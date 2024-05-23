@@ -46,6 +46,8 @@ public interface DeviceHost {
         public void onPollingLoopDetected(Bundle pollingFrame);
 
         public void onVendorSpecificEvent(int gid, int oid, byte[] payload);
+
+        public void onRfDiscoveryEvent(boolean isDiscoveryStarted);
     }
 
     public interface TagEndpoint {
