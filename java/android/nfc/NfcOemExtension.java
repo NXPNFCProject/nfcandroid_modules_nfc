@@ -26,6 +26,8 @@ import android.os.Binder;
 import android.os.RemoteException;
 import android.util.Log;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executor;
 
 /**
@@ -42,10 +44,13 @@ public final class NfcOemExtension {
     private static final int OEM_EXTENSION_RESPONSE_THRESHOLD_MS = 2000;
     private final NfcAdapter mAdapter;
     private final NfcOemExtensionCallback mOemNfcExtensionCallback;
+    private boolean mIsRegistered = false;
+    private final Map<Callback, Executor> mCallbackMap = new HashMap<>();
     private final Context mContext;
-    private Executor mExecutor = null;
-    private Callback mCallback = null;
     private final Object mLock = new Object();
+    private boolean mCardEmulationActivated = false;
+    private boolean mRfFieldActivated = false;
+    private boolean mRfDiscoveryStarted = false;
 
     /**
      * Interface for Oem extensions for NFC.
@@ -59,6 +64,27 @@ public final class NfcOemExtension {
          * @param tag Tag details
          */
         void onTagConnected(boolean connected, @NonNull Tag tag);
+
+        /**
+        * Notifies NFC is activated in listen mode.
+        *
+        * @param isActivated true, if listen mode activated, else de-activated.
+        */
+        void onCardEmulationActivated(boolean isActivated);
+
+        /**
+        * Notifies the NFC RF Field status
+        *
+        * @param isActivated true, if RF Field is ON, else RF Field is OFF.
+        */
+        void onRfFieldActivated(boolean isActivated);
+
+        /**
+        * Notifies the NFC RF discovery status
+        *
+        * @param isDiscoveryStarted true, if RF discovery started, else RF state is Idle.
+        */
+        void onRfDiscoveryStarted(boolean isDiscoveryStarted);
     }
 
 
@@ -73,8 +99,13 @@ public final class NfcOemExtension {
     }
 
     /**
-     * Register an {@link Callback} to listen for UWB oem extension callbacks
+     * Register an {@link Callback} to listen for NFC oem extension callbacks
+     * Multiple clients can register and callbacks will be invoked asynchronously.
+     *
      * <p>The provided callback will be invoked by the given {@link Executor}.
+     * As part of {@link #registerCallback(Executor, Callback)} the
+     * {@link Callback} will be invoked with current NFC state
+     * before the {@link #registerCallback(Executor, Callback)} function completes.
      *
      * @param executor an {@link Executor} to execute given callback
      * @param callback oem implementation of {@link Callback}
@@ -84,18 +115,40 @@ public final class NfcOemExtension {
     public void registerCallback(@NonNull @CallbackExecutor Executor executor,
             @NonNull Callback callback) {
         synchronized (mLock) {
-            if (mCallback != null) {
+            if (executor == null || callback == null) {
+                Log.e(TAG, "Executor and Callback must not be null!");
+                throw new IllegalArgumentException();
+            }
+
+            if (mCallbackMap.containsKey(callback)) {
                 Log.e(TAG, "Callback already registered. Unregister existing callback before"
                         + "registering");
                 throw new IllegalArgumentException();
             }
-            try {
-                NfcAdapter.sService.registerOemExtensionCallback(mOemNfcExtensionCallback);
-                mCallback = callback;
-                mExecutor = executor;
-            } catch (RemoteException e) {
-                mAdapter.attemptDeadServiceRecovery(e);
+            mCallbackMap.put(callback, executor);
+            if (!mIsRegistered) {
+                try {
+                    NfcAdapter.sService.registerOemExtensionCallback(mOemNfcExtensionCallback);
+                    mIsRegistered = true;
+                } catch (RemoteException e) {
+                    Log.w(TAG, "Failed to register oem callback");
+                    mCallbackMap.remove(callback);
+                    throw e.rethrowFromSystemServer();
+                }
+            } else {
+                updateNfCState(callback, executor);
             }
+        }
+    }
+
+    private void updateNfCState(Callback callback, Executor executor) {
+        if (callback != null) {
+            Log.i(TAG, "updateNfCState");
+            executor.execute(() -> {
+                callback.onCardEmulationActivated(mCardEmulationActivated);
+                callback.onRfFieldActivated(mRfFieldActivated);
+                callback.onRfDiscoveryStarted(mRfDiscoveryStarted);
+            });
         }
     }
 
@@ -113,16 +166,21 @@ public final class NfcOemExtension {
     @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
     public void unregisterCallback(@NonNull Callback callback) {
         synchronized (mLock) {
-            if (mCallback == null || mCallback != callback) {
+            if (!mCallbackMap.containsKey(callback) || !mIsRegistered) {
                 Log.e(TAG, "Callback not registered");
                 throw new IllegalArgumentException();
             }
-            try {
-                NfcAdapter.sService.unregisterOemExtensionCallback(mOemNfcExtensionCallback);
-                mCallback = null;
-                mExecutor = null;
-            } catch (RemoteException e) {
-                mAdapter.attemptDeadServiceRecovery(e);
+            if (mCallbackMap.size() == 1) {
+                try {
+                    NfcAdapter.sService.unregisterOemExtensionCallback(mOemNfcExtensionCallback);
+                    mIsRegistered = false;
+                    mCallbackMap.remove(callback);
+                } catch (RemoteException e) {
+                    Log.w(TAG, "Failed to unregister Oem Callback with service");
+                    throw e.rethrowFromSystemServer();
+                }
+            } else {
+                mCallbackMap.remove(callback);
             }
         }
     }
@@ -145,12 +203,68 @@ public final class NfcOemExtension {
         @Override
         public void onTagConnected(boolean connected, Tag tag) throws RemoteException {
             synchronized (mLock) {
-                if (mCallback == null || mExecutor == null) {
-                    return;
-                }
                 final long identity = Binder.clearCallingIdentity();
                 try {
-                    mExecutor.execute(() -> mCallback.onTagConnected(connected, tag));
+                    for (Callback callback : mCallbackMap.keySet()) {
+                        Executor executor = mCallbackMap.get(callback);
+                        executor.execute(() -> callback.onTagConnected(connected, tag));
+                    }
+                } catch (RuntimeException ex) {
+                    throw ex;
+                } finally {
+                    Binder.restoreCallingIdentity(identity);
+                }
+            }
+        }
+
+        @Override
+        public void onCardEmulationActivated(boolean isActivated) throws RemoteException {
+            mCardEmulationActivated = isActivated;
+            synchronized (mLock) {
+                final long identity = Binder.clearCallingIdentity();
+                try {
+                    for (Callback callback : mCallbackMap.keySet()) {
+                        Executor executor = mCallbackMap.get(callback);
+                        executor.execute(() -> callback.onCardEmulationActivated(isActivated));
+                    }
+                } catch (RuntimeException ex) {
+                    throw ex;
+                } finally {
+                    Binder.restoreCallingIdentity(identity);
+                }
+            }
+        }
+
+        @Override
+        public void onRfFieldActivated(boolean isActivated) throws RemoteException {
+            mRfFieldActivated = isActivated;
+            synchronized (mLock) {
+                final long identity = Binder.clearCallingIdentity();
+                try {
+                    for (Callback callback : mCallbackMap.keySet()) {
+                        Executor executor = mCallbackMap.get(callback);
+                        executor.execute(() -> callback.onRfFieldActivated(isActivated));
+                    }
+                } catch (RuntimeException ex) {
+                    throw ex;
+                } finally {
+                    Binder.restoreCallingIdentity(identity);
+                }
+            }
+        }
+
+        @Override
+        public void onRfDiscoveryStarted(boolean isDiscoveryStarted) throws RemoteException {
+            mRfDiscoveryStarted = isDiscoveryStarted;
+            synchronized (mLock) {
+                final long identity = Binder.clearCallingIdentity();
+                try {
+                    for (Callback callback : mCallbackMap.keySet()) {
+                        Executor executor = mCallbackMap.get(callback);
+                        executor.execute(() -> callback.onRfDiscoveryStarted(isDiscoveryStarted));
+                    }
+                } catch (RuntimeException ex) {
+                    throw ex;
                 } finally {
                     Binder.restoreCallingIdentity(identity);
                 }

@@ -22,4 +22,7 @@ import android.nfc.Tag;
  */
 interface INfcOemExtensionCallback {
    void onTagConnected(boolean connected, in Tag tag);
+   void onCardEmulationActivated(boolean isActivated);
+   void onRfFieldActivated(boolean isActivated);
+   void onRfDiscoveryStarted(boolean isDiscoveryStarted);
 }
