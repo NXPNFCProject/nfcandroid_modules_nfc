@@ -168,6 +168,7 @@ uint8_t gConfig[256];
 static int prevScreenState = NFA_SCREEN_STATE_OFF_LOCKED;
 static int NFA_SCREEN_POLLING_TAG_MASK = 0x10;
 static bool gIsDtaEnabled = false;
+static int gPartialInitMode = INIT_MODE_DEFAULT;
 /////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////
 
@@ -1171,6 +1172,48 @@ static jint nfcManager_getLfT3tMax(JNIEnv*, jobject) {
 
 /*******************************************************************************
 **
+** Function:        doPartialInit
+**
+** Description:     Partial Nfc initialization based on mode set
+**	            INIT_MODE_TRANSPARENT : Minimum initialization to allow NFCC
+**                                          transport
+**	            INIT_MODE_EE : Minimum Initialization to allow card
+**                                 emulation operation
+**
+** Returns:         True if ok.
+**
+*******************************************************************************/
+static jboolean doPartialInit() {
+  LOG(DEBUG) << StringPrintf("%s: enter", __func__);
+  tNFA_STATUS stat = NFA_STATUS_OK;
+
+  NfcAdaptation& theInstance = NfcAdaptation::GetInstance();
+  theInstance.Initialize();  // start GKI, NCI task, NFC task
+
+  {
+    SyncEventGuard guard(sNfaEnableEvent);
+    tHAL_NFC_ENTRY* halFuncEntries = theInstance.GetHalEntryFuncs();
+    NFA_Partial_Init(halFuncEntries, gPartialInitMode);
+    LOG(DEBUG) << StringPrintf("%s: calling enable", __func__);
+    stat = NFA_Enable(nfaDeviceManagementCallback, nfaConnectionCallback);
+    if (stat == NFA_STATUS_OK) {
+      sNfaEnableEvent.wait();  // wait for NFA command to finish
+    }
+    NFA_SetNfccMode(INIT_MODE_DEFAULT);
+  }
+
+  // sIsNfaEnabled indicates whether stack started successfully
+  if (!sIsNfaEnabled) {
+    NFA_Disable(false /* ungraceful */);
+    theInstance.Finalize();
+    return JNI_FALSE;
+  }
+  LOG(DEBUG) << StringPrintf("%s: exit", __func__);
+  return JNI_TRUE;
+}
+
+/*******************************************************************************
+**
 ** Function:        nfcManager_doInitialize
 **
 ** Description:     Turn on NFC.
@@ -1191,7 +1234,9 @@ static jboolean nfcManager_doInitialize(JNIEnv* e, jobject o) {
     LOG(DEBUG) << StringPrintf("%s: already enabled", __func__);
     goto TheEnd;
   }
-
+  if (gPartialInitMode != INIT_MODE_DEFAULT) {
+    return doPartialInit();
+  }
   powerSwitch.initialize(PowerSwitch::FULL_POWER);
 
   {
@@ -1295,6 +1340,10 @@ TheEnd:
   }
   LOG(DEBUG) << StringPrintf("%s: exit", __func__);
   return sIsNfaEnabled ? JNI_TRUE : JNI_FALSE;
+}
+
+static void nfcManager_doSetPartialInitMode(JNIEnv*, jobject, jint mode) {
+  gPartialInitMode = mode;
 }
 
 static void nfcManager_doEnableDtaMode(JNIEnv*, jobject) {
@@ -1476,6 +1525,39 @@ TheEnd:
 
 /*******************************************************************************
 **
+** Function:        doPartialDeinit
+**
+** Description:     Partial DeInit for mode TRANSPARENT, CE ..
+**
+** Returns:         True if ok.
+**
+*******************************************************************************/
+static jboolean doPartialDeinit() {
+  LOG(DEBUG) << StringPrintf("%s: enter", __func__);
+  tNFA_STATUS stat = NFA_STATUS_OK;
+  sIsDisabling = true;
+  if (sIsNfaEnabled) {
+    SyncEventGuard guard(sNfaDisableEvent);
+    stat = NFA_Disable(TRUE /* graceful */);
+    if (stat == NFA_STATUS_OK) {
+      LOG(DEBUG) << StringPrintf("%s: wait for completion", __func__);
+      sNfaDisableEvent.wait();  // wait for NFA command to finish
+    } else {
+      LOG(ERROR) << StringPrintf("%s: fail disable; error=0x%X", __func__,
+                                 stat);
+    }
+  }
+  sIsDisabling = false;
+
+  NfcAdaptation& theInstance = NfcAdaptation::GetInstance();
+  LOG(DEBUG) << StringPrintf("%s: exit", __func__);
+  theInstance.Finalize();
+
+  return stat == NFA_STATUS_OK ? JNI_TRUE : JNI_FALSE;
+}
+
+/*******************************************************************************
+**
 ** Function:        nfcManager_doDeinitialize
 **
 ** Description:     Turn off NFC.
@@ -1487,7 +1569,9 @@ TheEnd:
 *******************************************************************************/
 static jboolean nfcManager_doDeinitialize(JNIEnv*, jobject) {
   LOG(DEBUG) << StringPrintf("%s: enter", __func__);
-
+  if (gPartialInitMode != INIT_MODE_DEFAULT) {
+    return doPartialDeinit();
+  }
   sIsDisabling = true;
 
   if (!recovery_option || !sIsRecovering) {
@@ -2089,6 +2173,8 @@ static JNINativeMethod gMethods[] = {
     {"initializeNativeStructure", "()Z", (void*)nfcManager_initNativeStruc},
 
     {"doInitialize", "()Z", (void*)nfcManager_doInitialize},
+
+    {"doSetPartialInitMode", "(I)V", (void*)nfcManager_doSetPartialInitMode},
 
     {"doDeinitialize", "()Z", (void*)nfcManager_doDeinitialize},
 
