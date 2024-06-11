@@ -93,6 +93,7 @@ import android.se.omapi.SeServiceManager;
 import android.sysprop.NfcProperties;
 import android.text.TextUtils;
 import android.util.EventLog;
+import java.util.List;
 import android.util.Log;
 import android.util.proto.ProtoOutputStream;
 import android.widget.Toast;
@@ -2234,6 +2235,14 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             if (DBG) Log.i(TAG, "Unregister the oem extension callback");
             NfcPermissions.enforceAdminPermissions(mContext);
             mNfcOemExtensionCallback = null;
+        }
+        @Override
+        public List<String> fetchActiveNfceeList() throws RemoteException {
+          List<String> list = new ArrayList<String>();
+          if (isNfcEnabled()) {
+            list = mDeviceHost.dofetchActiveNfceeList();
+          }
+          return list;
         }
 
         @Override

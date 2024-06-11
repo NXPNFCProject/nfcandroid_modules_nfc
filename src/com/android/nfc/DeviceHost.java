@@ -22,6 +22,7 @@ import android.os.Bundle;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
+import java.util.List;
 
 public interface DeviceHost {
     public interface DeviceHostListener {
@@ -231,4 +232,8 @@ public interface DeviceHost {
      * Sends Vendor NCI command
      */
     NfcVendorNciResponse sendRawVendorCmd(int mt, int gid, int oid, byte[] payload);
+    /**
+     * Get the active NFCEE list
+     */
+    public List<String> dofetchActiveNfceeList();
 }
