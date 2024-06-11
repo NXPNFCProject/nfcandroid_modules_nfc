@@ -34,7 +34,7 @@ import android.nfc.ITagRemovedCallback;
 import android.nfc.INfcDta;
 import android.nfc.NfcAntennaInfo;
 import android.os.Bundle;
-
+import java.util.List;
 /**
  * @hide
  */
@@ -95,4 +95,5 @@ interface INfcAdapter
     void registerOemExtensionCallback(INfcOemExtensionCallback callbacks);
     void unregisterOemExtensionCallback(INfcOemExtensionCallback callbacks);
     void clearPreference();
+    List<String> fetchActiveNfceeList();
 }

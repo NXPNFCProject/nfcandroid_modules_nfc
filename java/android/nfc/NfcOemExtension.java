@@ -25,8 +25,9 @@ import android.content.Context;
 import android.os.Binder;
 import android.os.RemoteException;
 import android.util.Log;
-
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
@@ -199,6 +200,24 @@ public final class NfcOemExtension {
         }
     }
 
+    /**
+     * Get the Active NFCEE List
+     *
+     * @return List of activated secure element list on success
+     *         which can contain "eSE" and "UICC",
+     *         otherwise empty list.
+     */
+    @NonNull
+    @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
+    public List<String> getActiveNfceeList() {
+      List<String> nfceeList = new ArrayList<String>();
+      try {
+        nfceeList = NfcAdapter.sService.fetchActiveNfceeList();
+      } catch (RemoteException e) {
+        Log.e(TAG, "getActiveNfceeList: failed", e);
+      }
+      return nfceeList;
+    }
     private final class NfcOemExtensionCallback extends INfcOemExtensionCallback.Stub {
         @Override
         public void onTagConnected(boolean connected, Tag tag) throws RemoteException {
