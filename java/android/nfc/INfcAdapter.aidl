@@ -34,7 +34,9 @@ import android.nfc.ITagRemovedCallback;
 import android.nfc.INfcDta;
 import android.nfc.NfcAntennaInfo;
 import android.os.Bundle;
+
 import java.util.List;
+
 /**
  * @hide
  */
@@ -70,7 +72,7 @@ interface INfcAdapter
     boolean setNfcSecure(boolean enable);
     NfcAntennaInfo getNfcAntennaInfo();
 
-    boolean setControllerAlwaysOn(boolean value);
+    boolean setControllerAlwaysOn(boolean value, int mode);
     boolean isControllerAlwaysOn();
     boolean isControllerAlwaysOnSupported();
     void registerControllerAlwaysOnListener(in INfcControllerAlwaysOnListener listener);
