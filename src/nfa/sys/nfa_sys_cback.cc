@@ -81,7 +81,7 @@ void nfa_sys_cback_notify_enable_complete(uint8_t id) {
 void nfa_sys_cback_notify_partial_enable_complete(uint8_t id) {
   if (nfa_sys_cb.p_enable_cback && id == NFA_ID_SYS) {
     nfa_sys_cb.p_enable_cback();
-    nfa_sys_cb.p_enable_cback = NULL;
+    nfa_sys_cb.p_enable_cback = nullptr;
   }
 }
 
