@@ -33,6 +33,8 @@ tNFC_STATUS NFC_SendData(uint8_t conn_id, NFC_HDR* p_data) {
   return NFC_STATUS_OK;
 }
 
+void NFC_SetStaticT4tNfceeCback(tNFC_CONN_CBACK*) {}
+
 uint8_t nci_snd_t3t_polling(uint16_t system_code, uint8_t rc, uint8_t tsn) {
   FUZZLOG("sc=%04X, rc=%02X, tsn=%02X", system_code, rc, tsn);
   return NFC_STATUS_OK;
