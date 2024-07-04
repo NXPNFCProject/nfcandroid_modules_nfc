@@ -52,6 +52,7 @@ public class NativeNfcManager implements DeviceHost {
 
     private int mIsoDepMaxTransceiveLength;
     private final DeviceHostListener mListener;
+    private final NativeT4tNfceeManager mT4tNfceeMgr;
     private final Context mContext;
 
     private final Object mLock = new Object();
@@ -72,6 +73,7 @@ public class NativeNfcManager implements DeviceHost {
         mListener = listener;
         initializeNativeStructure();
         mContext = context;
+        mT4tNfceeMgr = new NativeT4tNfceeManager();
     }
 
     public native boolean initializeNativeStructure();
@@ -175,6 +177,16 @@ public class NativeNfcManager implements DeviceHost {
 
     @Override
     public native boolean setObserveMode(boolean enabled);
+
+    @Override
+    public int   getT4TNfceePowerState() {
+      return mT4tNfceeMgr.getT4TNfceePowerState();
+    }
+
+    @Override
+    public int getNdefNfceeRouteId() {
+      return mT4tNfceeMgr.getNdefNfceeRouteId();
+    }
 
     @Override
     public void registerT3tIdentifier(byte[] t3tIdentifier) {

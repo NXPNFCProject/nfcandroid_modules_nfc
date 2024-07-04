@@ -171,6 +171,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     static final String NATIVE_LOG_FILE_NAME = "native_crash_logs";
     static final String NATIVE_LOG_FILE_PATH = "/data/misc/nfc/logs";
     static final int NATIVE_CRASH_FILE_SIZE = 1024 * 1024;
+    static final String DEFAULT_T4T_NFCEE_AID = "D2760000850101";
 
     static final int MSG_NDEF_TAG = 0;
     // Previously used: MSG_LLCP_LINK_ACTIVATION = 1
@@ -272,6 +273,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     private static final int NCI_GID_PROP = 0x0F;
     private static final int NCI_MSG_PROP_ANDROID = 0x0C;
     private static final int NCI_MSG_PROP_ANDROID_POWER_SAVING = 0x01;
+    private static final int POWER_STATE_SWITCH_ON = 0x01;
 
     private final UserManager mUserManager;
     private final ActivityManager mActivityManager;
@@ -417,6 +419,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     private final boolean mIsAlwaysOnSupported;
     private final Set<INfcControllerAlwaysOnListener> mAlwaysOnListeners =
             Collections.synchronizedSet(new HashSet<>());
+
+    private int AID_MATCHING_EXACT_ONLY = 0x02;
 
     private final FeatureFlags mFeatureFlags = new com.android.nfc.flags.FeatureFlagsImpl();
 
@@ -3145,6 +3149,21 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         mHandler.sendEmptyMessage(MSG_COMMIT_ROUTING);
     }
 
+    /**
+     * get default T4TNfcee power state supported
+     */
+    public int getT4TNfceePowerState() {
+        int powerState = mDeviceHost.getT4TNfceePowerState();
+        synchronized (NfcService.this) {
+            if (mIsSecureNfcEnabled) {
+            /* Secure nfc on,Setting power state screen on unlocked */
+                powerState=POWER_STATE_SWITCH_ON;
+            }
+        }
+        if (DBG) Log.d(TAG, "T4TNfceePowerState : " + powerState);
+        return powerState;
+    }
+
     public boolean sendData(byte[] data) {
         return mDeviceHost.sendRawFrame(data);
     }
@@ -4134,6 +4153,14 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             pw.flush();
             mDeviceHost.dump(fd);
         }
+    }
+
+    public void addT4TNfceeAid() {
+      Log.i(TAG, "Add T4T Nfcee AID");
+      int ndefNfceeRouteId = mDeviceHost.getNdefNfceeRouteId();
+      routeAids(DEFAULT_T4T_NFCEE_AID, ndefNfceeRouteId,
+              AID_MATCHING_EXACT_ONLY,
+              getT4TNfceePowerState());
     }
 
     /**

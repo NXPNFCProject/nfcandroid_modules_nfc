@@ -150,6 +150,8 @@ public interface DeviceHost {
 
     public boolean unrouteAid(byte[] aid);
 
+    public int getT4TNfceePowerState();
+
     public boolean commitRouting();
 
     public void registerT3tIdentifier(byte[] t3tIdentifier);
@@ -195,6 +197,8 @@ public interface DeviceHost {
     public boolean isObserveModeSupported();
 
     public boolean setObserveMode(boolean enable);
+
+    public int getNdefNfceeRouteId();
 
     /**
     * Get the committed listen mode routing configuration
