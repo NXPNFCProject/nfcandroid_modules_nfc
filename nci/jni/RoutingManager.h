@@ -48,7 +48,7 @@ class RoutingManager {
   void updateRoutingTable();
   void eeSetPwrAndLinkCtrl(uint8_t config);
   void updateIsoDepProtocolRoute(int route);
-  tNFA_TECHNOLOGY_MASK updateTechnologyABRoute(int route);
+  tNFA_TECHNOLOGY_MASK updateTechnologyABFRoute(int route);
   void clearRoutingEntry(int clearFlags);
 
   static const int CLEAR_AID_ENTRIES = 0x01;

@@ -477,7 +477,7 @@ public class NativeNfcManager implements DeviceHost {
     public native void setIsoDepProtocolRoute(int route);
 
     @Override
-    public native void setTechnologyABRoute(int route);
+    public native void setTechnologyABFRoute(int route);
 
     private void notifyCommandTimeout() {
         NfcService.getInstance().storeNativeCrashLogs();

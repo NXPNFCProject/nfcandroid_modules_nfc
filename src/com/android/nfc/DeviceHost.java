@@ -222,7 +222,7 @@ public interface DeviceHost {
     boolean setPowerSavingMode(boolean flag);
 
     void setIsoDepProtocolRoute(int route);
-    void setTechnologyABRoute(int route);
+    void setTechnologyABFRoute(int route);
     void clearRoutingEntry(int clearFlags);
 
     /**
