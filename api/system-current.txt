@@ -71,6 +71,8 @@ package android.nfc.cardemulation {
 
   public final class CardEmulation {
     method @FlaggedApi("android.nfc.enable_nfc_mainline") @NonNull public java.util.List<android.nfc.cardemulation.ApduServiceInfo> getServices(@NonNull String, int);
+    method @FlaggedApi("android.nfc.enable_nfc_mainline") @NonNull public boolean overrideRoutingTable(@NonNull android.app.Activity, @NonNull String, @NonNull String);
+    method @FlaggedApi("android.nfc.enable_nfc_mainline") @NonNull public boolean recoverRoutingTable(@NonNull android.app.Activity);
   }
 
 }

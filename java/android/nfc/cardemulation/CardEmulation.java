@@ -1021,7 +1021,11 @@ public final class CardEmulation {
       * This is a high risk API and only included to support mainline effort
       * @hide
       */
-    public boolean overrideRoutingTable(Activity activity, String protocol, String technology) {
+    @SystemApi
+    @FlaggedApi(Flags.FLAG_ENABLE_NFC_MAINLINE)
+    @NonNull
+    public boolean overrideRoutingTable(@NonNull Activity activity, @NonNull String protocol,
+                                        @NonNull String technology) {
         if (activity == null) {
             throw new NullPointerException("activity or service or category is null");
         }
@@ -1055,7 +1059,10 @@ public final class CardEmulation {
      *
      * @hide
      */
-    public boolean recoverRoutingTable(Activity activity) {
+    @SystemApi
+    @FlaggedApi(Flags.FLAG_ENABLE_NFC_MAINLINE)
+    @NonNull
+    public boolean recoverRoutingTable(@NonNull Activity activity) {
         if (activity == null) {
             throw new NullPointerException("activity is null");
         }
