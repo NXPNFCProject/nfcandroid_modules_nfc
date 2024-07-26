@@ -175,6 +175,50 @@ jboolean NativeT4tNfcee::performT4tClearData(uint8_t* fileId) {
 }
 /*******************************************************************************
 **
+** Function:        getT4tStatus
+**
+** Description:     This API will get T4T NDEF NFCEE status.
+**
+** Returns:         boolean : Indicates whether T4T NDEF NFCEE Read or write
+**                            operation is under process
+**                  Return "True" when operation is in progress. else "False"
+**
+*******************************************************************************/
+jboolean NativeT4tNfcee::getT4tStatus(JNIEnv* e, jobject o) {
+  LOG(DEBUG) << StringPrintf("%s:Enter: ", __func__);
+
+  bool t4tStatus = false;
+  t4tStatus = NFA_T4tNfcEeIsProcessing();
+
+  LOG(DEBUG) << StringPrintf("%s:Exit: Returnig status : %d", __func__,
+                             t4tStatus);
+  return t4tStatus;
+}
+/*******************************************************************************
+**
+** Function:        isT4tNdefNfceeEmulationSupported
+**
+** Description:     This API will tell whether T4T NDEF NFCEE emulation is
+**                  supported or not.
+**
+** Returns:         boolean : Indicates whether T4T NDEF NFCEE emulation is
+**                            supported or not
+**                  Return "True" emulation is supprted. else "False"
+**
+*******************************************************************************/
+jboolean NativeT4tNfcee::isT4tNdefNfceeEmulationSupported(JNIEnv* e,
+                                                          jobject o) {
+  LOG(DEBUG) << StringPrintf("%s:Enter: ", __func__);
+
+  bool t4tStatus = false;
+  t4tStatus = NFA_T4tNfcEeIsEmulationSupported();
+
+  LOG(DEBUG) << StringPrintf("%s:Exit: ", __func__);
+  return t4tStatus;
+}
+
+/*******************************************************************************
+**
 ** Function:        t4tWriteData
 **
 ** Description:     Write the data into the T4T file of the specific file ID
@@ -184,7 +228,7 @@ jboolean NativeT4tNfcee::performT4tClearData(uint8_t* fileId) {
 **
 *******************************************************************************/
 jint NativeT4tNfcee::t4tWriteData(JNIEnv* e, jobject object, jbyteArray fileId,
-                                  jbyteArray data, int length) {
+                                  jbyteArray data) {
   tNFA_STATUS status = NFA_STATUS_FAILED;
 
   T4TNFCEE_STATUS_t t4tNfceeStatus =
@@ -201,11 +245,6 @@ jint NativeT4tNfcee::t4tWriteData(JNIEnv* e, jobject object, jbyteArray fileId,
   if (bytesData.size() == 0x00) {
     LOG(ERROR) << StringPrintf("%s:Empty Data", __func__);
     return ERROR_EMPTY_PAYLOAD;
-  }
-
-  if ((int)bytesData.size() != length) {
-    LOG(ERROR) << StringPrintf("%s:Invalid Length", __func__);
-    return ERROR_INVALID_LENGTH;
   }
 
   if (setup() != NFA_STATUS_OK) return ERROR_CONNECTION_FAILED;

@@ -152,6 +152,18 @@ public interface DeviceHost {
 
     public int getT4TNfceePowerState();
 
+    public int getNdefNfceeRouteId();
+
+    public int doWriteData(byte[] fileId, byte[] data);
+
+    public byte[] doReadData(byte[] fileId);
+
+    public boolean doClearNdefData();
+
+    public boolean getNdefNfceeStatus();
+
+    public boolean isNdefNfceeEmulationSupported();
+
     public boolean commitRouting();
 
     public void registerT3tIdentifier(byte[] t3tIdentifier);
@@ -197,8 +209,6 @@ public interface DeviceHost {
     public boolean isObserveModeSupported();
 
     public boolean setObserveMode(boolean enable);
-
-    public int getNdefNfceeRouteId();
 
     /**
     * Get the committed listen mode routing configuration

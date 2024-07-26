@@ -29,41 +29,76 @@ using android::base::StringPrintf;
 namespace android {
 /*******************************************************************************
 **
-** Function:        t4tClearData
+** Function:        t4tNfceeManager_doClearNdefData
 **
-** Description:     This API will set all the T4T NFCEE NDEF data to zero.
+** Description:     This API will set all the NFCEE NDEF data to zero.
 **                  This API can be called regardless of NDEF file lock state.
 **
 ** Returns:         boolean : Return the Success or fail of the operation.
 **                  Return "True" when operation is successful. else "False"
 **
 *******************************************************************************/
-jint t4tNfceeManager_doClearNdefT4tData(JNIEnv* e, jobject o) {
+jint t4tNfceeManager_doClearNdefData(JNIEnv* e, jobject o) {
   LOG(DEBUG) << StringPrintf("%s: enter", __func__);
 
   return t4tNfcEe.t4tClearData(e, o);
 }
 /*******************************************************************************
+**
+** Function:        t4tNfceeManager_getNdefNfceeStatus
+**
+** Description:     This API will get NDEF NFCEE status.
+**
+** Returns:         boolean : Indicates whether NDEF NFCEE Read or write
+**                            operation is under process
+**                  Return "True" when operation is in progress. else "False"
+**
+*******************************************************************************/
+jboolean t4tNfceeManager_getNdefNfceeStatus(JNIEnv* e, jobject o) {
+  LOG(DEBUG) << StringPrintf("%s: enter", __func__);
+
+  return t4tNfcEe.getT4tStatus(e, o);
+}
+/*******************************************************************************
+**
+** Function:        t4tNfceeManager_isNdefNfceeEmulationSupported
+**
+** Description:     This API will tell whether NDEF NFCEE emulation is supported
+**                  or not.
+**
+** Returns:         boolean : Indicates whether NDEF NFCEE emulation is
+**                            supported or not
+**                  Return "True" when feature supported. else "False"
+**
+*******************************************************************************/
+jboolean t4tNfceeManager_isNdefNfceeEmulationSupported(JNIEnv* e, jobject o) {
+  LOG(DEBUG) << StringPrintf("%s: enter", __func__);
+
+  return t4tNfcEe.isT4tNdefNfceeEmulationSupported(e, o);
+}
+/*******************************************************************************
  **
- ** Function:        nfcManager_doWriteT4tData
+ ** Function:        nfcManager_doWriteData
  **
- ** Description:     Write the data into the T4T file of the specific file ID
+ ** Description:     Write the data into the NDEF NFCEE file of the specific
+ **                  file ID
  **
  ** Returns:         Return the size of data written
  **                  Return negative number of error code
  **
  *******************************************************************************/
-jint t4tNfceeManager_doWriteT4tData(JNIEnv* e, jobject o, jbyteArray fileId,
-                                    jbyteArray data, jint length) {
+jint t4tNfceeManager_doWriteData(JNIEnv* e, jobject o, jbyteArray fileId,
+                                 jbyteArray data) {
   LOG(DEBUG) << StringPrintf("%s: enter", __func__);
 
-  return t4tNfcEe.t4tWriteData(e, o, fileId, data, length);
+  return t4tNfcEe.t4tWriteData(e, o, fileId, data);
 }
 /*******************************************************************************
 **
-** Function:        nfcManager_doReadT4tData
+** Function:        nfcManager_doReadData
 **
-** Description:     Read the data from the T4T file of the specific file ID.
+** Description:     Read the data from the NDEF NFCEE file of the specific file
+**                  ID.
 **
 ** Returns:         byte[] : all the data previously written to the specific
 **                  file ID.
@@ -72,8 +107,7 @@ jint t4tNfceeManager_doWriteT4tData(JNIEnv* e, jobject o, jbyteArray fileId,
 **                  Return null if reading fails.
 **
 *******************************************************************************/
-jbyteArray t4tNfceeManager_doReadT4tData(JNIEnv* e, jobject o,
-                                         jbyteArray fileId) {
+jbyteArray t4tNfceeManager_doReadData(JNIEnv* e, jobject o, jbyteArray fileId) {
   LOG(DEBUG) << StringPrintf("%s: enter", __func__);
   return t4tNfcEe.t4tReadData(e, o, fileId);
 }
@@ -110,9 +144,12 @@ jint t4tNfceeManager_getT4TNfceePowerState(JNIEnv* e, jobject o) {
  **
  *****************************************************************************/
 static JNINativeMethod gMethods[] = {
-    {"doWriteT4tData", "([B[BI)I", (void*)t4tNfceeManager_doWriteT4tData},
-    {"doReadT4tData", "([B)[B", (void*)t4tNfceeManager_doReadT4tData},
-    {"doClearNdefT4tData", "()Z", (void*)t4tNfceeManager_doClearNdefT4tData},
+    {"doWriteData", "([B[B)I", (void*)t4tNfceeManager_doWriteData},
+    {"doReadData", "([B)[B", (void*)t4tNfceeManager_doReadData},
+    {"doClearNdefData", "()Z", (void*)t4tNfceeManager_doClearNdefData},
+    {"getNdefNfceeStatus", "()Z", (void*)t4tNfceeManager_getNdefNfceeStatus},
+    {"isNdefNfceeEmulationSupported", "()Z",
+     (void*)t4tNfceeManager_isNdefNfceeEmulationSupported},
     {"getT4TNfceePowerState", "()I",
      (void*)t4tNfceeManager_getT4TNfceePowerState},
     {"getNdefNfceeRouteId", "()I", (void*)t4tNfceeManager_getNdefNfceeRouteId},

@@ -59,6 +59,7 @@ import android.nfc.INfcOemExtensionCallback;
 import android.nfc.INfcTag;
 import android.nfc.INfcUnlockHandler;
 import android.nfc.ITagRemovedCallback;
+import android.nfc.INdefNfcee;
 import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
 import android.nfc.NfcAntennaInfo;
@@ -367,6 +368,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     int mErrorSound;
     SoundPool mSoundPool; // playback synchronized on this
     TagService mNfcTagService;
+    NdefNfceeService mNdefNfceeService;
     NfcAdapterService mNfcAdapter;
     NfcDtaService mNfcDtaService;
     RoutingTableParser mRoutingTableParser;
@@ -421,6 +423,10 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             Collections.synchronizedSet(new HashSet<>());
 
     private int AID_MATCHING_EXACT_ONLY = 0x02;
+
+    public static final int T4TNFCEE_STATUS_FAILED = -1;
+    private Object mNdefNfcEeObj = new Object();
+    private Bundle mNdefNfceeReturnBundle = new Bundle();
 
     private final FeatureFlags mFeatureFlags = new com.android.nfc.flags.FeatureFlagsImpl();
 
@@ -1968,6 +1974,15 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         }
 
         @Override
+        public INdefNfcee getNdefNfceeInterface() throws RemoteException {
+            NfcPermissions.enforceAdminPermissions(mContext);
+            if (mNdefNfceeService == null) {
+                mNdefNfceeService = new NdefNfceeService();
+            }
+            return mNdefNfceeService;
+        }
+
+        @Override
         public void addNfcUnlockHandler(INfcUnlockHandler unlockHandler, int[] techList) {
             NfcPermissions.enforceAdminPermissions(mContext);
 
@@ -2808,6 +2823,53 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         }
 
     };
+
+    class NdefNfceeService extends INdefNfcee.Stub {
+
+        public int doWriteData(final byte[] fileId, byte[] data) {
+          NfcPermissions.enforceUserPermissions(mContext);
+          int status = NCI_STATUS_FAILED;
+          try {
+            status = mDeviceHost.doWriteData(fileId, data);
+          } catch (Exception e) {
+            Log.e(TAG, "Exception occured while writing NDEF NFCEE data", e);
+          }
+          Log.i(TAG, "doWriteData : " + status);
+          return status;
+        }
+
+        public byte[] doReadData(final byte[] fileId) {
+          NfcPermissions.enforceUserPermissions(mContext);
+          byte[] readData = {};
+          try {
+            readData = mDeviceHost.doReadData(fileId);
+          } catch (Exception e) {
+            Log.e(TAG, "Exception occured while reading NDEF NFCEE data", e);
+          }
+          return readData;
+        }
+
+        public boolean doClearNdefData() {
+            NfcPermissions.enforceUserPermissions(mContext);
+            boolean status  = mDeviceHost.doClearNdefData();
+            Log.i(TAG, "doClearNdefT4tData : " + status);
+            return status;
+        }
+
+        public boolean getNdefNfceeStatus() {
+            NfcPermissions.enforceUserPermissions(mContext);
+            boolean status  = mDeviceHost.getNdefNfceeStatus();
+            Log.i(TAG, "getNdefNfceeStatus : " + status);
+            return status;
+        }
+
+        public boolean isNdefNfceeEmulationSupported() {
+            NfcPermissions.enforceUserPermissions(mContext);
+            boolean status  = mDeviceHost.isNdefNfceeEmulationSupported();
+            Log.i(TAG, "isNdefNfceeEmulationSupported : " + status);
+            return status;
+        }
+    }
 
     boolean isNfcEnabledOrShuttingDown() {
         synchronized (this) {

@@ -20,11 +20,15 @@ package com.android.nfc.dhimpl;
 import com.android.nfc.DeviceHost;
 
 public class NativeT4tNfceeManager {
-  public native int doWriteT4tData(byte[] fileId, byte[] data, int length);
+  public native int doWriteData(byte[] fileId, byte[] data);
 
-  public native byte[] doReadT4tData(byte[] fileId);
+  public native byte[] doReadData(byte[] fileId);
 
-  public native boolean doClearNdefT4tData();
+  public native boolean doClearNdefData();
+
+  public native boolean getNdefNfceeStatus();
+
+  public native boolean isNdefNfceeEmulationSupported();
 
   public native int getNdefNfceeRouteId();
 

@@ -85,8 +85,7 @@ class NativeT4tNfcee {
   **                  Return negative number of error code
   **
   *******************************************************************************/
-  int t4tWriteData(JNIEnv* e, jobject o, jbyteArray fileId, jbyteArray data,
-                   int length);
+  int t4tWriteData(JNIEnv* e, jobject o, jbyteArray fileId, jbyteArray data);
   /*******************************************************************************
   **
   ** Function:        t4tClearData
@@ -110,6 +109,32 @@ class NativeT4tNfcee {
   **
   *******************************************************************************/
   jboolean performT4tClearData(uint8_t* fileId);
+  /*******************************************************************************
+   **
+   ** Function:        getT4tStatus
+   **
+   ** Description:     This API will get T4T NDEF NFCEE status.
+   **
+   ** Returns:         boolean : Indicates whether T4T NDEF NFCEE Read or write
+   **                            operation is under process
+   **                  Return "True" when operation is in progress. else "False"
+   **
+   **
+   *******************************************************************************/
+  jboolean getT4tStatus(JNIEnv* e, jobject o);
+  /*******************************************************************************
+   **
+   ** Function:        t4tNfceeManager_isT4tNdefNfceeEmulationSupported
+   **
+   ** Description:     This API will tell whether T4T NDEF NFCEE emulation is
+   **                  supported or not.
+   **
+   ** Returns:         boolean : Indicates whether T4T NDEF NFCEE emulation is
+   **                            supported or not
+   **                  Return "True" when feature supported. else "False"
+   **
+   *******************************************************************************/
+  jboolean isT4tNdefNfceeEmulationSupported(JNIEnv* e, jobject o);
   /*******************************************************************************
   **
   ** Function:        t4tReadData

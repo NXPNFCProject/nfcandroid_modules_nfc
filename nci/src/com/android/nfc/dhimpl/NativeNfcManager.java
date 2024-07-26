@@ -189,6 +189,31 @@ public class NativeNfcManager implements DeviceHost {
     }
 
     @Override
+    public int doWriteData(byte[] fileId, byte[] data) {
+      return mT4tNfceeMgr.doWriteData(fileId, data);
+    }
+
+    @Override
+    public byte[] doReadData(byte[] fileId) {
+      return mT4tNfceeMgr.doReadData(fileId);
+    }
+
+    @Override
+    public boolean doClearNdefData() {
+      return mT4tNfceeMgr.doClearNdefData();
+    }
+
+    @Override
+    public boolean getNdefNfceeStatus() {
+      return mT4tNfceeMgr.getNdefNfceeStatus();
+    }
+
+    @Override
+    public boolean isNdefNfceeEmulationSupported() {
+      return mT4tNfceeMgr.isNdefNfceeEmulationSupported();
+    }
+
+    @Override
     public void registerT3tIdentifier(byte[] t3tIdentifier) {
         synchronized (mLock) {
             int handle = doRegisterT3tIdentifier(t3tIdentifier);
