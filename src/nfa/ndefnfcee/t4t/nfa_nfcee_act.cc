@@ -81,7 +81,7 @@ tNFA_STATUS nfa_t4tnfcee_exec_file_operation() {
   tNFA_STATUS status = NFA_STATUS_FAILED;
   LOG(DEBUG) << StringPrintf("%s Enter", __func__);
   status = RW_SetT4tNfceeInfo((tRW_CBACK*)nfa_t4tnfcee_handle_t4t_evt,
-                              NCI_DEST_TYPE_T4T_NFCEE);
+                              nfa_t4tnfcee_cb.connId);
   if (status != NFA_STATUS_OK) {
     LOG(DEBUG) << StringPrintf("%s T4T info not able to set. Return", __func__);
     return status;

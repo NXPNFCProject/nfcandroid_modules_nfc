@@ -1082,11 +1082,12 @@ extern void NFC_SetStaticRfCback(tNFC_CONN_CBACK* p_cback);
 **                  to receive the data for the given connection id.
 **
 ** Parameters       p_cback - the connection callback function
+**                  connId - connection ID for T4T NFCEE
 **
 ** Returns          Nothing
 **
 *******************************************************************************/
-void NFC_SetStaticT4tNfceeCback(tNFC_CONN_CBACK* p_cback);
+void NFC_SetStaticT4tNfceeCback(tNFC_CONN_CBACK* p_cback, uint8_t connId);
 
 /*******************************************************************************
 **

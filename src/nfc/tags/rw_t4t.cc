@@ -129,7 +129,13 @@ static void rw_t4t_sm_ndef_format(NFC_HDR* p_r_apdu);
 **
 *******************************************************************************/
 static bool rw_t4t_send_to_lower(NFC_HDR* p_c_apdu) {
-  if (NFC_SendData(NFC_RF_CONN_ID, p_c_apdu) != NFC_STATUS_OK) {
+  uint8_t conn_id = NFC_RF_CONN_ID;
+  if (NFA_T4tNfcEeIsProcessing()) {
+    conn_id = nfa_t4tnfcee_cb.connId;
+  }
+  LOG(DEBUG) << StringPrintf("%s - conn_id sent to lower : %d", __func__,
+                             conn_id);
+  if (NFC_SendData(conn_id, p_c_apdu) != NFC_STATUS_OK) {
     LOG(ERROR) << StringPrintf("failed");
     return false;
   }
@@ -2354,7 +2360,7 @@ tNFC_STATUS RW_T4tNfceeInitCb(void) {
 
   LOG(DEBUG) << StringPrintf("rw_t4t_ndefee_select ()");
 
-  NFC_SetStaticT4tNfceeCback(rw_t4t_data_cback);
+  NFC_SetStaticT4tNfceeCback(rw_t4t_data_cback, nfa_t4tnfcee_cb.connId);
 
   p_t4t->state = RW_T4T_STATE_IDLE;
   p_t4t->version = T4T_MY_VERSION;

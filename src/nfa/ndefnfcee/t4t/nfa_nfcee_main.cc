@@ -55,12 +55,14 @@ const tNFA_T4TNFCEE_ACTION nfa_t4tnfcee_action_tbl[] = {
 **
 *******************************************************************************/
 void nfa_t4tnfcee_init(void) {
-  LOG(DEBUG) << StringPrintf("nfa_t4tnfcee_init ()");
-  /* initialize control block */
-  memset(&nfa_t4tnfcee_cb, 0, sizeof(tNFA_T4TNFCEE_CB));
-  nfa_t4tnfcee_cb.t4tnfcee_state = NFA_T4TNFCEE_STATE_DISABLED;
-  /* register message handler on NFA SYS */
-  nfa_sys_register(NFA_ID_T4TNFCEE, &nfa_t4tnfcee_sys_reg);
+  if (NfcConfig::hasKey(NAME_DEFAULT_NDEF_NFCEE_ROUTE)) {
+    LOG(DEBUG) << StringPrintf("nfa_t4tnfcee_init ()");
+    /* initialize control block */
+    memset(&nfa_t4tnfcee_cb, 0, sizeof(tNFA_T4TNFCEE_CB));
+    nfa_t4tnfcee_cb.t4tnfcee_state = NFA_T4TNFCEE_STATE_DISABLED;
+    /* register message handler on NFA SYS */
+    nfa_sys_register(NFA_ID_T4TNFCEE, &nfa_t4tnfcee_sys_reg);
+  }
 }
 
 /*******************************************************************************
@@ -95,27 +97,21 @@ static void nfa_t4tnfcee_conn_cback(uint8_t conn_id, tNFC_CONN_EVT event,
                              conn_id, event);
   switch (event) {
     case NFC_CONN_CREATE_CEVT: {
-      if (conn_id == NCI_DEST_TYPE_T4T_NFCEE) {
-        if (p_data->status != NFA_STATUS_OK) {
-          NFC_ConnClose(NCI_DEST_TYPE_T4T_NFCEE);
-          nfa_t4tnfcee_cb.t4tnfcee_state = NFA_T4TNFCEE_STATE_OPEN_FAILED;
-        } else {
-          conn_evt_data.status = NFA_STATUS_OK;
-        }
+      if (p_data->status == NFA_STATUS_OK) {
+        nfa_t4tnfcee_cb.connId = conn_id;
+        conn_evt_data.status = NFA_STATUS_OK;
       }
       break;
     }
     case NFC_CONN_CLOSE_CEVT: {
-      if (conn_id == NCI_DEST_TYPE_T4T_NFCEE) {
-        if (p_data->status != NFA_STATUS_OK) {
-          conn_evt_data.status = NFA_STATUS_FAILED;
-        } else {
-          nfa_t4tnfcee_cb.t4tnfcee_state = NFA_T4TNFCEE_STATE_DISCONNECTED;
-          conn_evt_data.status = p_data->status;
-        }
-        /*reset callbacks*/
-        RW_SetT4tNfceeInfo(NULL, 0);
+      if (p_data->status != NFA_STATUS_OK) {
+        conn_evt_data.status = NFA_STATUS_FAILED;
+      } else {
+        nfa_t4tnfcee_cb.t4tnfcee_state = NFA_T4TNFCEE_STATE_DISCONNECTED;
+        conn_evt_data.status = p_data->status;
       }
+      /*reset callbacks*/
+      RW_SetT4tNfceeInfo(NULL, 0);
       break;
     }
     default:
@@ -145,6 +141,7 @@ void nfa_t4tnfcee_info_cback(tNFA_EE_EVT event, tNFA_EE_CBACK_DATA* p_data) {
         nfa_t4tnfcee_cb.t4tnfcee_state = NFA_T4TNFCEE_STATE_TRY_ENABLE;
         if ((p_data != nullptr) &&
             (p_data->new_ee.ee_status != NFA_STATUS_OK)) {
+          nfa_t4tnfcee_cb.ndefEmulationSupport = true;
           NFC_NfceeModeSet(defaultNdefNfcee, NFC_MODE_ACTIVATE);
         }
       }
@@ -273,11 +270,12 @@ tNFC_STATUS nfa_t4tnfcee_proc_disc_evt(tNFA_T4TNFCEE_OP event) {
       break;
     case NFA_T4TNFCEE_OP_CLOSE_CONNECTION:
       if (nfa_t4tnfcee_cb.t4tnfcee_state == NFA_T4TNFCEE_STATE_CONNECTED) {
-        NFC_SetStaticT4tNfceeCback(nfa_t4tnfcee_conn_cback);
-        if (NFC_STATUS_OK != NFC_ConnClose(NCI_DEST_TYPE_T4T_NFCEE)) {
+        NFC_SetStaticT4tNfceeCback(nfa_t4tnfcee_conn_cback,
+                                   nfa_t4tnfcee_cb.connId);
+        if (NFC_STATUS_OK != NFC_ConnClose(nfa_t4tnfcee_cb.connId)) {
           tNFC_CONN p_data;
           p_data.status = NFC_STATUS_FAILED;
-          nfa_t4tnfcee_conn_cback(NCI_DEST_TYPE_T4T_NFCEE, NFC_ERROR_CEVT,
+          nfa_t4tnfcee_conn_cback(nfa_t4tnfcee_cb.connId, NFC_ERROR_CEVT,
                                   &p_data);
         }
       }
@@ -327,13 +325,26 @@ bool nfa_t4tnfcee_is_enabled(void) {
 
 /*******************************************************************************
 **
-** Function         nfa_t4tnfcee_is_processing
+** Function         NFA_T4tNfcEeIsProcessing
 **
 ** Description      Indicates if T4tNfcee Read or write under process
 **
 ** Returns          true if under process else false
 **
 *******************************************************************************/
-bool nfa_t4tnfcee_is_processing(void) {
+bool NFA_T4tNfcEeIsProcessing(void) {
   return (nfa_t4tnfcee_cb.t4tnfcee_state == NFA_T4TNFCEE_STATE_CONNECTED);
+}
+
+/*******************************************************************************
+**
+** Function         NFA_T4tNfcEeIsEmulationSupported
+**
+** Description      Indicates if T4t NDEF Nfcee emulation is supported or not
+**
+** Returns          true if supported else false
+**
+*******************************************************************************/
+bool NFA_T4tNfcEeIsEmulationSupported(void) {
+  return nfa_t4tnfcee_cb.ndefEmulationSupport;
 }

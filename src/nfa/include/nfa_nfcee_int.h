@@ -137,6 +137,8 @@ typedef struct {
   uint16_t cur_fileId; /* Current FileId */
   uint16_t rd_offset; /* current read-offset of incoming NDEF data  */
   uint32_t dataLen; /*length of the data*/
+  bool ndefEmulationSupport; /* NDEF emulation support */
+  uint8_t connId;            /* NDEF NFCEE CONN ID */
 } tNFA_T4TNFCEE_CB;
 extern tNFA_T4TNFCEE_CB nfa_t4tnfcee_cb;
 
@@ -147,7 +149,8 @@ bool nfa_t4tnfcee_handle_op_req(tNFA_T4TNFCEE_MSG* p_data);
 bool nfa_t4tnfcee_handle_event(NFC_HDR* p_msg);
 void nfa_t4tnfcee_free_rx_buf(void);
 bool nfa_t4tnfcee_is_enabled(void);
-bool nfa_t4tnfcee_is_processing(void);
+bool NFA_T4tNfcEeIsProcessing(void);
+bool NFA_T4tNfcEeIsEmulationSupported(void);
 void nfa_t4tnfcee_set_ee_cback(tNFA_EE_ECB* p_ecb);
 void nfa_t4tnfcee_init();
 void nfa_t4tnfcee_deinit(void);

@@ -1094,13 +1094,14 @@ void NFC_SetStaticRfCback(tNFC_CONN_CBACK* p_cback) {
 **                  to receive the data for the given connection id.
 **
 ** Parameters       p_cback - the connection callback function
+**                  connId - connection ID for T4T NFCEE
 **
 ** Returns          Nothing
 **
 *******************************************************************************/
-void NFC_SetStaticT4tNfceeCback(tNFC_CONN_CBACK* p_cback) {
+void NFC_SetStaticT4tNfceeCback(tNFC_CONN_CBACK* p_cback, uint8_t connId) {
   // tNFC_CONN_CB * p_cb = &nfc_cb.conn_cb[];
-  tNFC_CONN_CB* p_cb = nfc_find_conn_cb_by_conn_id(NFC_T4TNFCEE_CONN_ID);
+  tNFC_CONN_CB* p_cb = nfc_find_conn_cb_by_conn_id(connId);
   if (p_cb != NULL) {
     p_cb->p_cback = p_cback;
     /* just in case DH has received NCI data before the data callback is set
