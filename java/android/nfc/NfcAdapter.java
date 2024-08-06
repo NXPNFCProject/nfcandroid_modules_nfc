@@ -544,6 +544,7 @@ public final class NfcAdapter {
     static INfcTag sTagService;
     static INfcCardEmulation sCardEmulationService;
     static INfcFCardEmulation sNfcFCardEmulationService;
+    static INdefNfcee sNdefNfceeService;
 
     /**
      * The NfcAdapter object for each application context.
@@ -782,6 +783,14 @@ public final class NfcAdapter {
                 }
             }
 
+            try {
+              sNdefNfceeService = sService.getNdefNfceeInterface();
+            } catch (RemoteException e) {
+              sNdefNfceeService = null;
+              Log.e(TAG, "could not retrieve NDEF NFCEE service");
+              throw new UnsupportedOperationException();
+            }
+
             sIsInitialized = true;
         }
         NfcAdapter adapter = sNfcAdapters.get(context);
@@ -926,8 +935,9 @@ public final class NfcAdapter {
      */
     public INfcDta getNfcDtaInterface() {
         if (mContext == null) {
-            throw new UnsupportedOperationException("You need a context on NfcAdapter to use the "
-                    + " NFC extras APIs");
+          throw new UnsupportedOperationException(
+              "You need a context on NfcAdapter to use the "
+              + " NFC OEM extension APIs");
         }
         try {
             return sService.getNfcDtaInterface(mContext.getPackageName());
@@ -945,6 +955,34 @@ public final class NfcAdapter {
             }
             return null;
         }
+    }
+
+    /**
+     * Returns the binder interface to the NDEF NFCEE interface.
+     * @hide
+     */
+    private INdefNfcee getNdefNfceeInterface() {
+      if (mContext == null) {
+        throw new UnsupportedOperationException(
+            "You need a context on NfcAdapter to use the "
+            + " NFC OEM extension APIs");
+      }
+      try {
+        return sService.getNdefNfceeInterface();
+      } catch (RemoteException e) {
+        attemptDeadServiceRecovery(e);
+        // Try one more time
+        if (sService == null) {
+          Log.e(TAG, "Failed to recover Ndef Nfcee Service.");
+          return null;
+        }
+        try {
+          return sService.getNdefNfceeInterface();
+        } catch (RemoteException ee) {
+          Log.e(TAG, "Failed to recover Ndef Nfcee Service.");
+        }
+        return null;
+      }
     }
 
     /**
@@ -992,6 +1030,15 @@ public final class NfcAdapter {
                 Log.e(TAG,
                         "could not retrieve NFC-F card emulation service during service recovery");
             }
+        }
+
+        try {
+          sNdefNfceeService = service.getNdefNfceeInterface();
+        } catch (RemoteException ee) {
+          sNdefNfceeService = null;
+          Log.e(
+              TAG,
+              "could not retrieve NDEF Nfceee service during service recovery");
         }
 
         return;
