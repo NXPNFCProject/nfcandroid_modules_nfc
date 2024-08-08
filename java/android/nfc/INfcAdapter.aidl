@@ -48,7 +48,6 @@ interface INfcAdapter
     INfcFCardEmulation getNfcFCardEmulationInterface();
     INfcAdapterExtras getNfcAdapterExtrasInterface(in String pkg);
     INfcDta getNfcDtaInterface(in String pkg);
-    INdefNfcee getNdefNfceeInterface();
     int getState();
     boolean disable(boolean saveState);
     boolean enable();
@@ -100,4 +99,6 @@ interface INfcAdapter
     void unregisterOemExtensionCallback(INfcOemExtensionCallback callbacks);
     void clearPreference();
     List<String> fetchActiveNfceeList();
+
+    INdefNfcee getNdefNfceeInterface();
 }
