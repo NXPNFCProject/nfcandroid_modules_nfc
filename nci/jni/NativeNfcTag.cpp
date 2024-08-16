@@ -1331,6 +1331,18 @@ static jboolean nativeNfcTag_doPresenceCheck(JNIEnv*, jobject) {
         method = NFA_RW_PRES_CHK_I_BLOCK;
       }
     }
+    if ((sCurrentConnectedTargetProtocol == NFA_PROTOCOL_T2T) &&
+        (sCurrentRfInterface == NFA_INTERFACE_FRAME) &&
+        (!NfcTag::getInstance().isNfcForumT2T())) {
+      /* Only applicable for Type2 tag which has SAK value other than 0
+       (as defined in NFC Digital Protocol, section 4.8.2(SEL_RES)) */
+      uint8_t RW_TAG_SLP_REQ[] = {0x50, 0x00};
+      status = NFA_SendRawFrame(RW_TAG_SLP_REQ, sizeof(RW_TAG_SLP_REQ), 0);
+      if (status != NFA_STATUS_OK) {
+        LOG(ERROR) << StringPrintf(
+            "%s: failed to send RW_TAG_SLP_REQ, status=%d", __func__, status);
+      }
+    }
 
     status = NFA_RwPresenceCheck(method);
     if (status == NFA_STATUS_OK) {
