@@ -71,6 +71,7 @@ NfcTag::NfcTag()
   memset(mTechParams, 0, sizeof(mTechParams));
   memset(mLastKovioUid, 0, NFC_KOVIO_MAX_LEN);
   memset(&mLastKovioTime, 0, sizeof(timespec));
+  memset(&mActivationParams_t, 0, sizeof(activationParams_t));
   mNfcStatsUtil = new NfcStatsUtil();
 }
 
@@ -525,6 +526,7 @@ void NfcTag::createNativeNfcTag(tNFA_ACTIVATED& activationData) {
   LOG(DEBUG) << StringPrintf("%s; mNumDiscNtf=%x", fn, mNumDiscNtf);
 
   if (!mNumDiscNtf) {
+    storeActivationParams();
     // notify NFC service about this new tag
     LOG(DEBUG) << StringPrintf("%s: try notify nfc service", fn);
     e->CallVoidMethod(mNativeData->manager,
@@ -540,6 +542,23 @@ void NfcTag::createNativeNfcTag(tNFA_ACTIVATED& activationData) {
   }
 
   LOG(DEBUG) << StringPrintf("%s: exit", fn);
+}
+
+/*******************************************************************************
+**
+** Function:        storeActivationParams
+**
+** Description:     stores tag activation parameters for backup
+**
+** Returns:         None
+**
+*******************************************************************************/
+void NfcTag::storeActivationParams() {
+  static const char fn[] = "NfcTag::storeActivationParams";
+  LOG(DEBUG) << StringPrintf("%s: Mode %d Types %d", fn, mTechParams[0].mode,
+                             mTechLibNfcTypes[0]);
+  mActivationParams_t.mTechParams = mTechParams[0].mode;
+  mActivationParams_t.mTechLibNfcTypes = mTechLibNfcTypes[0];
 }
 
 /*******************************************************************************

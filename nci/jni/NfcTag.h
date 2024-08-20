@@ -29,6 +29,11 @@
 #define MIN_FWI (11)
 #define MAX_FWI (14)
 
+typedef struct activationParams {
+  int mTechParams;
+  int mTechLibNfcTypes;
+} activationParams_t;
+
 class NfcTag {
   friend class NfcTagTest;
 
@@ -46,6 +51,7 @@ class NfcTag {
                                              // service received from
                                              // RF_INTF_ACTIVATED NTF
   int mNumTechList;  // current number of NFC technologies in the list
+  activationParams_t mActivationParams_t;
 
   /*******************************************************************************
   **
@@ -499,6 +505,17 @@ class NfcTag {
   **
   *******************************************************************************/
   void createNativeNfcTag(tNFA_ACTIVATED& activationData);
+
+  /*******************************************************************************
+  **
+  ** Function:        storeActivationParams
+  **
+  ** Description:     stores tag activation parameters for backup
+  **
+  ** Returns:         None
+  **
+  *******************************************************************************/
+  void storeActivationParams();
 
   /*******************************************************************************
   **

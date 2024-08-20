@@ -125,11 +125,22 @@ static int sCurrentConnectedHandle = 0;
 static int sIsoDepPresCheckCnt = 0;
 static bool sIsoDepPresCheckAlternate = false;
 static int sPresCheckErrCnt = 0;
+/**
+ * Public constants for Non-standard tag handling
+ * status values.
+ */
+static const int TAG_STATUS_OK = 1;  // Identified as Standard TAG
+static const int TAG_REQUIRE_RECONNECT =
+    2;                                   // Tag requires RF discovery restart
+static const int TAG_STATUS_FAILED = 4;  // Failed while processing
+static int tagStat = TAG_STATUS_OK;
 
 static int sPresCheckStatus = 0;
 static int reSelect(tNFA_INTF_TYPE rfInterface, bool fSwitchIfNeeded);
 static bool switchRfInterface(tNFA_INTF_TYPE rfInterface);
 static tNFA_STATUS performHaltPICC();
+static int updateTagState();
+static int performTagReconnect();
 
 /*******************************************************************************
 **
@@ -657,16 +668,19 @@ static int reSelect(tNFA_INTF_TYPE rfInterface, bool fSwitchIfNeeded) {
                                    __func__);
       }
     }
+    tagStat = updateTagState();
 
-    if (!sGotDeactivate) {
-      rVal = STATUS_CODE_TARGET_LOST;
-      break;
-    }
+    if (tagStat == TAG_STATUS_OK) {
+      if (!sGotDeactivate) {
+        rVal = STATUS_CODE_TARGET_LOST;
+        break;
+      }
 
-    if (NfcTag::getInstance().getActivationState() != NfcTag::Sleep) {
-      LOG(ERROR) << StringPrintf("%s: tag is not in sleep", __func__);
-      rVal = STATUS_CODE_TARGET_LOST;
-      break;
+      if (NfcTag::getInstance().getActivationState() != NfcTag::Sleep) {
+        LOG(ERROR) << StringPrintf("%s: tag is not in sleep", __func__);
+        rVal = STATUS_CODE_TARGET_LOST;
+        break;
+      }
     }
 
     gIsTagDeactivating = false;
@@ -678,13 +692,18 @@ static int reSelect(tNFA_INTF_TYPE rfInterface, bool fSwitchIfNeeded) {
       LOG(DEBUG) << StringPrintf("%s: select interface %u", __func__,
                                  rfInterface);
       gIsSelectingRfInterface = true;
-      if (NFA_STATUS_OK !=
-          (status = NFA_Select(natTag.mTechHandles[sCurrentConnectedHandle],
-                               natTag.mTechLibNfcTypes[sCurrentConnectedHandle],
-                               rfInterface))) {
-        LOG(ERROR) << StringPrintf("%s: NFA_Select failed, status = %d",
-                                   __func__, status);
-        break;
+      tagStat = performTagReconnect();
+      if (tagStat == TAG_STATUS_FAILED) break;
+      if (tagStat == TAG_STATUS_OK) {
+        if (NFA_STATUS_OK !=
+            (status =
+                 NFA_Select(natTag.mTechHandles[sCurrentConnectedHandle],
+                            natTag.mTechLibNfcTypes[sCurrentConnectedHandle],
+                            rfInterface))) {
+          LOG(ERROR) << StringPrintf("%s: NFA_Select failed, status = %d",
+                                     __func__, status);
+          break;
+        }
       }
 
       sConnectOk = false;
@@ -1823,6 +1842,53 @@ void updateNfcID0Param(uint8_t* nfcID0) {
   LOG(DEBUG) << StringPrintf("%s: nfcID0 =%X%X%X%X", __func__, nfcID0[0],
                              nfcID0[1], nfcID0[2], nfcID0[3]);
   memcpy(mNfcID0, nfcID0, 4);
+}
+
+/*******************************************************************************
+**
+** Function:        updateTagState()
+**
+** Description:     Update tag status after receiving RF_DEACTIVATE_NTF
+**
+** Returns:         TAG_REQUIRE_RECONNECT if tag is not reselected using
+**                  deactivate to sleep else TAG_STATUS_OK.
+**
+*******************************************************************************/
+static int updateTagState() {
+  if (NfcTag::getInstance().getActivationState() == NfcTag::Idle) {
+    LOG(DEBUG) << StringPrintf("%s: Tag is in IDLE state", __func__);
+
+    if ((NfcTag::getInstance().mActivationParams_t.mTechLibNfcTypes ==
+         NFC_PROTOCOL_ISO_DEP) &&
+        (NfcTag::getInstance().mActivationParams_t.mTechParams ==
+         NFC_DISCOVERY_TYPE_POLL_A)) {
+      return TAG_REQUIRE_RECONNECT;
+    }
+  }
+  return TAG_STATUS_OK;
+}
+
+/*******************************************************************************
+**
+** Function:        performTagReconnect()
+**
+** Description:     Perform RF Discovery restart operation.
+**
+** Returns:         TAG_REQUIRE_RECONNECT if tag is not reselected using
+**                  deactivate to sleep else TAG_STATUS_OK.
+**
+*******************************************************************************/
+static int performTagReconnect() {
+  int ret = TAG_STATUS_OK;
+  if (tagStat == TAG_REQUIRE_RECONNECT) {
+    ret = TAG_REQUIRE_RECONNECT;
+    LOG(DEBUG) << StringPrintf("%s: Start RF discovery", __func__);
+    if (NFA_STATUS_OK != NFA_StartRfDiscovery()) {
+      LOG(ERROR) << StringPrintf("%s: deactivate failed,", __func__);
+      ret = TAG_STATUS_FAILED;
+    }
+  }
+  return ret;
 }
 
 } /* namespace android */

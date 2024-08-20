@@ -462,6 +462,11 @@ static void nfaConnectionCallback(uint8_t connEvent,
       NfcTag::getInstance().setDeactivationState(eventData->deactivated);
       NfcTag::getInstance().selectNextTagIfExists();
       if (eventData->deactivated.type != NFA_DEACTIVATE_TYPE_SLEEP) {
+        if (android::gIsSelectingRfInterface == false) {
+          if (eventData->deactivated.type != NFA_DEACTIVATE_TYPE_DISCOVERY)
+            memset(&NfcTag::getInstance().mActivationParams_t, 0,
+                   sizeof(activationParams_t));
+        }
         {
           SyncEventGuard g(gDeactivatedEvent);
           gActivated = false;  // guard this variable from multi-threaded access
