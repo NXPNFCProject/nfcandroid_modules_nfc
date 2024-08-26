@@ -787,9 +787,12 @@ void nfa_ee_report_event(tNFA_EE_CBACK* p_cback, tNFA_EE_EVT event,
 **
 *******************************************************************************/
 void nfa_ee_start_timer(void) {
+// To be reverted, post mainline adaptation:artf1170301
+#if 0
   if (nfa_dm_is_active())
     nfa_sys_start_timer(&nfa_ee_cb.timer, NFA_EE_ROUT_TIMEOUT_EVT,
                         NFA_EE_ROUT_TIMEOUT_VAL);
+#endif
 }
 
 /*******************************************************************************
