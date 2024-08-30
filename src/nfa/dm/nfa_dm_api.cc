@@ -48,8 +48,8 @@ using android::base::StringPrintf;
 **
 ** Description      This function sets the different NFC controller modes.
 **
-**                  mode INIT_MODE_DEFAULT or INIT_MODE_TRANSPARENT
-**                  or INIT_MODE_EE
+**                  mode ENABLE_MODE_DEFAULT or ENABLE_MODE_TRANSPARENT
+**                  or ENABLE_MODE_EE
 **
 ** Returns          none
 **
@@ -68,8 +68,8 @@ extern void NFA_SetNfccMode(uint8_t mode) {
 **                  mode
 **
 **                  p_hal_entry_tbl points to a table of HAL entry points
-**                  mode INIT_MODE_DEFAULT or INIT_MODE_TRANSPARENT
-**                  or INIT_MODE_EE
+**                  mode ENABLE_MODE_DEFAULT or ENABLE_MODE_TRANSPARENT
+**                  or ENABLE_MODE_EE
 **
 **                  NOTE: the buffer that p_hal_entry_tbl points must be
 **                  persistent until NFA is disabled.
@@ -79,10 +79,10 @@ extern void NFA_SetNfccMode(uint8_t mode) {
 *******************************************************************************/
 extern void NFA_Partial_Init(tHAL_NFC_ENTRY* p_hal_entry_tbl, uint8_t mode) {
   LOG(DEBUG) << StringPrintf("%s:enter ", __func__);
-  if (mode == INIT_MODE_TRANSPARENT) {
+  if (mode == ENABLE_MODE_TRANSPARENT) {
     nfa_sys_init();
     nfa_dm_init();
-  } else if (mode == INIT_MODE_EE) {
+  } else if (mode == ENABLE_MODE_EE) {
     nfa_sys_init();
     nfa_dm_init();
     nfa_ee_init();

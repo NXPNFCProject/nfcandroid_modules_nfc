@@ -696,10 +696,10 @@ typedef void(tNFA_NDEF_CBACK)(tNFA_NDEF_EVT event, tNFA_NDEF_EVT_DATA* p_data);
 /* NFA VSC Callback */
 typedef void(tNFA_VSC_CBACK)(uint8_t event, uint16_t param_len,
                              uint8_t* p_param);
-/* INIT MODES */
-#define INIT_MODE_DEFAULT 0
-#define INIT_MODE_TRANSPARENT 1
-#define INIT_MODE_EE 2
+/* Modes used by setNfcControllerAlwaysOn */
+#define ENABLE_MODE_DEFAULT 1
+#define ENABLE_MODE_TRANSPARENT 2
+#define ENABLE_MODE_EE 3
 
 /*****************************************************************************
 **  External Function Declarations
@@ -710,8 +710,8 @@ typedef void(tNFA_VSC_CBACK)(uint8_t event, uint16_t param_len,
 **
 ** Description      This function sets the control blocks nfcc mode
 **
-**                  mode INIT_MODE_DEFAULT or INIT_MODE_TRANSPARENT
-**                  or INIT_MODE_EE
+**                  mode ENABLE_MODE_DEFAULT or ENABLE_MODE_TRANSPARENT
+**                  or ENABLE_MODE_EE
 **
 ** Returns          none
 **
@@ -743,8 +743,8 @@ extern void NFA_Init(tHAL_NFC_ENTRY* p_hal_entry_tbl);
 **                  mode
 **
 **                  p_hal_entry_tbl points to a table of HAL entry points
-**                  mode INIT_MODE_DEFAULT or INIT_MODE_TRANSPARENT
-**                  or INIT_MODE_EE
+**                  mode ENABLE_MODE_DEFAULT or ENABLE_MODE_TRANSPARENT
+**                  or ENABLE_MODE_EE
 **
 **                  NOTE: the buffer that p_hal_entry_tbl points must be
 **                  persistent until NFA is disabled.
