@@ -348,7 +348,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     // mAlwaysOnState is protected by this, however it is only modified in onCreate()
     // and the default AsyncTask thread so it is read unprotected from that thread
     int mAlwaysOnState;  // one of NfcAdapter.STATE_ON, STATE_TURNING_ON, etc
-    int mAlwaysOnMode; // one of NfcOemExtension.INIT_MODE_DEFAULT, INIT_MODE_TRANSPARENT, etc
+    int mAlwaysOnMode; // one of NfcOemExtension.ENABLE_DEFAULT, ENABLE_TRANSPARENT, etc
     private boolean mIsPowerSavingModeEnabled = false;
 
     // fields below are final after onCreate()
@@ -689,7 +689,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
         mState = NfcAdapter.STATE_OFF;
         mAlwaysOnState = NfcAdapter.STATE_OFF;
-        mAlwaysOnMode = NfcOemExtension.INIT_MODE_DEFAULT;
+        mAlwaysOnMode = NfcOemExtension.ENABLE_DEFAULT;
 
         mIsDebugBuild = "userdebug".equals(Build.TYPE) || "eng".equals(Build.TYPE);
 
@@ -1174,7 +1174,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
         boolean isAlwaysOnInDefaultMode() {
             return mAlwaysOnState == NfcAdapter.STATE_ON
-                    && mAlwaysOnMode == NfcOemExtension.INIT_MODE_DEFAULT;
+                    && mAlwaysOnMode == NfcOemExtension.ENABLE_DEFAULT;
         }
 
         /**
@@ -1379,7 +1379,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                  * And the NFCC stays initialized.
                  */
                 updateAlwaysOnState(NfcAdapter.STATE_TURNING_ON);
-                if (mode != NfcOemExtension.INIT_MODE_DEFAULT) {
+                if (mode != NfcOemExtension.ENABLE_DEFAULT) {
                     mDeviceHost.setPartialInitMode(mode);
                     mAlwaysOnMode = mode;
                 }
@@ -1440,8 +1440,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     return;
                 }
                 if (newState == NfcAdapter.STATE_OFF) {
-                    mAlwaysOnMode = NfcOemExtension.INIT_MODE_DEFAULT;
-                    mDeviceHost.setPartialInitMode(NfcOemExtension.INIT_MODE_DEFAULT);
+                    mAlwaysOnMode = NfcOemExtension.ENABLE_DEFAULT;
+                    mDeviceHost.setPartialInitMode(NfcOemExtension.ENABLE_DEFAULT);
                 }
                 mAlwaysOnState = newState;
                 if (mAlwaysOnState == NfcAdapter.STATE_OFF
@@ -2121,12 +2121,12 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         }
 
         @Override
-        public boolean setControllerAlwaysOn(boolean value, int mode) throws RemoteException {
+        public boolean setControllerAlwaysOn(int mode) throws RemoteException {
             NfcPermissions.enforceSetControllerAlwaysOnPermissions(mContext);
             if (!mIsAlwaysOnSupported) {
                 return false;
             }
-            if (value) {
+            if (mode != NfcOemExtension.DISABLE) {
                 /* AsyncTask params */
                 Integer[] paramIntegers = {TASK_ENABLE_ALWAYS_ON, mode};
                 new EnableDisableTask().execute(paramIntegers);

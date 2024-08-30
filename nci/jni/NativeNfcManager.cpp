@@ -172,7 +172,7 @@ uint8_t gConfig[256];
 static int prevScreenState = NFA_SCREEN_STATE_OFF_LOCKED;
 static int NFA_SCREEN_POLLING_TAG_MASK = 0x10;
 static bool gIsDtaEnabled = false;
-static int gPartialInitMode = INIT_MODE_DEFAULT;
+static int gPartialInitMode = ENABLE_MODE_DEFAULT;
 /////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////
 
@@ -1191,9 +1191,9 @@ static jint nfcManager_getLfT3tMax(JNIEnv*, jobject) {
 ** Function:        doPartialInit
 **
 ** Description:     Partial Nfc initialization based on mode set
-**	            INIT_MODE_TRANSPARENT : Minimum initialization to allow NFCC
+**	            ENABLE_MODE_TRANSPARENT : Minimum initialization to allow NFCC
 **                                          transport
-**	            INIT_MODE_EE : Minimum Initialization to allow card
+**	            ENABLE_MODE_EE : Minimum Initialization to allow card
 **                                 emulation operation
 **
 ** Returns:         True if ok.
@@ -1215,7 +1215,7 @@ static jboolean doPartialInit() {
     if (stat == NFA_STATUS_OK) {
       sNfaEnableEvent.wait();  // wait for NFA command to finish
     }
-    NFA_SetNfccMode(INIT_MODE_DEFAULT);
+    NFA_SetNfccMode(ENABLE_MODE_DEFAULT);
   }
 
   // sIsNfaEnabled indicates whether stack started successfully
@@ -1250,7 +1250,7 @@ static jboolean nfcManager_doInitialize(JNIEnv* e, jobject o) {
     LOG(DEBUG) << StringPrintf("%s: already enabled", __func__);
     goto TheEnd;
   }
-  if (gPartialInitMode != INIT_MODE_DEFAULT) {
+  if (gPartialInitMode != ENABLE_MODE_DEFAULT) {
     return doPartialInit();
   }
   powerSwitch.initialize(PowerSwitch::FULL_POWER);
@@ -1587,7 +1587,7 @@ static jboolean doPartialDeinit() {
 *******************************************************************************/
 static jboolean nfcManager_doDeinitialize(JNIEnv*, jobject) {
   LOG(DEBUG) << StringPrintf("%s: enter", __func__);
-  if (gPartialInitMode != INIT_MODE_DEFAULT) {
+  if (gPartialInitMode != ENABLE_MODE_DEFAULT) {
     return doPartialDeinit();
   }
   sIsDisabling = true;
