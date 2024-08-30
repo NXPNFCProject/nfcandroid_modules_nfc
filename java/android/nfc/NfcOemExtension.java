@@ -58,42 +58,52 @@ public final class NfcOemExtension {
     private boolean mRfDiscoveryStarted = false;
 
     /**
-     * Mode Type for {@link #setControllerAlwaysOn(boolean, int)}.
+     * Mode Type for {@link #setControllerAlwaysOn(int)}.
      * works same as {@link NfcAdapter#setControllerAlwaysOn(boolean)}.
      * @hide
      */
     @SystemApi
     @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
-    public static final int INIT_MODE_DEFAULT = NfcAdapter.CONTROLLER_ALWAYS_ON_MODE_DEFAULT;
+    public static final int ENABLE_DEFAULT = NfcAdapter.CONTROLLER_ALWAYS_ON_MODE_DEFAULT;
 
     /**
-     * Mode Type for {@link #setControllerAlwaysOn(boolean, int)}.
+     * Mode Type for {@link #setControllerAlwaysOn(int)}.
      * Opens transport to communicate with controller
      * @hide
      */
     @SystemApi
     @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
-    public static final int INIT_MODE_TRANSPARENT = 1;
+    public static final int ENABLE_TRANSPARENT = 2;
 
     /**
-     * Mode Type for {@link #setControllerAlwaysOn(boolean, int)}.
+     * Mode Type for {@link #setControllerAlwaysOn(int)}.
      * Opens transport to communicate with controller
      * and initializes and enables the EE subsystem
      * @hide
      */
     @SystemApi
     @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
-    public static final int INIT_MODE_EE = 2;
+    public static final int ENABLE_EE = 3;
 
     /**
-     * Possible controller modes for {@link #setControllerAlwaysOn(boolean, int)}.
+     * Mode Type for {@link #setControllerAlwaysOn(int)}.
+     * Disable the Controller Always On Mode
+     * @hide
+     */
+    @SystemApi
+    @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
+    public static final int DISABLE = NfcAdapter.CONTROLLER_ALWAYS_ON_DISABLE;
+
+    /**
+     * Possible controller modes for {@link #setControllerAlwaysOn(int)}.
      *
      * @hide
      */
-    @IntDef(prefix = { "INIT_MODE_" }, value = {
-        INIT_MODE_DEFAULT,
-        INIT_MODE_TRANSPARENT,
-        INIT_MODE_EE,
+    @IntDef(prefix = { "" }, value = {
+        ENABLE_DEFAULT,
+        ENABLE_TRANSPARENT,
+        ENABLE_EE,
+        DISABLE,
     })
     @Retention(RetentionPolicy.SOURCE)
     public @interface ControllerMode{}
@@ -288,12 +298,9 @@ public final class NfcOemExtension {
      * complete.
      * <p>If this returns true, then either NFCC always on state has been set based on the value,
      * or a {@link NfcAdapter.ControllerAlwaysOnListener#onControllerAlwaysOnChanged(boolean)}
-     * will be invoked
-     * to indicate the state change.
+     * will be invoked to indicate the state change.
      * If this returns false, then there is some problem that prevents an attempt to turn NFCC
      * always on.
-     * @param value if true the NFCC will be kept on (with no RF enabled if NFC adapter is
-     * disabled), if false the NFCC will follow completely the Nfc adapter state.
      * @params mode ref {@link ControllerMode}
      * @throws UnsupportedOperationException if FEATURE_NFC,
      * FEATURE_NFC_HOST_CARD_EMULATION, FEATURE_NFC_HOST_CARD_EMULATION_NFCF,
@@ -305,12 +312,12 @@ public final class NfcOemExtension {
     @SystemApi
     @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
     @RequiresPermission(android.Manifest.permission.NFC_SET_CONTROLLER_ALWAYS_ON)
-    public boolean setControllerAlwaysOn(boolean value, @ControllerMode int mode) {
+    public boolean setControllerAlwaysOn(@ControllerMode int mode) {
         if (!NfcAdapter.sHasNfcFeature && !NfcAdapter.sHasCeFeature) {
             throw new UnsupportedOperationException();
         }
         try {
-            return NfcAdapter.sService.setControllerAlwaysOn(value, mode);
+            return NfcAdapter.sService.setControllerAlwaysOn(mode);
         } catch (RemoteException e) {
             mAdapter.attemptDeadServiceRecovery(e);
             // Try one more time
@@ -319,7 +326,7 @@ public final class NfcOemExtension {
                 return false;
             }
             try {
-                return NfcAdapter.sService.setControllerAlwaysOn(value, mode);
+                return NfcAdapter.sService.setControllerAlwaysOn(mode);
             } catch (RemoteException ee) {
                 Log.e(TAG, "Failed to recover NFC Service.");
             }

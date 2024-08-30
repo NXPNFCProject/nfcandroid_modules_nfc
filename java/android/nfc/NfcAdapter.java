@@ -522,11 +522,16 @@ public final class NfcAdapter {
     public @interface TagIntentAppPreferenceResult {}
 
     /**
-     * Mode Type for {@link NfcOemExtension#setControllerAlwaysOn(boolean, int)}.
-     * works same as {@link #setControllerAlwaysOn(boolean)}.
+     * Mode Type for {@link NfcOemExtension#setControllerAlwaysOn(int)}.
      * @hide
      */
-    public static final int CONTROLLER_ALWAYS_ON_MODE_DEFAULT = 0;
+    public static final int CONTROLLER_ALWAYS_ON_MODE_DEFAULT = 1;
+
+    /**
+     * Mode Type for {@link NfcOemExtension#setControllerAlwaysOn(int)}.
+     * @hide
+     */
+    public static final int CONTROLLER_ALWAYS_ON_DISABLE = 0;
 
     // Guarded by sLock
     static boolean sIsInitialized = false;
@@ -2560,8 +2565,9 @@ public final class NfcAdapter {
         if (!sHasNfcFeature && !sHasCeFeature) {
             throw new UnsupportedOperationException();
         }
+        int mode = value ? CONTROLLER_ALWAYS_ON_MODE_DEFAULT : CONTROLLER_ALWAYS_ON_DISABLE;
         try {
-            return sService.setControllerAlwaysOn(value, CONTROLLER_ALWAYS_ON_MODE_DEFAULT);
+            return sService.setControllerAlwaysOn(mode);
         } catch (RemoteException e) {
             attemptDeadServiceRecovery(e);
             // Try one more time
@@ -2570,7 +2576,7 @@ public final class NfcAdapter {
                 return false;
             }
             try {
-                return sService.setControllerAlwaysOn(value, CONTROLLER_ALWAYS_ON_MODE_DEFAULT);
+                return sService.setControllerAlwaysOn(mode);
             } catch (RemoteException ee) {
                 Log.e(TAG, "Failed to recover NFC Service.");
             }
