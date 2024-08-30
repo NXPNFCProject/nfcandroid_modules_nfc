@@ -32,7 +32,7 @@ void nfa_t4tnfcee_info_cback(tNFA_EE_EVT event, tNFA_EE_CBACK_DATA* p_data);
 static void nfa_t4tnfcee_sys_enable(void);
 static void nfa_t4tnfcee_sys_disable(void);
 
-#define NFA_T4T_NFCEE_ENANLE_BIT_POS 0x01
+#define NFA_T4T_NFCEE_ENABLE_BIT_POS 0x01
 
 /*****************************************************************************
 ** Constants and types
@@ -55,13 +55,16 @@ const tNFA_T4TNFCEE_ACTION nfa_t4tnfcee_action_tbl[] = {
 **
 *******************************************************************************/
 void nfa_t4tnfcee_init(void) {
-  if (NfcConfig::hasKey(NAME_DEFAULT_NDEF_NFCEE_ROUTE)) {
-    LOG(DEBUG) << StringPrintf("nfa_t4tnfcee_init ()");
-    /* initialize control block */
-    memset(&nfa_t4tnfcee_cb, 0, sizeof(tNFA_T4TNFCEE_CB));
-    nfa_t4tnfcee_cb.t4tnfcee_state = NFA_T4TNFCEE_STATE_DISABLED;
-    /* register message handler on NFA SYS */
-    nfa_sys_register(NFA_ID_T4TNFCEE, &nfa_t4tnfcee_sys_reg);
+  if (NfcConfig::hasKey(NAME_T4T_NFCEE_ENABLE)) {LOG(DEBUG) << StringPrintf("KRNK check");
+    if (NFA_T4T_NFCEE_ENABLE_BIT_POS &
+        NfcConfig::getUnsigned(NAME_T4T_NFCEE_ENABLE)) {
+      LOG(DEBUG) << StringPrintf("nfa_t4tnfcee_init ()");
+      /* initialize control block */
+      memset(&nfa_t4tnfcee_cb, 0, sizeof(tNFA_T4TNFCEE_CB));
+      nfa_t4tnfcee_cb.t4tnfcee_state = NFA_T4TNFCEE_STATE_DISABLED;
+      /* register message handler on NFA SYS */
+      nfa_sys_register(NFA_ID_T4TNFCEE, &nfa_t4tnfcee_sys_reg);
+    }
   }
 }
 
