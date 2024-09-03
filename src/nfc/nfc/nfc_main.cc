@@ -438,7 +438,7 @@ void nfc_main_handle_hal_evt(tNFC_HAL_EVT_MSG* p_msg) {
       break;
 
     case HAL_NFC_POST_INIT_CPLT_EVT:
-      if (nfc_cb.nfcc_mode == INIT_MODE_TRANSPARENT) {
+      if (nfc_cb.nfcc_mode == ENABLE_MODE_TRANSPARENT) {
         nfc_set_state(NFC_STATE_IDLE);
         nfa_sys_cback_notify_partial_enable_complete(NFA_ID_SYS);
       } else if (nfc_cb.p_nci_init_rsp) {
