@@ -656,6 +656,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         mNfcTagService = new TagService();
         mNfcAdapter = new NfcAdapterService();
         mRoutingTableParser = new RoutingTableParser();
+        mNdefNfceeService = new NdefNfceeService();
         Log.i(TAG, "Starting NFC service");
 
         sService = this;
@@ -1975,10 +1976,6 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
         @Override
         public INdefNfcee getNdefNfceeInterface() throws RemoteException {
-            NfcPermissions.enforceAdminPermissions(mContext);
-            if (mNdefNfceeService == null) {
-                mNdefNfceeService = new NdefNfceeService();
-            }
             return mNdefNfceeService;
         }
 
