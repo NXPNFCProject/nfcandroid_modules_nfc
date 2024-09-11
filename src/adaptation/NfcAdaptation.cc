@@ -97,6 +97,7 @@ std::string nfc_storage_path;
 uint8_t appl_dta_mode_flag = 0x00;
 bool isDownloadFirmwareCompleted = false;
 bool use_aidl = false;
+unsigned int t5t_mute_legacy = 0;
 
 extern tNFA_DM_CFG nfa_dm_cfg;
 extern tNFA_PROPRIETARY_CFG nfa_proprietary_cfg;
@@ -535,6 +536,11 @@ void NfcAdaptation::Initialize() {
     host_allowlist = NfcConfig::getBytes(NAME_DEVICE_HOST_ALLOW_LIST);
     nfa_hci_cfg.num_allowlist_host = host_allowlist.size();
     nfa_hci_cfg.p_allowlist = &host_allowlist[0];
+  }
+
+  if (NfcConfig::hasKey(NAME_ISO15693_SKIP_GET_SYS_INFO_CMD)) {
+    t5t_mute_legacy =
+        NfcConfig::getUnsigned(NAME_ISO15693_SKIP_GET_SYS_INFO_CMD);
   }
 
   verify_stack_non_volatile_store();
