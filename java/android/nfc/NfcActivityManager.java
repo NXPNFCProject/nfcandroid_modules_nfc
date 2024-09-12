@@ -195,16 +195,25 @@ public final class NfcActivityManager extends IAppCallback.Stub
             Bundle extras) {
         boolean isResumed;
         Binder token;
+        int pollTech, listenTech;
         synchronized (NfcActivityManager.this) {
             NfcActivityState state = getActivityState(activity);
             state.readerCallback = callback;
             state.readerModeFlags = flags;
             state.readerModeExtras = extras;
+            pollTech = state.mPollTech;
+            listenTech = state.mListenTech;
             token = state.token;
             isResumed = state.resumed;
         }
         if (isResumed) {
-            setReaderMode(token, flags, extras);
+            if (listenTech != NfcAdapter.FLAG_USE_ALL_TECH
+                    || pollTech != NfcAdapter.FLAG_USE_ALL_TECH) {
+                throw new IllegalStateException(
+                    "Cannot be used when alternative DiscoveryTechnology is set");
+            } else {
+                setReaderMode(token, flags, extras);
+            }
         }
     }
 
@@ -227,11 +236,7 @@ public final class NfcActivityManager extends IAppCallback.Stub
 
     public void setReaderMode(Binder token, int flags, Bundle extras) {
         if (DBG) Log.d(TAG, "Setting reader mode");
-        try {
-            NfcAdapter.sService.setReaderMode(token, this, flags, extras);
-        } catch (RemoteException e) {
-            mAdapter.attemptDeadServiceRecovery(e);
-        }
+        NfcAdapter.callService(() -> NfcAdapter.sService.setReaderMode(token, this, flags, extras));
     }
 
     /**
@@ -239,19 +244,11 @@ public final class NfcActivityManager extends IAppCallback.Stub
      * Makes IPC call - do not hold lock.
      */
     void requestNfcServiceCallback() {
-        try {
-            NfcAdapter.sService.setAppCallback(this);
-        } catch (RemoteException e) {
-            mAdapter.attemptDeadServiceRecovery(e);
-        }
+        NfcAdapter.callService(() -> NfcAdapter.sService.setAppCallback(this));
     }
 
     void verifyNfcPermission() {
-        try {
-            NfcAdapter.sService.verifyNfcPermission();
-        } catch (RemoteException e) {
-            mAdapter.attemptDeadServiceRecovery(e);
-        }
+        NfcAdapter.callService(() -> NfcAdapter.sService.verifyNfcPermission());
     }
 
     @Override
@@ -385,26 +382,20 @@ public final class NfcActivityManager extends IAppCallback.Stub
         boolean readerModeFlagsSet;
         synchronized (NfcActivityManager.this) {
             NfcActivityState state = getActivityState(activity);
-            readerModeFlagsSet = state.readerModeFlags != 0;
             state.mListenTech = NfcAdapter.FLAG_USE_ALL_TECH;
             state.mPollTech = NfcAdapter.FLAG_USE_ALL_TECH;
             token = state.token;
             isResumed = state.resumed;
         }
-        if (readerModeFlagsSet) {
-            disableReaderMode(activity);
-        } else if (isResumed) {
+        if (isResumed) {
             changeDiscoveryTech(token, NfcAdapter.FLAG_USE_ALL_TECH, NfcAdapter.FLAG_USE_ALL_TECH);
         }
 
     }
 
     private void changeDiscoveryTech(Binder token, int pollTech, int listenTech) {
-        try {
-            NfcAdapter.sService.updateDiscoveryTechnology(token, pollTech, listenTech);
-        } catch (RemoteException e) {
-            mAdapter.attemptDeadServiceRecovery(e);
-        }
+        NfcAdapter.callService(
+            () -> NfcAdapter.sService.updateDiscoveryTechnology(token, pollTech, listenTech));
     }
 
 }

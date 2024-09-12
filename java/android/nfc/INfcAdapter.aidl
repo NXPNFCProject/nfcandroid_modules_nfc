@@ -33,7 +33,10 @@ import android.nfc.INfcUnlockHandler;
 import android.nfc.INdefNfcee;
 import android.nfc.ITagRemovedCallback;
 import android.nfc.INfcDta;
+import android.nfc.INfcWlcStateListener;
 import android.nfc.NfcAntennaInfo;
+import android.nfc.WlcListenerDeviceInfo;
+import android.nfc.cardemulation.PollingFrame;
 import android.os.Bundle;
 
 import java.util.List;
@@ -49,8 +52,8 @@ interface INfcAdapter
     INfcAdapterExtras getNfcAdapterExtrasInterface(in String pkg);
     INfcDta getNfcDtaInterface(in String pkg);
     int getState();
-    boolean disable(boolean saveState);
-    boolean enable();
+    boolean disable(boolean saveState, in String pkg);
+    boolean enable(in String pkg);
     void pausePolling(int timeoutInMs);
     void resumePolling();
 
@@ -88,16 +91,31 @@ interface INfcAdapter
     boolean isReaderOptionEnabled();
     boolean isReaderOptionSupported();
     @JavaPassthrough(annotation="@android.annotation.RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)")
-    boolean enableReaderOption(boolean enable);
+    boolean enableReaderOption(boolean enable, in String pkg);
     boolean isObserveModeSupported();
-    boolean setObserveMode(boolean enabled);
+    boolean isObserveModeEnabled();
+    boolean setObserveMode(boolean enabled, String pkg);
+
+    @JavaPassthrough(annotation="@android.annotation.RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)")
+    boolean setWlcEnabled(boolean enable);
+    boolean isWlcEnabled();
+    void registerWlcStateListener(in INfcWlcStateListener listener);
+    void unregisterWlcStateListener(in INfcWlcStateListener listener);
+    WlcListenerDeviceInfo getWlcListenerDeviceInfo();
+
     void updateDiscoveryTechnology(IBinder b, int pollFlags, int listenFlags);
+
+    void notifyPollingLoop(in PollingFrame frame);
+    void notifyHceDeactivated();
+    void notifyTestHceData(in int technology, in byte[] data);
     int sendVendorNciMessage(int mt, int gid, int oid, in byte[] payload);
     void registerVendorExtensionCallback(in INfcVendorNciCallback callbacks);
     void unregisterVendorExtensionCallback(in INfcVendorNciCallback callbacks);
     void registerOemExtensionCallback(INfcOemExtensionCallback callbacks);
     void unregisterOemExtensionCallback(INfcOemExtensionCallback callbacks);
     void clearPreference();
+    void setScreenState();
+    void checkFirmware();
     List<String> fetchActiveNfceeList();
 
     INdefNfcee getNdefNfceeInterface();
