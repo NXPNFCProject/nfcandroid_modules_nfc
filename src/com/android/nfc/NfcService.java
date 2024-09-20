@@ -546,7 +546,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
     @Override
     public void onVendorSpecificEvent(int gid, int oid, byte[] payload) {
-        sendVendorNciNotification(gid, oid, payload);
+        mHandler.post(() -> mNfcAdapter.sendVendorNciNotification(gid, oid, payload));
     }
 
     @Override
@@ -2231,7 +2231,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                        NfcVendorNciResponse response =
                                mDeviceHost.sendRawVendorCmd(mt, gid, oid, payload);
                        if (response.status == NCI_STATUS_OK) {
-                           sendVendorNciResponse(response.gid, response.oid, response.payload);
+                            mHandler.post(() -> mNfcAdapter.sendVendorNciResponse(
+                                                response.gid, response.oid, response.payload));
                        }
                        return Integer.valueOf(response.status);
                    }
