@@ -491,10 +491,11 @@ public class NativeNfcManager implements DeviceHost {
             Log.e(TAG, "Invalid data");
             return;
         }
-        if (android.nfc.Flags.nfcVendorCmd()) {
+        //TODO: check the vendor NCI NTF behavior in 6th Aug Manifest and un-comment
+        //if (android.nfc.Flags.nfcVendorCmd()) {
             mListener.onVendorSpecificEvent(pData[NCI_GID_INDEX], pData[NCI_OID_INDEX],
                     Arrays.copyOfRange(pData, OP_CODE_INDEX, pData.length));
-        }
+        //}
     }
 
     private void notifyRFDiscoveryEvent(boolean isDiscoveryStarted) {
