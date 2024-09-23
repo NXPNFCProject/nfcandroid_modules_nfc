@@ -55,7 +55,7 @@ const tNFA_T4TNFCEE_ACTION nfa_t4tnfcee_action_tbl[] = {
 **
 *******************************************************************************/
 void nfa_t4tnfcee_init(void) {
-  if (NfcConfig::hasKey(NAME_T4T_NFCEE_ENABLE)) {LOG(DEBUG) << StringPrintf("KRNK check");
+  if (NfcConfig::hasKey(NAME_T4T_NFCEE_ENABLE)) {
     if (NFA_T4T_NFCEE_ENABLE_BIT_POS &
         NfcConfig::getUnsigned(NAME_T4T_NFCEE_ENABLE)) {
       LOG(DEBUG) << StringPrintf("nfa_t4tnfcee_init ()");
