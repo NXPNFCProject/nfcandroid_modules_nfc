@@ -129,6 +129,8 @@ jboolean NativeT4tNfcee::t4tClearData(JNIEnv* e, jobject o) {
   switch (t4tNfceeStatus) {
     case STATUS_SUCCESS:
       /*NFC is ON*/
+    case ERROR_NFC_NOT_ON:
+      /*NFC is OFF*/
       clear_status = performT4tClearData(pFileId);
       break;
     default:
