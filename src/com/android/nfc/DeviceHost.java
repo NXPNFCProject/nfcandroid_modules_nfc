@@ -18,10 +18,12 @@ package com.android.nfc;
 
 import android.annotation.Nullable;
 import android.nfc.NdefMessage;
+import android.nfc.cardemulation.PollingFrame;
 import android.os.Bundle;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.List;
 
 public interface DeviceHost {
@@ -44,11 +46,15 @@ public interface DeviceHost {
 
         public void onHwErrorReported();
 
-        public void onPollingLoopDetected(Bundle pollingFrame);
+        public void onPollingLoopDetected(List<PollingFrame> pollingFrames);
+
+        public void onWlcStopped(int wpt_end_condition);
 
         public void onVendorSpecificEvent(int gid, int oid, byte[] payload);
 
-        public void onRfDiscoveryEvent(boolean isDiscoveryStarted);
+	public void onRfDiscoveryEvent(boolean isDiscoveryStarted);
+
+        public void onObserveModeStateChanged(boolean enable);
     }
 
     public interface TagEndpoint {
@@ -74,6 +80,7 @@ public interface DeviceHost {
         byte[] readNdef();
         boolean writeNdef(byte[] data);
         NdefMessage findAndReadNdef();
+        NdefMessage getNdef();
         boolean formatNdef(byte[] key);
         boolean isNdefFormatable();
         boolean makeReadOnly();
@@ -91,7 +98,7 @@ public interface DeviceHost {
     }
 
     public interface TagDisconnectedCallback {
-        void onTagDisconnected(long handle);
+        void onTagDisconnected();
     }
 
     public interface NfceeEndpoint {
@@ -190,9 +197,9 @@ public interface DeviceHost {
 
     boolean getExtendedLengthApdusSupported();
 
-    void dump(FileDescriptor fd);
+    void dump(PrintWriter pw, FileDescriptor fd);
 
-    public void doSetScreenState(int screen_state_mask);
+    public void doSetScreenState(int screen_state_mask, boolean alwaysPoll);
 
     public int getNciVersion();
 
@@ -209,6 +216,8 @@ public interface DeviceHost {
     public boolean isObserveModeSupported();
 
     public boolean setObserveMode(boolean enable);
+
+    public boolean isObserveModeEnabled();
 
     /**
     * Get the committed listen mode routing configuration
@@ -235,6 +244,8 @@ public interface DeviceHost {
      */
     boolean setPowerSavingMode(boolean flag);
 
+    boolean isMultiTag();
+
     void setIsoDepProtocolRoute(int route);
     void setTechnologyABFRoute(int route);
     void clearRoutingEntry(int clearFlags);
@@ -248,6 +259,9 @@ public interface DeviceHost {
      * Sends Vendor NCI command
      */
     NfcVendorNciResponse sendRawVendorCmd(int mt, int gid, int oid, byte[] payload);
+
+    void enableVendorNciNotifications(boolean enabled);
+
     /**
      * Get the active NFCEE list
      */

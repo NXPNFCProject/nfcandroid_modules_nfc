@@ -42,7 +42,7 @@ import java.util.Random;
 public class HandoverDataParser {
     private static final String TAG = "NfcHandover";
     private static final boolean DBG =
-            NfcProperties.debug_enabled().orElse(false);
+            NfcProperties.debug_enabled().orElse(true);
 
     private static final byte[] TYPE_BT_OOB = "application/vnd.bluetooth.ep.oob"
             .getBytes(StandardCharsets.US_ASCII);
@@ -341,12 +341,12 @@ public class HandoverDataParser {
         byte[] type = r.getType();
 
         // Check for BT OOB record
-        if (r.getTnf() == NdefRecord.TNF_MIME_MEDIA && Arrays.equals(r.getType(), TYPE_BT_OOB)) {
+        if (tnf == NdefRecord.TNF_MIME_MEDIA && Arrays.equals(type, TYPE_BT_OOB)) {
             return parseBtOob(ByteBuffer.wrap(r.getPayload()));
         }
 
         // Check for BLE OOB record
-        if (r.getTnf() == NdefRecord.TNF_MIME_MEDIA && Arrays.equals(r.getType(), TYPE_BLE_OOB)) {
+        if (tnf == NdefRecord.TNF_MIME_MEDIA && Arrays.equals(type, TYPE_BLE_OOB)) {
             return parseBleOob(ByteBuffer.wrap(r.getPayload()));
         }
 

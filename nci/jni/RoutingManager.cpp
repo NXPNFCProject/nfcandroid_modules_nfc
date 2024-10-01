@@ -721,8 +721,8 @@ tNFA_TECHNOLOGY_MASK RoutingManager::updateTechnologyABFRoute(int route) {
   else
     LOG(ERROR) << fn << "Fail to clear Tech route";
 
-  nfaStat = NFA_EeClearDefaultTechRouting(mDefaultFelicaRoute,
-                                          NFA_TECHNOLOGY_MASK_F);
+  nfaStat =
+      NFA_EeClearDefaultTechRouting(mDefaultFelicaRoute, NFA_TECHNOLOGY_MASK_F);
   if (nfaStat == NFA_STATUS_OK)
     mRoutingEvent.wait();
   else
@@ -1243,6 +1243,26 @@ void RoutingManager::clearRoutingEntry(int clearFlags) {
       }
     }
   }
+}
+
+/*******************************************************************************
+**
+** Function:        setEeTechRouteUpdateRequired
+**
+** Description:     Set flag EeInfoChanged so that tech route will be updated
+**                  when applying route table.
+**
+** Returns:         None
+**
+*******************************************************************************/
+void RoutingManager::setEeTechRouteUpdateRequired() {
+  static const char fn[] = "RoutingManager::setEeTechRouteUpdateRequired";
+
+  LOG(DEBUG) << StringPrintf("%s", fn);
+
+  // Setting flag for Ee info changed so that
+  // routing table can be updated
+  mEeInfoChanged = true;
 }
 
 void RoutingManager::deinitialize() {
