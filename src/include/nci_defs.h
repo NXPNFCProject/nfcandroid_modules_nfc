@@ -101,7 +101,7 @@
 
 /* parse byte0 of NCI packet */
 #define NCI_MSG_PRS_HDR0(p, mt, pbf, gid)       \
-  mt = (*(p)&NCI_MT_MASK) >> NCI_MT_SHIFT;      \
+  (mt) = (*(p)&NCI_MT_MASK) >> NCI_MT_SHIFT;    \
   (pbf) = (*(p)&NCI_PBF_MASK) >> NCI_PBF_SHIFT; \
   (gid) = *(p)++ & NCI_GID_MASK;
 
@@ -232,8 +232,13 @@
 #define NCI_ANDROID_POLLING_FRAME_NTF 0x03
 
 /* Android Opcodes */
+#define NCI_ANDROID_GET_CAPS 0x0
 #define NCI_ANDROID_POWER_SAVING 0x1
-#define NCI_ANDROID_PASSIVE_OBSERVER 0x2
+#define NCI_ANDROID_PASSIVE_OBSERVE 0x2
+#define NCI_QUERY_ANDROID_PASSIVE_OBSERVE 0x4
+
+/* Android Get Proprietary Caps */
+#define NCI_ANDROID_GET_CAPS_PARAM_SIZE 0x1
 
 /* Android Power Saving Params */
 #define NCI_ANDROID_POWER_SAVING_PARAM_SIZE 0x2
@@ -241,9 +246,10 @@
 #define NCI_ANDROID_POWER_SAVING_PARAM_ENABLE 0x1
 
 /* Android Passive Observer Settings */
-#define NCI_ANDROID_PASSIVE_OBSERVER_PARAM_SIZE 0x2
-#define NCI_ANDROID_PASSIVE_OBSERVER_PARAM_DISABLE 0x0
-#define NCI_ANDROID_PASSIVE_OBSERVER_PARAM_ENABLE 0x1
+#define NCI_ANDROID_PASSIVE_OBSERVE_PARAM_SIZE 0x2
+#define NCI_QUERY_ANDROID_PASSIVE_OBSERVE_PARAM_SIZE 0x1
+#define NCI_ANDROID_PASSIVE_OBSERVE_PARAM_DISABLE 0x0
+#define NCI_ANDROID_PASSIVE_OBSERVE_PARAM_ENABLE 0x1
 /**********************************************
  * NCI Core Group Params
  **********************************************/
@@ -394,17 +400,9 @@ typedef uint8_t tNCI_INTF_TYPE;
 #define NCI_DISCOVERY_TYPE_POLL_B 0x01
 #define NCI_DISCOVERY_TYPE_POLL_F 0x02
 #define NCI_DISCOVERY_TYPE_POLL_V 0x06
-#define NCI_DISCOVERY_TYPE_POLL_A_ACTIVE 0x03
-/* NCI2.0 standardizes P2P poll active*/
-#define NCI_DISCOVERY_TYPE_POLL_ACTIVE 0x03
-#define NCI_DISCOVERY_TYPE_POLL_F_ACTIVE 0x05
 #define NCI_DISCOVERY_TYPE_LISTEN_A 0x80
 #define NCI_DISCOVERY_TYPE_LISTEN_B 0x81
 #define NCI_DISCOVERY_TYPE_LISTEN_F 0x82
-#define NCI_DISCOVERY_TYPE_LISTEN_A_ACTIVE 0x83
-/* NCI2.0 standardizes P2P listen active*/
-#define NCI_DISCOVERY_TYPE_LISTEN_ACTIVE 0x83
-#define NCI_DISCOVERY_TYPE_LISTEN_F_ACTIVE 0x85
 #define NCI_DISCOVERY_TYPE_LISTEN_ISO15693 0x86
 
 typedef uint8_t tNCI_DISCOVERY_TYPE;
