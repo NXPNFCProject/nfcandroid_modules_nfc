@@ -1232,8 +1232,10 @@ public final class NfcAdapter {
     }
 
     /**
-     * Pauses polling for a {@code timeoutInMs} millis. If polling must be resumed before timeout,
-     * use {@link #resumePolling()}.
+     * Pauses NFC tag reader mode polling for a {@code timeoutInMs} millisecond.
+     * In case of {@code timeoutInMs} is zero or invalid
+     * polling will be stopped indefinitely use {@link #resumePolling() to resume the polling.
+     * @param timeoutInMs the pause polling duration in millisecond
      * @hide
      */
     public void pausePolling(int timeoutInMs) {
@@ -1301,7 +1303,7 @@ public final class NfcAdapter {
 
     /**
      * Resumes default polling for the current device state if polling is paused. Calling
-     * this while polling is not paused is a no-op.
+     * this while already in polling is a no-op.
      *
      * @hide
      */
