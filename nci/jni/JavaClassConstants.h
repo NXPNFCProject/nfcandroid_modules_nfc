@@ -27,6 +27,8 @@ extern jmethodID gCachedNfcManagerNotifyHostEmuActivated;
 extern jmethodID gCachedNfcManagerNotifyHostEmuData;
 extern jmethodID gCachedNfcManagerNotifyHostEmuDeactivated;
 
+extern jmethodID gCachedNfcManagerNotifySeListenActivated;
+
 extern jmethodID gCachedNfcManagerNotifyEeUpdated;
 
 extern const char* gNativeNfcTagClassName;

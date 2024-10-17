@@ -440,6 +440,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     private boolean mCardEmulationActivated = false;
     private boolean mRfFieldActivated = false;
     private boolean mRfDiscoveryStarted = false;
+    private boolean mSeListenActivated = false;
 
     public static NfcService getInstance() {
         return sService;
@@ -562,6 +563,18 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             }
         } catch (RemoteException e) {
             Log.e(TAG, "Failed to send onRfDiscoveryStarted", e);
+        }
+    }
+
+    @Override
+    public void onSeListenActivated(boolean isActivated) {
+        mSeListenActivated = isActivated;
+        try {
+            if (mNfcOemExtensionCallback != null) {
+                mNfcOemExtensionCallback.onSeListenActivated(isActivated);
+            }
+        } catch (RemoteException e) {
+            Log.e(TAG, "Failed to send onSeListenActivated", e);
         }
     }
 
@@ -2321,6 +2334,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     mNfcOemExtensionCallback.onCardEmulationActivated(mCardEmulationActivated);
                     mNfcOemExtensionCallback.onRfFieldActivated(mRfFieldActivated);
                     mNfcOemExtensionCallback.onRfDiscoveryStarted(mRfDiscoveryStarted);
+                    mNfcOemExtensionCallback.onSeListenActivated(mSeListenActivated);
                 } catch (RemoteException e) {
                     Log.e(TAG, "Failed to update OemExtension with updateNfCState", e);
                 }

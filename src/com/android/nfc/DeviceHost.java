@@ -49,6 +49,8 @@ public interface DeviceHost {
         public void onVendorSpecificEvent(int gid, int oid, byte[] payload);
 
         public void onRfDiscoveryEvent(boolean isDiscoveryStarted);
+
+        public void onSeListenActivated(boolean isActivated);
     }
 
     public interface TagEndpoint {
