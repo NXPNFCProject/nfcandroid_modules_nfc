@@ -435,9 +435,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     private  INfcVendorNciCallback mNfcVendorNciCallBack = null;
     private  INfcOemExtensionCallback mNfcOemExtensionCallback = null;
 
+    private Object mDiscoveryLock = new Object();
+
     private boolean mCardEmulationActivated = false;
     private boolean mRfFieldActivated = false;
-    private Boolean mRfDiscoveryStarted = false;
+    private boolean mRfDiscoveryStarted = false;
 
     public static NfcService getInstance() {
         return sService;
@@ -551,7 +553,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
     @Override
     public void onRfDiscoveryEvent(boolean isDiscoveryStarted) {
-        synchronized (mRfDiscoveryStarted) {
+        synchronized (mDiscoveryLock) {
             mRfDiscoveryStarted = isDiscoveryStarted;
         }
         try {
@@ -1623,7 +1625,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         @Override
         public void pausePolling(int timeoutInMs) {
             NfcPermissions.enforceAdminPermissions(mContext);
-            synchronized (mRfDiscoveryStarted) {
+            synchronized (mDiscoveryLock) {
                 if (!mRfDiscoveryStarted) {
                     if (DBG) Log.d(TAG, "Polling is already disabled!");
                     return;
@@ -1644,14 +1646,19 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         @Override
         public void resumePolling() {
             NfcPermissions.enforceAdminPermissions(mContext);
-            synchronized (mRfDiscoveryStarted) {
-                if (mRfDiscoveryStarted) {
-                    if (DBG) Log.d(TAG, "Polling is already enabled!");
-                    return;
-                }
+            boolean rfDiscoveryStarted;
+            synchronized (mDiscoveryLock) {
+                rfDiscoveryStarted = mRfDiscoveryStarted;
             }
-
             synchronized (NfcService.this) {
+                if (!mPollingPaused) {
+                    if (rfDiscoveryStarted) {
+                        if (DBG) Log.d(TAG, "Polling is already enabled!");
+                        return;
+                    } else {
+                        if (DBG) Log.d(TAG, "Enable polling explicitly!");
+                    }
+                }
                 mHandler.removeMessages(MSG_RESUME_POLLING);
                 mPollingPaused = false;
                 new ApplyRoutingTask().execute();
