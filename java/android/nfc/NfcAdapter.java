@@ -1860,8 +1860,9 @@ public final class NfcAdapter {
      * technology mask is returned to default.
      * Note: FLAG_USE_ALL_TECH used with _KEEP flags will reset the technolody to android default
      */
-        if (Flags.nfcSetDefaultDiscTech()
-                && ((pollTechnology & FLAG_SET_DEFAULT_TECH) == FLAG_SET_DEFAULT_TECH
+        //TODO: will be enabled once build time flag was added in build tree
+        if (/*Flags.nfcSetDefaultDiscTech()
+                && */((pollTechnology & FLAG_SET_DEFAULT_TECH) == FLAG_SET_DEFAULT_TECH
                 || (listenTechnology & FLAG_SET_DEFAULT_TECH) == FLAG_SET_DEFAULT_TECH)) {
             Binder token = new Binder();
             callService( () ->
