@@ -411,7 +411,11 @@ public final class NfcOemExtension {
     @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
     @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
     public void pausePolling(int timeoutInMs) {
-        NfcAdapter.callService(() -> NfcAdapter.sService.pausePolling(timeoutInMs));
+        try {
+            NfcAdapter.sService.pausePolling(timeoutInMs);
+        } catch (RemoteException e) {
+            mAdapter.attemptDeadServiceRecovery(e);
+        }
     }
 
     /**
@@ -420,8 +424,12 @@ public final class NfcOemExtension {
      */
     @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
     @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
-    public void resumePolling() {
-        NfcAdapter.callService(() -> NfcAdapter.sService.resumePolling());
+    public void resumePolling () {
+        try {
+            NfcAdapter.sService.resumePolling();
+        } catch (RemoteException e) {
+            mAdapter.attemptDeadServiceRecovery(e);
+        }
     }
 
     /**
