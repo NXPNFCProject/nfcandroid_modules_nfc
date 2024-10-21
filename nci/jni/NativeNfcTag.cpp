@@ -90,6 +90,7 @@ static uint8_t sCurrentActivatedMode = 0;
 static std::vector<uint8_t> sRxDataBuffer;
 static tNFA_STATUS sRxDataStatus = NFA_STATUS_OK;
 static bool sWaitingForTransceive = false;
+static bool sIsISODepActivatedByApp = false;
 static bool sTransceiveRfTimeout = false;
 static Mutex sRfInterfaceMutex;
 static uint32_t sReadDataLen = 0;
@@ -107,6 +108,8 @@ static IntervalTimer sSwitchBackTimer;  // timer used to tell us to switch back
                                         // to ISO_DEP frame interface
 uint8_t RW_TAG_SLP_REQ[] = {0x50, 0x00};
 uint8_t RW_DESELECT_REQ[] = {0xC2};
+uint8_t RW_ATTRIB_REQ[] = {0x1D};
+uint8_t RW_TAG_RATS[] = {0xE0, 0x80};
 static jboolean sWriteOk = JNI_FALSE;
 static jboolean sWriteWaitingForComplete = JNI_FALSE;
 static bool sFormatOk = false;
@@ -182,6 +185,7 @@ void nativeNfcTag_abortWaits() {
   sIsoDepPresCheckCnt = 0;
   sPresCheckErrCnt = 0;
   sIsoDepPresCheckAlternate = false;
+  sIsISODepActivatedByApp = false;
 }
 
 /*******************************************************************************
@@ -767,6 +771,7 @@ static int reSelect(tNFA_INTF_TYPE rfInterface, bool fSwitchIfNeeded) {
 *******************************************************************************/
 static bool switchRfInterface(tNFA_INTF_TYPE rfInterface) {
   NfcTag& natTag = NfcTag::getInstance();
+  int retCode = NFCSTATUS_SUCCESS;
 
   if (sCurrentConnectedTargetProtocol != NFC_PROTOCOL_ISO_DEP &&
       sCurrentConnectedTargetProtocol != NFC_PROTOCOL_MIFARE) {
@@ -779,7 +784,9 @@ static bool switchRfInterface(tNFA_INTF_TYPE rfInterface) {
   LOG(DEBUG) << StringPrintf("%s: new rf intf = %d, cur rf intf = %d", __func__,
                              rfInterface, sCurrentRfInterface);
 
-  return (0 == reSelect(rfInterface, true));
+  retCode = reSelect(rfInterface, true);
+  if (retCode == STATUS_CODE_TARGET_LOST) sIsISODepActivatedByApp = false;
+  return (0 == retCode);
 }
 
 /*******************************************************************************
@@ -818,6 +825,7 @@ static jint nativeNfcTag_doReconnect(JNIEnv*, jobject) {
   else if (sCurrentConnectedTargetProtocol == NFC_PROTOCOL_MIFARE)
     retCode = reSelect(NFA_INTERFACE_MIFARE, false);
 
+  if (retCode == STATUS_CODE_TARGET_LOST) sIsISODepActivatedByApp = false;
 TheEnd:
   LOG(DEBUG) << StringPrintf("%s: exit 0x%X", __func__, retCode);
   return retCode;
@@ -977,6 +985,13 @@ static jbyteArray nativeNfcTag_doTransceive(JNIEnv* e, jobject o,
       if (status != NFA_STATUS_OK) {
         LOG(ERROR) << StringPrintf("%s: fail send; error=%d", __func__, status);
         break;
+      }
+      if (((bufLen >= 2) &&
+           (memcmp(buf, RW_TAG_RATS, sizeof(RW_TAG_RATS)) == 0)) ||
+          ((bufLen >= 5) &&
+           (memcmp(buf, RW_ATTRIB_REQ, sizeof(RW_ATTRIB_REQ)) == 0) &&
+           (memcmp((buf + 1), mNfcID0, sizeof(mNfcID0)) == 0))) {
+        sIsISODepActivatedByApp = true;
       }
       waitOk = sTransceiveEvent.wait(timeout);
     }
@@ -1804,27 +1819,36 @@ int register_com_android_nfc_NativeNfcTag(JNIEnv* e) {
 *******************************************************************************/
 static tNFA_STATUS performHaltPICC() {
   tNFA_STATUS status = NFA_STATUS_OK;
-  if (sCurrentActivatedProtocl == NFA_PROTOCOL_T2T ||
-      (sCurrentActivatedProtocl == NFA_PROTOCOL_ISO_DEP &&
-       sCurrentActivatedMode == TARGET_TYPE_ISO14443_3A)) {
+  if (sCurrentActivatedProtocl == NFA_PROTOCOL_T2T) {
     status = NFA_SendRawFrame(RW_TAG_SLP_REQ, sizeof(RW_TAG_SLP_REQ), 0);
     usleep(10 * 1000);
-  } else if (sCurrentActivatedProtocl == NFA_PROTOCOL_ISO_DEP &&
-             sCurrentActivatedMode == TARGET_TYPE_ISO14443_3B) {
-    uint8_t halt_b[5] = {0x50, 0, 0, 0, 0};
-    memcpy(&halt_b[1], mNfcID0, 4);
-    android::nativeNfcTag_setTransceiveFlag(true);
-    SyncEventGuard g(android::sTransceiveEvent);
-    status = NFA_SendRawFrame(halt_b, sizeof(halt_b), 0);
-    if (status != NFA_STATUS_OK) {
-      LOG(DEBUG) << StringPrintf("%s: fail send; error=%d", __func__, status);
+  } else if (sCurrentActivatedProtocl == NFA_PROTOCOL_ISO_DEP) {
+    if (sIsISODepActivatedByApp) {
+      status = NFA_SendRawFrame(RW_DESELECT_REQ, sizeof(RW_DESELECT_REQ), 0);
+      usleep(10 * 1000);
+      sIsISODepActivatedByApp = false;
     } else {
-      if (android::sTransceiveEvent.wait(100) == false) {
-        status = NCI_STATUS_FAILED;
-        LOG(DEBUG) << StringPrintf("%s: timeout on HALTB", __func__);
+      if (sCurrentActivatedMode == TARGET_TYPE_ISO14443_3A) {
+        status = NFA_SendRawFrame(RW_TAG_SLP_REQ, sizeof(RW_TAG_SLP_REQ), 0);
+        usleep(10 * 1000);
+      } else if (sCurrentActivatedMode == TARGET_TYPE_ISO14443_3B) {
+        uint8_t halt_b[5] = {0x50, 0, 0, 0, 0};
+        memcpy(&halt_b[1], mNfcID0, 4);
+        android::nativeNfcTag_setTransceiveFlag(true);
+        SyncEventGuard g(android::sTransceiveEvent);
+        status = NFA_SendRawFrame(halt_b, sizeof(halt_b), 0);
+        if (status != NFA_STATUS_OK) {
+          LOG(DEBUG) << StringPrintf("%s: fail send; error=%d", __func__,
+                                     status);
+        } else {
+          if (android::sTransceiveEvent.wait(100) == false) {
+            status = NCI_STATUS_FAILED;
+            LOG(DEBUG) << StringPrintf("%s: timeout on HALTB", __func__);
+          }
+        }
+        android::nativeNfcTag_setTransceiveFlag(false);
       }
     }
-    android::nativeNfcTag_setTransceiveFlag(false);
   }
   return status;
 }
