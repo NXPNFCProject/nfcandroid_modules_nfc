@@ -2245,7 +2245,8 @@ static void nfcManager_setDiscoveryTech(JNIEnv* e, jobject o, jint pollTech,
 
   // Need listen tech routing update in routing table
   // for addition of blocking bit
-  RoutingManager::getInstance().setEeTechRouteUpdateRequired();
+  //RoutingManager::getInstance().setEeTechRouteUpdateRequired();
+  LOG(DEBUG) << StringPrintf("%s: EeTechRouteUpdate Disbaled!", __func__);
 
   nativeNfcTag_acquireRfInterfaceMutexLock();
   SyncEventGuard guard(sNfaEnableDisablePollingEvent);
