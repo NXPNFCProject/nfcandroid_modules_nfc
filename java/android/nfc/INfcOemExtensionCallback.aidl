@@ -25,6 +25,7 @@ interface INfcOemExtensionCallback {
    void onCardEmulationActivated(boolean isActivated);
    void onRfFieldActivated(boolean isActivated);
    void onRfDiscoveryStarted(boolean isDiscoveryStarted);
+   void onSeListenActivated(boolean isActivated);
    void onTagConnected(boolean connected, in Tag tag);
    void onStateUpdated(int state);
    void onApplyRouting(in ResultReceiver isSkipped);
