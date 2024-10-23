@@ -69,6 +69,7 @@ public final class NfcOemExtension {
 	private boolean mCardEmulationActivated = false;
     private boolean mRfFieldActivated = false;
     private boolean mRfDiscoveryStarted = false;
+    private boolean mSeListenActivated = false;
 
     /**
      * Event that Host Card Emulation is activated.
@@ -199,6 +200,13 @@ public final class NfcOemExtension {
         * @param isDiscoveryStarted true, if RF discovery started, else RF state is Idle.
         */
         void onRfDiscoveryStarted(boolean isDiscoveryStarted);
+
+        /**
+        * Notifies the NFC SE Listen status
+        *
+        * @param isActivated true, if SE Listen is ON, else SE Listen is OFF.
+        */
+        void onSeListenActivated(boolean isActivated);
 
         /**
          * Update the Nfc Adapter State
@@ -723,6 +731,24 @@ public final class NfcOemExtension {
                     for (Callback callback : mCallbackMap.keySet()) {
                         Executor executor = mCallbackMap.get(callback);
                         executor.execute(() -> callback.onRfDiscoveryStarted(isDiscoveryStarted));
+                    }
+                } catch (RuntimeException ex) {
+                    throw ex;
+                } finally {
+                    Binder.restoreCallingIdentity(identity);
+                }
+            }
+        }
+
+        @Override
+        public void onSeListenActivated(boolean isActivated) throws RemoteException {
+            mSeListenActivated = isActivated;
+            synchronized (mLock) {
+                final long identity = Binder.clearCallingIdentity();
+                try {
+                    for (Callback callback : mCallbackMap.keySet()) {
+                        Executor executor = mCallbackMap.get(callback);
+                        executor.execute(() -> callback.onSeListenActivated(isActivated));
                     }
                 } catch (RuntimeException ex) {
                     throw ex;
