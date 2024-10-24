@@ -115,10 +115,10 @@ void initializeGlobalDebugEnabledFlag() {
       (NfcConfig::getUnsigned(NAME_NFC_DEBUG_ENABLED, 0) != 0) ||
       property_get_bool("persist.nfc.debug_enabled", true);
 
-  android::base::SetMinimumLogSeverity(nfc_debug_enabled ? android::base::DEBUG
+  android::base::SetMinimumLogSeverity(nfc_debug_enabled ? android::base::VERBOSE
                                                          : android::base::INFO);
 
-  LOG(VERBOSE) << StringPrintf("%s: level=%u", __func__, nfc_debug_enabled);
+  LOG(VERBOSE) << StringPrintf("%s: level(VERBOSE)=%u", __func__, nfc_debug_enabled);
 }
 
 // initialize NciResetType Flag
