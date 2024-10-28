@@ -129,15 +129,18 @@ tNFA_STATUS NFA_T4tNfcEeWrite(uint8_t* p_fileId, uint8_t* p_data,
 *******************************************************************************/
 tNFA_STATUS NFA_T4tNfcEeRead(uint8_t* p_fileId) {
   tNFA_T4TNFCEE_OPERATION* p_msg;
-
-  LOG(DEBUG) << StringPrintf("%s : Enter ", __func__);
+  uint16_t m_fileId = (uint16_t)(((uint16_t)(*(p_fileId)) << 8) +
+                                (uint16_t)(*((p_fileId) + 1)));
 
   if ((p_msg = (tNFA_T4TNFCEE_OPERATION*)GKI_getbuf(
            (uint16_t)(sizeof(tNFA_T4TNFCEE_OPERATION)))) != NULL) {
     p_msg->hdr.event = NFA_T4TNFCEE_OP_REQUEST_EVT;
-    p_msg->op = NFA_T4TNFCEE_OP_READ;
+    if (m_fileId == T4T_CC_FILE_ID) {
+      p_msg->op = NFA_T4TNFCEE_OP_READ_CC_FILE;
+    } else {
+      p_msg->op = NFA_T4TNFCEE_OP_READ;
+    }
     p_msg->p_fileId = p_fileId;
-
     nfa_sys_sendmsg(p_msg);
 
     return (NFA_STATUS_OK);

@@ -59,7 +59,8 @@ void nfa_t4tnfcee_free_rx_buf(void) {
   /*Free only if it is Read operation
   For write, buffer will be passed from JNI which will be freed by JNI*/
   if (((nfa_t4tnfcee_cb.cur_op == NFA_T4TNFCEE_OP_READ) ||
-       (nfa_t4tnfcee_cb.cur_op == NFA_T4TNFCEE_OP_CLEAR)) &&
+       (nfa_t4tnfcee_cb.cur_op == NFA_T4TNFCEE_OP_CLEAR) ||
+       (nfa_t4tnfcee_cb.cur_op == NFA_T4TNFCEE_OP_READ_CC_FILE)) &&
       nfa_t4tnfcee_cb.p_dataBuf) {
     nfa_mem_co_free(nfa_t4tnfcee_cb.p_dataBuf);
     nfa_t4tnfcee_cb.p_dataBuf = NULL;
@@ -116,7 +117,8 @@ bool nfa_t4tnfcee_handle_op_req(tNFA_T4TNFCEE_MSG* p_data) {
     case NFA_T4TNFCEE_OP_OPEN_CONNECTION: {
       nfa_t4tnfcee_proc_disc_evt(NFA_T4TNFCEE_OP_OPEN_CONNECTION);
     } break;
-    case NFA_T4TNFCEE_OP_READ: {
+    case NFA_T4TNFCEE_OP_READ:
+    case NFA_T4TNFCEE_OP_READ_CC_FILE: {
       if (!is_read_precondition_valid(p_data)) {
         LOG(DEBUG) << StringPrintf("%s Failed", __func__);
         nfa_t4tnfcee_cb.status = NFA_STATUS_INVALID_PARAM;
@@ -238,15 +240,23 @@ void nfa_t4tnfcee_store_cc_info(NFC_HDR* p_data) {
   uint8_t* ccInfo;
 
   if (NULL != p_data) {
-    ccInfo = (uint8_t*)(p_data + 1) + p_data->offset + jumpToFirstTLV;
+    if (nfa_t4tnfcee_cb.cur_op == NFA_T4TNFCEE_OP_READ_CC_FILE) {
+      ccInfo = (uint8_t*)(p_data + 1) +
+               p_data->offset;  // CC data does not require NDEF header offset
+      nfa_t4tnfcee_cb.p_dataBuf = (uint8_t*)nfa_mem_co_alloc(p_data->len);
+      memcpy(&nfa_t4tnfcee_cb.p_dataBuf[0], ccInfo, p_data->len);
+      return;
+    } else {
+      ccInfo = (uint8_t*)(p_data + 1) + p_data->offset + jumpToFirstTLV;
+    }
   } else {
     LOG(DEBUG) << StringPrintf("%s empty cc info", __func__);
     return;
   }
   RW_T4tNfceeUpdateCC(ccInfo);
+
   jumpToFirstTLV = 0x07;
   ccInfo = (uint8_t*)(p_data + 1) + p_data->offset + jumpToFirstTLV;
-
   ccFileInfo.clear();
   RemainingDataLen =
       (p_data->len - jumpToFirstTLV - T4TNFCEE_SIZEOF_STATUS_BYTES);
@@ -349,13 +359,19 @@ void nfa_t4tnfcee_handle_file_operations(tRW_DATA* p_rwData) {
     case WAIT_READ_CC_FILE: {
       if (isError(p_rwData->raw_frame.status)) break;
       nfa_t4tnfcee_store_cc_info(p_rwData->raw_frame.p_data);
-      if (ccFileInfo.find(nfa_t4tnfcee_cb.cur_fileId) == ccFileInfo.end()) {
-        LOG(DEBUG) << StringPrintf("%s FileId Not found in CC", __func__);
-        nfa_t4tnfcee_cb.status = NFA_T4T_STATUS_INVALID_FILE_ID;
+      if (nfa_t4tnfcee_cb.cur_op != NFA_T4TNFCEE_OP_READ_CC_FILE) {
+        if (ccFileInfo.find(nfa_t4tnfcee_cb.cur_fileId) == ccFileInfo.end()) {
+          LOG(DEBUG) << StringPrintf("%s FileId Not found in CC", __func__);
+          nfa_t4tnfcee_cb.status = NFA_T4T_STATUS_INVALID_FILE_ID;
+          nfa_t4tnfcee_notify_rx_evt();
+          break;
+        }
+      } else {
+        nfa_t4tnfcee_cb.dataLen = p_rwData->raw_frame.p_data->len;
+        nfa_t4tnfcee_cb.status = p_rwData->raw_frame.status;
         nfa_t4tnfcee_notify_rx_evt();
         break;
       }
-
       RW_T4tNfceeSelectFile(nfa_t4tnfcee_cb.cur_fileId);
       nfa_t4tnfcee_cb.rw_state = WAIT_SELECT_FILE;
       break;
@@ -379,6 +395,10 @@ void nfa_t4tnfcee_handle_file_operations(tRW_DATA* p_rwData) {
       } else if (nfa_t4tnfcee_cb.cur_op == NFA_T4TNFCEE_OP_CLEAR) {
         RW_T4tNfceeReadDataLen();
         nfa_t4tnfcee_cb.rw_state = WAIT_CLEAR_NDEF_DATA;
+      } else if (nfa_t4tnfcee_cb.cur_op == NFA_T4TNFCEE_OP_READ_CC_FILE) {
+        nfa_t4tnfcee_cb.dataLen = nfa_t4tnfcee_cb.rd_offset;
+        nfa_t4tnfcee_cb.status = p_rwData->raw_frame.status;
+        nfa_t4tnfcee_notify_rx_evt();
       }
       break;
     }
@@ -505,6 +525,13 @@ void nfa_t4tnfcee_notify_rx_evt(void) {
     nfa_dm_act_conn_cback_notify(NFA_T4TNFCEE_WRITE_CPLT_EVT, &conn_evt_data);
   } else if (nfa_t4tnfcee_cb.cur_op == NFA_T4TNFCEE_OP_CLEAR) {
     nfa_dm_act_conn_cback_notify(NFA_T4TNFCEE_CLEAR_CPLT_EVT, &conn_evt_data);
+  } else if (nfa_t4tnfcee_cb.cur_op == NFA_T4TNFCEE_OP_READ_CC_FILE) {
+    if (conn_evt_data.status == NFA_STATUS_OK) {
+      conn_evt_data.data.p_data = nfa_t4tnfcee_cb.p_dataBuf;
+      conn_evt_data.data.len = nfa_t4tnfcee_cb.dataLen;
+    }
+    nfa_dm_act_conn_cback_notify(NFA_T4TNFCEE_READ_CC_DATA_CPLT_EVT,
+                                 &conn_evt_data);
   }
   nfa_t4tnfcee_free_rx_buf();
 }
