@@ -1282,6 +1282,10 @@ static jboolean nfcManager_doInitialize(JNIEnv* e, jobject o) {
 
       NFA_Init(halFuncEntries);
 
+      if (android_nfc_nfc_read_polling_loop() || android_nfc_nfc_vendor_cmd()) {
+        NFA_RegVSCback(true, &nfaVSCallback);
+      }
+
       stat = NFA_Enable(nfaDeviceManagementCallback, nfaConnectionCallback);
       if (stat == NFA_STATUS_OK) {
         sNfaEnableEvent.wait();  // wait for NFA command to finish
@@ -1367,9 +1371,6 @@ static jboolean nfcManager_doInitialize(JNIEnv* e, jobject o) {
 TheEnd:
   if (sIsNfaEnabled) {
     PowerSwitch::getInstance().setLevel(PowerSwitch::LOW_POWER);
-    if (android_nfc_nfc_read_polling_loop() || android_nfc_nfc_vendor_cmd()) {
-      NFA_RegVSCback(true, &nfaVSCallback);
-    }
   }
   LOG(DEBUG) << StringPrintf("%s: exit", __func__);
   return sIsNfaEnabled ? JNI_TRUE : JNI_FALSE;
