@@ -28,6 +28,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.mockito.MockitoSession;
 import org.mockito.quality.Strictness;
 
@@ -37,6 +38,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.dx.mockito.inline.extended.ExtendedMockito;
 import com.android.nfc.cardemulation.AidRoutingManager;
 import com.android.nfc.cardemulation.RegisteredAidCache;
+import com.android.nfc.cardemulation.WalletRoleObserver;
 
 @RunWith(AndroidJUnit4.class)
 public class RegisteredAidCacheTest {
@@ -46,6 +48,8 @@ public class RegisteredAidCacheTest {
     private MockitoSession mStaticMockSession;
     private RegisteredAidCache mRegisteredAidCache;
     private Context mockContext;
+    @Mock
+    private WalletRoleObserver mWalletRoleObserver;
 
     @Before
     public void setUp() throws Exception {
@@ -67,7 +71,8 @@ public class RegisteredAidCacheTest {
 
         AidRoutingManager routingManager = mock(AidRoutingManager.class);
         InstrumentationRegistry.getInstrumentation().runOnMainSync(
-                () -> mRegisteredAidCache = new RegisteredAidCache(mockContext, routingManager));
+                () -> mRegisteredAidCache = new RegisteredAidCache(
+                        mockContext, mWalletRoleObserver, routingManager));
         Assert.assertNotNull(mRegisteredAidCache);
     }
 
@@ -81,13 +86,13 @@ public class RegisteredAidCacheTest {
     public void testOnPreferredForegroundServiceChanged() {
         if (!mNfcSupported) return;
 
-        ComponentName componentName = mRegisteredAidCache.getPreferredService();
+        ComponentName componentName = mRegisteredAidCache.getPreferredService().second;
         Assert.assertNull(componentName);
 
         componentName = new ComponentName("com.android.nfc",
                 RegisteredAidCacheTest.class.getName());
         mRegisteredAidCache.onPreferredForegroundServiceChanged(0, componentName);
-        ComponentName preferredService = mRegisteredAidCache.getPreferredService();
+        ComponentName preferredService = mRegisteredAidCache.getPreferredService().second;
 
         Assert.assertNotNull(preferredService);
         Assert.assertEquals(componentName.getClassName(), preferredService.getClassName());

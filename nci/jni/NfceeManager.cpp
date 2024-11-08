@@ -132,7 +132,7 @@ bool NfceeManager::getNFCEeInfo() {
   mNumEePresent = 0x00;
   memset(&mNfceeData_t, 0, sizeof(mNfceeData_t));
 
-  /* Reading latest NFCEE info  incase it is updated */
+  /* Reading latest NFCEE info  in case it is updated */
   if ((nfaStat = NFA_EeGetInfo(&mActualNumEe, mEeInfo)) != NFA_STATUS_OK) {
     LOG(ERROR) << StringPrintf("%s: fail get info; error=0x%X", fn, nfaStat);
     mActualNumEe = 0;
