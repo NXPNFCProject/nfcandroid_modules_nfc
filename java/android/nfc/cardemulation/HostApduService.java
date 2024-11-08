@@ -20,6 +20,7 @@ import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
 import android.annotation.SdkConstant;
 import android.annotation.SdkConstant.SdkConstantType;
+import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -241,91 +242,22 @@ public abstract class HostApduService extends Service {
     /**
      * @hide
      */
-    public static final String KEY_DATA = "data";
-
-    /**
-     * POLLING_LOOP_TYPE_KEY is the Bundle key for the type of
-     * polling loop frame in the Bundle passed to {@link #processPollingFrames(List)}
-     */
-    @FlaggedApi(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
-    public static final String POLLING_LOOP_TYPE_KEY = "android.nfc.cardemulation.TYPE";
-
-    /**
-     * POLLING_LOOP_TYPE_A is the value associated with the key
-     * POLLING_LOOP_TYPE  in the Bundle passed to {@link #processPollingFrames(List)}
-     * when the polling loop is for NFC-A.
-     */
-    @FlaggedApi(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
-    public static final char POLLING_LOOP_TYPE_A = 'A';
-
-    /**
-     * POLLING_LOOP_TYPE_B is the value associated with the key
-     * POLLING_LOOP_TYPE  in the Bundle passed to {@link #processPollingFrames(List)}
-     * when the polling loop is for NFC-B.
-     */
-    @FlaggedApi(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
-    public static final char POLLING_LOOP_TYPE_B = 'B';
-
-    /**
-     * POLLING_LOOP_TYPE_F is the value associated with the key
-     * POLLING_LOOP_TYPE  in the Bundle passed to {@link #processPollingFrames(List)}
-     * when the polling loop is for NFC-F.
-     */
-    @FlaggedApi(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
-    public static final char POLLING_LOOP_TYPE_F = 'F';
-
-    /**
-     * POLLING_LOOP_TYPE_ON is the value associated with the key
-     * POLLING_LOOP_TYPE  in the Bundle passed to {@link #processPollingFrames(List)}
-     * when the polling loop turns on.
-     */
-    @FlaggedApi(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
-    public static final char POLLING_LOOP_TYPE_ON = 'O';
-
-    /**
-     * POLLING_LOOP_TYPE_OFF is the value associated with the key
-     * POLLING_LOOP_TYPE  in the Bundle passed to {@link #processPollingFrames(List)}
-     * when the polling loop turns off.
-     */
-    @FlaggedApi(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
-    public static final char POLLING_LOOP_TYPE_OFF = 'X';
-
-    /**
-     * POLLING_LOOP_TYPE_UNKNOWN is the value associated with the key
-     * POLLING_LOOP_TYPE  in the Bundle passed to {@link #processPollingFrames(List)}
-     * when the polling loop frame isn't recognized.
-     */
-    @FlaggedApi(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
-    public static final char POLLING_LOOP_TYPE_UNKNOWN = 'U';
-
-    /**
-     * POLLING_LOOP_DATA is the Bundle key for the raw data of captured from
-     * the polling loop frame in the Bundle passed to {@link #processPollingFrames(List)}
-     * when the frame type isn't recognized.
-     */
-    @FlaggedApi(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
-    public static final String POLLING_LOOP_DATA_KEY = "android.nfc.cardemulation.DATA";
-
-    /**
-     * POLLING_LOOP_GAIN_KEY is the Bundle key for the field strength of
-     * the polling loop frame in the Bundle passed to {@link #processPollingFrames(List)}
-     * when the frame type isn't recognized.
-     */
-    @FlaggedApi(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
-    public static final String POLLING_LOOP_GAIN_KEY = "android.nfc.cardemulation.GAIN";
-
-    /**
-     * POLLING_LOOP_TIMESTAMP_KEY is the Bundle key for the timestamp of
-     * the polling loop frame in the Bundle passed to {@link #processPollingFrames(List)}
-     * when the frame type isn't recognized.
-     */
-    @FlaggedApi(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
-    public static final String POLLING_LOOP_TIMESTAMP_KEY = "android.nfc.cardemulation.TIMESTAMP";
+    public static final int MSG_OBSERVE_MODE_CHANGE = 5;
 
     /**
      * @hide
      */
-    public static final String POLLING_LOOP_FRAMES_BUNDLE_KEY =
+    public static final int MSG_PREFERRED_SERVICE_CHANGED = 6;
+
+    /**
+     * @hide
+     */
+    public static final String KEY_DATA = "data";
+
+    /**
+     * @hide
+     */
+    public static final String KEY_POLLING_LOOP_FRAMES_BUNDLE =
             "android.nfc.cardemulation.POLLING_FRAMES";
 
     /**
@@ -404,12 +336,24 @@ public abstract class HostApduService extends Service {
                 }
                 break;
                 case MSG_POLLING_LOOP:
-                    ArrayList<Bundle> frames =
-                            msg.getData().getParcelableArrayList(POLLING_LOOP_FRAMES_BUNDLE_KEY,
-                            Bundle.class);
-                    processPollingFrames(frames);
+                    if (android.nfc.Flags.nfcReadPollingLoop()) {
+                        ArrayList<PollingFrame> pollingFrames =
+                                msg.getData().getParcelableArrayList(
+                                    KEY_POLLING_LOOP_FRAMES_BUNDLE, PollingFrame.class);
+                        processPollingFrames(pollingFrames);
+                    }
                     break;
-            default:
+                case MSG_OBSERVE_MODE_CHANGE:
+                    if (android.nfc.Flags.nfcEventListener()) {
+                        onObserveModeStateChanged(msg.arg1 == 1);
+                    }
+                    break;
+                case MSG_PREFERRED_SERVICE_CHANGED:
+                    if (android.nfc.Flags.nfcEventListener()) {
+                        onPreferredServiceChanged(msg.arg1 == 1);
+                    }
+                    break;
+                default:
                 super.handleMessage(msg);
             }
         }
@@ -470,7 +414,7 @@ public abstract class HostApduService extends Service {
     }
 
     /**
-     * This method is called when a polling frame has been received from a
+     * This method is called when polling frames have been received from a
      * remote device. If the device is in observe mode, the service should
      * call {@link NfcAdapter#allowTransaction()} once it is ready to proceed
      * with the transaction. If the device is not in observe mode, the service
@@ -481,8 +425,9 @@ public abstract class HostApduService extends Service {
      *
      * @param frame A description of the polling frame.
      */
+    @SuppressLint("OnNameExpected")
     @FlaggedApi(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
-    public void processPollingFrames(@NonNull List<Bundle> frame) {
+    public void processPollingFrames(@NonNull List<PollingFrame> frame) {
     }
 
     /**
@@ -516,4 +461,26 @@ public abstract class HostApduService extends Service {
      * @param reason Either {@link #DEACTIVATION_LINK_LOSS} or {@link #DEACTIVATION_DESELECTED}
      */
     public abstract void onDeactivated(int reason);
+
+
+    /**
+     * This method is called when this service is the preferred Nfc service and
+     * Observe mode has been enabled or disabled.
+     *
+     * @param isEnabled true if observe mode has been enabled, false if it has been disabled
+     */
+    @FlaggedApi(android.nfc.Flags.FLAG_NFC_EVENT_LISTENER)
+    public void onObserveModeStateChanged(boolean isEnabled) {
+
+    }
+
+    /**
+     * This method is called when this service gains or loses preferred Nfc service status.
+     *
+     * @param isPreferred true is this service has become the preferred Nfc service,
+     * false if it is no longer the preferred service
+     */
+    @FlaggedApi(android.nfc.Flags.FLAG_NFC_EVENT_LISTENER)
+    public void onPreferredServiceChanged(boolean isPreferred) {
+    }
 }

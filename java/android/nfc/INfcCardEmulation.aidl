@@ -30,12 +30,16 @@ interface INfcCardEmulation
     boolean isDefaultServiceForAid(int userHandle, in ComponentName service, String aid);
     boolean setDefaultServiceForCategory(int userHandle, in ComponentName service, String category);
     boolean setDefaultForNextTap(int userHandle, in ComponentName service);
-    boolean setServiceObserveModeDefault(int userId, in android.content.ComponentName service, boolean enable);
+    boolean setShouldDefaultToObserveModeForService(int userId, in android.content.ComponentName service, boolean enable);
     boolean registerAidGroupForService(int userHandle, in ComponentName service, in AidGroup aidGroup);
+    boolean registerPollingLoopFilterForService(int userHandle, in ComponentName service, in String pollingLoopFilter, boolean autoTransact);
+    boolean registerPollingLoopPatternFilterForService(int userHandle, in ComponentName service, in String pollingLoopPatternFilter, boolean autoTransact);
     boolean setOffHostForService(int userHandle, in ComponentName service, in String offHostSecureElement);
     boolean unsetOffHostForService(int userHandle, in ComponentName service);
     AidGroup getAidGroupForService(int userHandle, in ComponentName service, String category);
     boolean removeAidGroupForService(int userHandle, in ComponentName service, String category);
+    boolean removePollingLoopFilterForService(int userHandle, in ComponentName service, in String pollingLoopFilter);
+    boolean removePollingLoopPatternFilterForService(int userHandle, in ComponentName service, in String pollingLoopPatternFilter);
     List<ApduServiceInfo> getServices(int userHandle, in String category);
     boolean setPreferredService(in ComponentName service);
     boolean unsetPreferredService();
@@ -44,6 +48,6 @@ interface INfcCardEmulation
     boolean setServiceEnabledForCategoryOther(int userHandle, in ComponentName app, boolean status);
     boolean isDefaultPaymentRegistered();
 
-    boolean overrideRoutingTable(int userHandle, String protocol, String technology);
-    boolean recoverRoutingTable(int userHandle);
+    void overrideRoutingTable(int userHandle, String protocol, String technology, in String pkg);
+    void recoverRoutingTable(int userHandle);
 }

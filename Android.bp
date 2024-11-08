@@ -1,4 +1,5 @@
 package {
+    default_team: "trendy_team_fwk_nfc",
     // See: http://go/android-license-faq
     // A large-scale-change added 'default_applicable_licenses' to import
     // all of the 'license_kinds' from "frameworks_base_license"
@@ -37,9 +38,12 @@ java_sdk_library {
     name: "framework-nfc",
     libs: [
         "unsupportedappusage", // for android.compat.annotation.UnsupportedAppUsage
+        "framework-permission-s.stubs.module_lib",
+        "framework-permission.stubs.module_lib",
     ],
     static_libs: [
         "android.nfc.flags-aconfig-java",
+        "android.permission.flags-aconfig-java",
     ],
     srcs: [
         ":framework-nfc-updatable-sources",
@@ -47,7 +51,7 @@ java_sdk_library {
     ],
     defaults: ["framework-module-defaults"],
     sdk_version: "module_current",
-    min_sdk_version: "34", // should be 35 (making it 34 for compiling for `-next`)
+    min_sdk_version: "current",
     installable: true,
     optimize: {
         enabled: false,
@@ -57,18 +61,20 @@ java_sdk_library {
         "android.nfc",
         "com.android.nfc",
     ],
-    hidden_api_packages: [
-        "com.android.nfc",
-    ],
     impl_library_visibility: [
         "//frameworks/base:__subpackages__",
+        "//cts/hostsidetests/multidevices/nfc:__subpackages__",
         "//cts/tests/tests/nfc",
         "//packages/apps/Nfc:__subpackages__",
     ],
     jarjar_rules: ":nfc-jarjar-rules",
     lint: {
-        strict_updatability_linting: true,
+        baseline_filename: "lint-baseline.xml",
     },
+    apex_available: [
+        "//apex_available:platform",
+        "com.android.nfcservices",
+    ],
     aconfig_declarations: [
         "android.nfc.flags-aconfig",
     ],
