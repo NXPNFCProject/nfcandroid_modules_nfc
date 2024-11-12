@@ -31,7 +31,6 @@
 #ifdef DTA_ENABLED
 #include "NfcDta.h"
 #endif /* DTA_ENABLED */
-#include "NativeT4tNfcee.h"
 #include "NfcJniUtil.h"
 #include "NfcTag.h"
 #include "NfceeManager.h"
@@ -43,7 +42,6 @@
 #include "debug_lmrt.h"
 #include "nfa_api.h"
 #include "nfa_ee_api.h"
-#include "nfa_nfcee_int.h"
 #include "nfc_brcm_defs.h"
 #include "nfc_config.h"
 #include "rw_api.h"
@@ -72,12 +70,10 @@ extern void nativeNfcTag_resetPresenceCheck();
 extern void nativeNfcTag_doReadCompleted(tNFA_STATUS status);
 extern void nativeNfcTag_setRfInterface(tNFA_INTF_TYPE rfInterface);
 extern void nativeNfcTag_setActivatedRfProtocol(tNFA_INTF_TYPE rfProtocol);
-extern void nativeNfcTag_setActivatedRfMode(uint8_t rfMode);
 extern void nativeNfcTag_abortWaits();
 extern void nativeNfcTag_registerNdefTypeHandler();
 extern void nativeNfcTag_acquireRfInterfaceMutexLock();
 extern void nativeNfcTag_releaseRfInterfaceMutexLock();
-extern void updateNfcID0Param(uint8_t* nfcID0);
 }  // namespace android
 
 /*****************************************************************************
@@ -108,14 +104,14 @@ jmethodID gCachedNfcManagerNotifyVendorSpecificEvent;
 jmethodID gCachedNfcManagerNotifyCommandTimeout;
 jmethodID gCachedNfcManagerNotifyObserveModeChanged;
 jmethodID gCachedNfcManagerNotifyRfDiscoveryEvent;
-jmethodID gCachedNfcManagerNotifySeListenActivated;
+jmethodID gCachedNfcManagerNotifyEeAidSelected;
+jmethodID gCachedNfcManagerNotifyEeProtocolSelected;
+jmethodID gCachedNfcManagerNotifyEeTechSelected;
 const char* gNativeNfcTagClassName = "com/android/nfc/dhimpl/NativeNfcTag";
 const char* gNativeNfcManagerClassName =
     "com/android/nfc/dhimpl/NativeNfcManager";
 const char* gNfcVendorNciResponseClassName =
     "com/android/nfc/NfcVendorNciResponse";
-const char* gNativeT4tNfceeClassName =
-    "com/android/nfc/dhimpl/NativeT4tNfceeManager";
 void doStartupConfig();
 void startStopPolling(bool isStartPolling);
 void startRfDiscovery(bool isStart);
@@ -184,7 +180,7 @@ uint8_t gConfig[256];
 std::vector<uint8_t> gCaps(0);
 static int prevScreenState = NFA_SCREEN_STATE_OFF_LOCKED;
 static int NFA_SCREEN_POLLING_TAG_MASK = 0x10;
-static bool gIsDtaEnabled = false;
+bool gIsDtaEnabled = false;
 static bool gObserveModeEnabled = false;
 static int gPartialInitMode = ENABLE_MODE_DEFAULT;
 /////////////////////////////////////////////////////////////
@@ -337,7 +333,8 @@ static void nfaConnectionCallback(uint8_t connEvent,
         return;
       }
       e->CallVoidMethod(nat->manager,
-                            android::gCachedNfcManagerNotifyRfDiscoveryEvent, JNI_TRUE);
+                        android::gCachedNfcManagerNotifyRfDiscoveryEvent,
+                        JNI_TRUE);
     } break;
 
     case NFA_RF_DISCOVERY_STOPPED_EVT:  // RF Discovery stopped event
@@ -362,7 +359,8 @@ static void nfaConnectionCallback(uint8_t connEvent,
         return;
       }
       e->CallVoidMethod(nat->manager,
-                            android::gCachedNfcManagerNotifyRfDiscoveryEvent, JNI_FALSE);
+                        android::gCachedNfcManagerNotifyRfDiscoveryEvent,
+                        JNI_FALSE);
     } break;
 
     case NFA_DISC_RESULT_EVT:  // NFC link/protocol discovery notificaiton
@@ -412,8 +410,6 @@ static void nfaConnectionCallback(uint8_t connEvent,
           __func__, gIsSelectingRfInterface, sIsDisabling);
       uint8_t activatedProtocol =
           (tNFA_INTF_TYPE)eventData->activated.activate_ntf.protocol;
-      uint8_t activatedMode =
-          eventData->activated.activate_ntf.rf_tech_param.mode;
       if (NFC_PROTOCOL_T5T == activatedProtocol &&
           NfcTag::getInstance().getNumDiscNtf()) {
         /* T5T doesn't support multiproto detection logic */
@@ -425,14 +421,11 @@ static void nfaConnectionCallback(uint8_t connEvent,
         nativeNfcTag_setRfInterface(
             (tNFA_INTF_TYPE)eventData->activated.activate_ntf.intf_param.type);
         nativeNfcTag_setActivatedRfProtocol(activatedProtocol);
-        nativeNfcTag_setActivatedRfMode(activatedMode);
       }
       NfcTag::getInstance().setActive(true);
       if (sIsDisabling || !sIsNfaEnabled) break;
       gActivated = true;
 
-      updateNfcID0Param(
-          eventData->activated.activate_ntf.rf_tech_param.param.pb.nfcid0);
       NfcTag::getInstance().setActivationState();
       if (gIsSelectingRfInterface) {
         nativeNfcTag_doConnectStatus(true);
@@ -453,6 +446,14 @@ static void nfaConnectionCallback(uint8_t connEvent,
         /*If its multiprotocol tag, deactivate tag with current selected
         protocol to sleep . Select tag with next supported protocol after
         deactivation event is received*/
+        if (((tNFA_INTF_TYPE)eventData->activated.activate_ntf.intf_param
+                 .type == NFA_INTERFACE_FRAME)) {
+          uint8_t RW_TAG_SLP_REQ[] = {0x50, 0x00};
+          SyncEvent waitSome;
+          SyncEventGuard g(waitSome);
+          NFA_SendRawFrame(RW_TAG_SLP_REQ, sizeof(RW_TAG_SLP_REQ), 0);
+          waitSome.wait(4);
+        }
         NFA_Deactivate(true);
       }
 
@@ -473,8 +474,8 @@ static void nfaConnectionCallback(uint8_t connEvent,
           return;
         }
         e->CallVoidMethod(nat->manager,
-                          android::gCachedNfcManagerNotifySeListenActivated,
-                          JNI_TRUE);
+                          android::gCachedNfcManagerNotifyHostEmuActivated,
+                          (int)activatedProtocol);
       }
     } break;
     case NFA_DEACTIVATED_EVT:  // NFC link/protocol deactivated
@@ -484,11 +485,6 @@ static void nfaConnectionCallback(uint8_t connEvent,
       NfcTag::getInstance().setDeactivationState(eventData->deactivated);
       NfcTag::getInstance().selectNextTagIfExists();
       if (eventData->deactivated.type != NFA_DEACTIVATE_TYPE_SLEEP) {
-        if (android::gIsSelectingRfInterface == false) {
-          if (eventData->deactivated.type != NFA_DEACTIVATE_TYPE_DISCOVERY)
-            memset(&NfcTag::getInstance().mActivationParams_t, 0,
-                   sizeof(activationParams_t));
-        }
         {
           SyncEventGuard g(gDeactivatedEvent);
           gActivated = false;  // guard this variable from multi-threaded access
@@ -521,8 +517,8 @@ static void nfaConnectionCallback(uint8_t connEvent,
             return;
           }
           e->CallVoidMethod(nat->manager,
-                            android::gCachedNfcManagerNotifySeListenActivated,
-                            JNI_FALSE);
+                            android::gCachedNfcManagerNotifyHostEmuDeactivated,
+                            NFA_TECHNOLOGY_MASK_A);
         }
       }
 
@@ -633,12 +629,6 @@ static void nfaConnectionCallback(uint8_t connEvent,
           "%s: NFA_CE_UICC_LISTEN_CONFIGURED_EVT : status=0x%X", __func__,
           eventData->status);
       break;
-    case NFA_T4TNFCEE_EVT:
-    case NFA_T4TNFCEE_READ_CPLT_EVT:
-    case NFA_T4TNFCEE_WRITE_CPLT_EVT:
-    case NFA_T4TNFCEE_CLEAR_CPLT_EVT:
-      t4tNfcEe.eventHandler(connEvent, eventData);
-      break;
 
     default:
       LOG(DEBUG) << StringPrintf("%s: unknown event (%d) ????", __func__,
@@ -727,8 +717,14 @@ static jboolean nfcManager_initNativeStruc(JNIEnv* e, jobject o) {
   gCachedNfcManagerNotifyRfDiscoveryEvent =
       e->GetMethodID(cls.get(), "notifyRFDiscoveryEvent", "(Z)V");
 
-  gCachedNfcManagerNotifySeListenActivated =
-      e->GetMethodID(cls.get(), "notifySeListenActivated", "(Z)V");
+  gCachedNfcManagerNotifyEeAidSelected = e->GetMethodID(
+      cls.get(), "notifyEeAidSelected", "([BLjava/lang/String;)V");
+
+  gCachedNfcManagerNotifyEeProtocolSelected = e->GetMethodID(
+      cls.get(), "notifyEeProtocolSelected", "(ILjava/lang/String;)V");
+
+  gCachedNfcManagerNotifyEeTechSelected = e->GetMethodID(
+      cls.get(), "notifyEeTechSelected", "(ILjava/lang/String;)V");
 
   if (nfc_jni_cache_object(e, gNativeNfcTagClassName, &(nat->cached_NfcTag)) ==
       -1) {
@@ -908,6 +904,12 @@ void nfaDeviceManagementCallback(uint8_t dmEvent,
         PowerSwitch::getInstance().abort();
 
         if (!sIsDisabling && sIsNfaEnabled) {
+          if (gIsDtaEnabled == true) {
+            LOG(DEBUG) << StringPrintf("%s: DTA; unset dta flag in core stack",
+                                       __func__);
+            NFA_DisableDtamode();
+          }
+
           NFA_Disable(FALSE);
           sIsDisabling = true;
         } else {
@@ -999,12 +1001,6 @@ static jboolean nfcManager_routeAid(JNIEnv* e, jobject, jbyteArray aid,
   ScopedByteArrayRO bytes(e, aid);
   buf = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(&bytes[0]));
   bufLen = bytes.size();
-  if (NfcConfig::hasKey(NAME_DEFAULT_NDEF_NFCEE_ROUTE)) {
-    if (route == (int)NfcConfig::getUnsigned(NAME_DEFAULT_NDEF_NFCEE_ROUTE)) {
-      NativeT4tNfcee::getInstance().checkAndUpdateT4TAid(buf,
-                                                         (uint8_t*)&bufLen);
-    }
-  }
   return RoutingManager::getInstance().addAidRouting(buf, bufLen, route,
                                                      aidInfo, power);
 }
@@ -1210,11 +1206,20 @@ static void nfaSendRawVsCmdCallback(uint8_t event, uint16_t param_len,
   gNfaVsCommand.notifyOne();
 }
 
+bool isObserveModeSupportedWithoutRfDeactivation(JNIEnv* e, jobject o) {
+  ScopedLocalRef<jclass> cls(e, e->GetObjectClass(o));
+  jmethodID isSupported = e->GetMethodID(
+      cls.get(), "isObserveModeSupportedWithoutRfDeactivation", "()Z");
+  return e->CallBooleanMethod(o, isSupported);
+}
+
 static jboolean nfcManager_setObserveMode(JNIEnv* e, jobject o,
                                           jboolean enable) {
   if (isObserveModeSupported(e, o) == JNI_FALSE) {
     return false;
   }
+
+  bool needToTurnOffRadio = !isObserveModeSupportedWithoutRfDeactivation(e, o);
 
   if ((gObserveModeEnabled == enable) &&
       ((enable != JNI_FALSE) ==
@@ -1226,7 +1231,7 @@ static jboolean nfcManager_setObserveMode(JNIEnv* e, jobject o,
     return true;
   }
   bool reenbleDiscovery = false;
-  if (sRfEnabled) {
+  if (sRfEnabled && needToTurnOffRadio) {
     startRfDiscovery(false);
     reenbleDiscovery = true;
   }
@@ -1352,8 +1357,8 @@ static jint nfcManager_getLfT3tMax(JNIEnv*, jobject) {
 ** Function:        doPartialInit
 **
 ** Description:     Partial Nfc initialization based on mode set
-**	            ENABLE_MODE_TRANSPARENT : Minimum initialization to allow NFCC
-**                                          transport
+**	            ENABLE_MODE_TRANSPARENT : Minimum initialization to allow
+**                                 NFCC transport
 **	            ENABLE_MODE_EE : Minimum Initialization to allow card
 **                                 emulation operation
 **
@@ -1427,8 +1432,11 @@ static jboolean nfcManager_doInitialize(JNIEnv* e, jobject o) {
 
       NFA_Init(halFuncEntries);
 
-      if (android_nfc_nfc_read_polling_loop() || android_nfc_nfc_vendor_cmd()) {
-        NFA_RegVSCback(true, &nfaVSCallback);
+      if (gIsDtaEnabled == true) {
+        // Allows to set appl_dta_mode_flag
+        LOG(DEBUG) << StringPrintf("%s: DTA; set dta flag in core stack",
+                                   __func__);
+        NFA_EnableDtamode((tNFA_eDtaModes)NFA_DTA_APPL_MODE);
       }
 
       stat = NFA_Enable(nfaDeviceManagementCallback, nfaConnectionCallback);
@@ -1445,22 +1453,10 @@ static jboolean nfcManager_doInitialize(JNIEnv* e, jobject o) {
         nativeNfcTag_registerNdefTypeHandler();
         NfcTag::getInstance().initialize(getNative(e, o));
         HciEventManager::getInstance().initialize(getNative(e, o));
-        NativeT4tNfcee::getInstance().initialize();
-		NativeWlcManager::getInstance().initialize(getNative(e, o));
+        NativeWlcManager::getInstance().initialize(getNative(e, o));
 
         /////////////////////////////////////////////////////////////////////////////////
         // Add extra configuration here (work-arounds, etc.)
-
-        if (gIsDtaEnabled == true) {
-          uint8_t configData = 0;
-          configData = 0x01; /* Poll NFC-DEP : Highest Available Bit Rates */
-          NFA_SetConfig(NCI_PARAM_ID_BITR_NFC_DEP, sizeof(uint8_t),
-                        &configData);
-          configData = 0x0B; /* Listen NFC-DEP : Waiting Time */
-          NFA_SetConfig(NFC_PMID_WT, sizeof(uint8_t), &configData);
-          configData = 0x0F; /* Specific Parameters for NFC-DEP RF Interface */
-          NFA_SetConfig(NCI_PARAM_ID_NFC_DEP_OP, sizeof(uint8_t), &configData);
-        }
 
         struct nfc_jni_native_data* nat = getNative(e, o);
         if (nat) {
@@ -1504,6 +1500,12 @@ static jboolean nfcManager_doInitialize(JNIEnv* e, jobject o) {
       }
     }
 
+    if (gIsDtaEnabled == true) {
+      LOG(DEBUG) << StringPrintf("%s: DTA; unset dta flag in core stack",
+                                 __func__);
+      NFA_DisableDtamode();
+    }
+
     LOG(ERROR) << StringPrintf("%s: fail nfa enable; error=0x%X", __func__,
                                stat);
 
@@ -1517,6 +1519,9 @@ static jboolean nfcManager_doInitialize(JNIEnv* e, jobject o) {
 TheEnd:
   if (sIsNfaEnabled) {
     PowerSwitch::getInstance().setLevel(PowerSwitch::LOW_POWER);
+    if (android_nfc_nfc_read_polling_loop() || android_nfc_nfc_vendor_cmd()) {
+      NFA_RegVSCback(true, &nfaVSCallback);
+    }
   }
   LOG(DEBUG) << StringPrintf("%s: exit", __func__);
   return sIsNfaEnabled ? JNI_TRUE : JNI_FALSE;
@@ -1527,10 +1532,12 @@ static void nfcManager_doSetPartialInitMode(JNIEnv*, jobject, jint mode) {
 }
 
 static void nfcManager_doEnableDtaMode(JNIEnv*, jobject) {
+  LOG(DEBUG) << StringPrintf("%s: enter", __func__);
   gIsDtaEnabled = true;
 }
 
 static void nfcManager_doDisableDtaMode(JNIEnv*, jobject) {
+  LOG(DEBUG) << StringPrintf("%s: enter", __func__);
   gIsDtaEnabled = false;
 }
 
@@ -1541,7 +1548,6 @@ static void nfcManager_doFactoryReset(JNIEnv*, jobject) {
 
 static void nfcManager_doShutdown(JNIEnv*, jobject) {
   NfcAdaptation& theInstance = NfcAdaptation::GetInstance();
-  NativeT4tNfcee::getInstance().onNfccShutdown();
   theInstance.DeviceShutdown();
 }
 
@@ -1755,7 +1761,6 @@ static jboolean nfcManager_doDeinitialize(JNIEnv*, jobject) {
   }
   sIsDisabling = true;
 
-  NativeT4tNfcee::getInstance().onNfccShutdown();
   if (!recovery_option || !sIsRecovering) {
     RoutingManager::getInstance().onNfccShutdown();
   }
@@ -1764,6 +1769,13 @@ static jboolean nfcManager_doDeinitialize(JNIEnv*, jobject) {
 
   if (sIsNfaEnabled) {
     SyncEventGuard guard(sNfaDisableEvent);
+
+    if (gIsDtaEnabled == true) {
+      LOG(DEBUG) << StringPrintf("%s: DTA; unset dta flag in core stack",
+                                 __func__);
+      NFA_DisableDtamode();
+    }
+
     tNFA_STATUS stat = NFA_Disable(TRUE /* graceful */);
     if (stat == NFA_STATUS_OK) {
       LOG(DEBUG) << StringPrintf("%s: wait for completion", __func__);
@@ -2249,8 +2261,7 @@ static void nfcManager_setDiscoveryTech(JNIEnv* e, jobject o, jint pollTech,
 
   // Need listen tech routing update in routing table
   // for addition of blocking bit
-  //RoutingManager::getInstance().setEeTechRouteUpdateRequired();
-  LOG(DEBUG) << StringPrintf("%s: EeTechRouteUpdate Disbaled!", __func__);
+  RoutingManager::getInstance().setEeTechRouteUpdateRequired();
 
   nativeNfcTag_acquireRfInterfaceMutexLock();
   SyncEventGuard guard(sNfaEnableDisablePollingEvent);

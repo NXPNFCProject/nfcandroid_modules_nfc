@@ -72,7 +72,6 @@ NfcTag::NfcTag()
   memset(mTechParams, 0, sizeof(mTechParams));
   memset(mLastKovioUid, 0, NFC_KOVIO_MAX_LEN);
   memset(&mLastKovioTime, 0, sizeof(timespec));
-  memset(&mActivationParams_t, 0, sizeof(activationParams_t));
   mNfcStatsUtil = new NfcStatsUtil();
 }
 
@@ -525,7 +524,6 @@ void NfcTag::createNativeNfcTag(tNFA_ACTIVATED& activationData) {
   LOG(DEBUG) << StringPrintf("%s; mNumDiscNtf=%x", fn, mNumDiscNtf);
 
   if (!mNumDiscNtf) {
-    storeActivationParams();
     // notify NFC service about this new tag
     LOG(DEBUG) << StringPrintf("%s: try notify nfc service", fn);
     e->CallVoidMethod(mNativeData->manager,
@@ -541,23 +539,6 @@ void NfcTag::createNativeNfcTag(tNFA_ACTIVATED& activationData) {
   }
 
   LOG(DEBUG) << StringPrintf("%s: exit", fn);
-}
-
-/*******************************************************************************
-**
-** Function:        storeActivationParams
-**
-** Description:     stores tag activation parameters for backup
-**
-** Returns:         None
-**
-*******************************************************************************/
-void NfcTag::storeActivationParams() {
-  static const char fn[] = "NfcTag::storeActivationParams";
-  LOG(DEBUG) << StringPrintf("%s: Mode %d Types %d", fn, mTechParams[0].mode,
-                             mTechLibNfcTypes[0]);
-  mActivationParams_t.mTechParams = mTechParams[0].mode;
-  mActivationParams_t.mTechLibNfcTypes = mTechLibNfcTypes[0];
 }
 
 /*******************************************************************************
@@ -1220,31 +1201,6 @@ void NfcTag::calculateT1tMaxMessageSize(tNFA_ACTIVATED& activate) {
       mtT1tMaxMessageSize = 0;
       break;
   }
-}
-
-/*******************************************************************************
-**
-** Function:        isNfcForumT2T
-**
-** Description:     Whether tag is Nfc-Forum based and uses read command for
-**                  presence check.
-**
-** Returns:         True if tag is isNfcForumT2T.
-**
-*******************************************************************************/
-bool NfcTag::isNfcForumT2T() {
-  static const char fn[] = "NfcTag::isNfcForumT2T";
-  bool retval = false;
-
-  for (int i = 0; i < mNumTechList; i++) {
-    if (mTechParams[i].mode == NFC_DISCOVERY_TYPE_POLL_A) {
-      if (mTechParams[i].param.pa.sel_rsp == 0) retval = true;
-
-      break;
-    }
-  }
-  LOG(DEBUG) << StringPrintf("%s: return=%u", fn, retval);
-  return retval;
 }
 
 /*******************************************************************************

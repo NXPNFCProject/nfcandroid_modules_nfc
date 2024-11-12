@@ -52,11 +52,11 @@ public interface DeviceHost {
 
         public void onVendorSpecificEvent(int gid, int oid, byte[] payload);
 
+        public void onObserveModeStateChanged(boolean enable);
+
         public void onRfDiscoveryEvent(boolean isDiscoveryStarted);
 
-        public void onSeListenActivated(boolean isActivated);
-
-        public void onObserveModeStateChanged(boolean enable);
+        public void onSeSelected();
     }
 
     public interface TagEndpoint {
@@ -158,20 +158,6 @@ public interface DeviceHost {
     public boolean routeAid(byte[] aid, int route, int aidInfo, int power);
 
     public boolean unrouteAid(byte[] aid);
-
-    public int getT4TNfceePowerState();
-
-    public int getNdefNfceeRouteId();
-
-    public int doWriteData(byte[] fileId, byte[] data);
-
-    public byte[] doReadData(byte[] fileId);
-
-    public boolean doClearNdefData();
-
-    public boolean getNdefNfceeStatus();
-
-    public boolean isNdefNfceeEmulationSupported();
 
     public boolean commitRouting();
 

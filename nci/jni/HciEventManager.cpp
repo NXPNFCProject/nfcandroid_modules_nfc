@@ -45,10 +45,12 @@ void HciEventManager::initialize(nfc_jni_native_data* native) {
     LOG(ERROR) << "HCI registration failed; status=" << nfaStat;
   }
   sEsePipe = NfcConfig::getUnsigned(NAME_OFF_HOST_ESE_PIPE_ID, 0x16);
-  sSimPipeIds = NfcConfig::getBytes(NAME_OFF_HOST_SIM_PIPE_IDS);
-
-  if (sSimPipeIds.size() < 1) {
-    sSimPipeIds.push_back(0x0A);
+  // Backward compatibility or For vendor supporting only single sim pipe ID
+  if (!NfcConfig::hasKey(NAME_OFF_HOST_SIM_PIPE_IDS)) {
+    uint8_t simPipeId = NfcConfig::getUnsigned(NAME_OFF_HOST_SIM_PIPE_ID, 0x0A);
+    sSimPipeIds = {simPipeId};
+  } else {
+    sSimPipeIds = NfcConfig::getBytes(NAME_OFF_HOST_SIM_PIPE_IDS);
   }
 }
 

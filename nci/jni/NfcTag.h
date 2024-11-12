@@ -29,11 +29,6 @@
 #define MIN_FWI (11)
 #define MAX_FWI (14)
 
-typedef struct activationParams {
-  int mTechParams;
-  int mTechLibNfcTypes;
-} activationParams_t;
-
 class NfcTag {
   friend class NfcTagTest;
 
@@ -52,7 +47,6 @@ class NfcTag {
                                              // RF_INTF_ACTIVATED NTF
   int mNumTechList;  // current number of NFC technologies in the list
   int mNumRfDiscId;
-  activationParams_t mActivationParams_t;
 
   /*******************************************************************************
   **
@@ -201,18 +195,6 @@ class NfcTag {
   **
   *******************************************************************************/
   int getT1tMaxMessageSize();
-
-  /*******************************************************************************
-  **
-  ** Function:        isNfcForumT2T
-  **
-  ** Description:     Whether tag is Nfc-Forum based and uses read command for
-  **                  presence check.
-  **
-  ** Returns:         True if tag is isNfcForumT2T.
-  **
-  *******************************************************************************/
-  bool isNfcForumT2T();
 
   /*******************************************************************************
   **
@@ -506,17 +488,6 @@ class NfcTag {
   **
   *******************************************************************************/
   void createNativeNfcTag(tNFA_ACTIVATED& activationData);
-
-  /*******************************************************************************
-  **
-  ** Function:        storeActivationParams
-  **
-  ** Description:     stores tag activation parameters for backup
-  **
-  ** Returns:         None
-  **
-  *******************************************************************************/
-  void storeActivationParams();
 
   /*******************************************************************************
   **
