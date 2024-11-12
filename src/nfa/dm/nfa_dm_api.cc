@@ -29,7 +29,6 @@
 #include "ndef_utils.h"
 #include "nfa_api.h"
 #include "nfa_ce_int.h"
-#include "nfa_nfcee_int.h"
 #include "nfa_wlc_int.h"
 #include "nfc_int.h"
 
@@ -86,10 +85,6 @@ extern void NFA_Partial_Init(tHAL_NFC_ENTRY* p_hal_entry_tbl, uint8_t mode) {
     nfa_sys_init();
     nfa_dm_init();
     nfa_ee_init();
-    if (nfa_ee_max_ee_cfg != 0) {
-      nfa_dm_cb.get_max_ee = p_hal_entry_tbl->get_max_ee;
-      nfa_t4tnfcee_init();
-    }
   } else {
     LOG(ERROR) << StringPrintf("Unknown Mode!");
     return;
@@ -123,7 +118,6 @@ void NFA_Init(tHAL_NFC_ENTRY* p_hal_entry_tbl) {
   nfa_ee_init();
   if (nfa_ee_max_ee_cfg != 0) {
     nfa_dm_cb.get_max_ee = p_hal_entry_tbl->get_max_ee;
-    nfa_t4tnfcee_init();
     nfa_hci_init();
   }
   nfa_wlc_init();
@@ -742,11 +736,10 @@ tNFA_STATUS NFA_Select(uint8_t rf_disc_id, tNFA_NFC_PROTOCOL protocol,
       "rf_disc_id:0x%X, protocol:0x%X, rf_interface:0x%X", rf_disc_id, protocol,
       rf_interface);
 
-  if (((rf_interface == NFA_INTERFACE_ISO_DEP) &&
-       (protocol != NFA_PROTOCOL_ISO_DEP)) ||
-      ((rf_interface == NFA_INTERFACE_NFC_DEP) &&
-       (protocol != NFA_PROTOCOL_NFC_DEP))) {
-    LOG(ERROR) << StringPrintf("RF interface is not matched protocol");
+  if ((rf_interface == NFA_INTERFACE_ISO_DEP) &&
+      (protocol != NFA_PROTOCOL_ISO_DEP)) {
+    LOG(ERROR) << StringPrintf("%s; RF interface is not matched protocol",
+                               __func__);
     return (NFA_STATUS_INVALID_PARAM);
   }
 
@@ -876,12 +869,6 @@ tNFA_STATUS NFA_SendRawFrame(uint8_t* p_raw_data, uint16_t data_len,
 
   LOG(VERBOSE) << StringPrintf("data_len:%d", data_len);
 
-  /* Validate parameters */
-  if (((data_len == 0) || (p_raw_data == nullptr)) &&
-      (!(nfa_dm_cb.disc_cb.disc_state == NFA_DM_RFST_LISTEN_ACTIVE &&
-         nfa_dm_cb.disc_cb.activated_protocol == NFA_PROTOCOL_T3T)))
-    return (NFA_STATUS_INVALID_PARAM);
-
   size = NFC_HDR_SIZE + NCI_MSG_OFFSET_SIZE + NCI_DATA_HDR_SIZE + data_len;
   /* Check for integer overflow */
   if (size < data_len) {
@@ -896,7 +883,7 @@ tNFA_STATUS NFA_SendRawFrame(uint8_t* p_raw_data, uint16_t data_len,
     p_msg->len = data_len;
 
     p = (uint8_t*)(p_msg + 1) + p_msg->offset;
-    if (p_raw_data != nullptr) {
+    if ((data_len != 0) && (p_raw_data != nullptr)) {
       memcpy(p, p_raw_data, data_len);
     }
 
@@ -1246,6 +1233,21 @@ void NFA_EnableDtamode(tNFA_eDtaModes eDtaMode) {
   LOG(VERBOSE) << StringPrintf("%s: 0x%x ", __func__, eDtaMode);
   appl_dta_mode_flag = 0x01;
   nfa_dm_cb.eDtaMode = eDtaMode;
+}
+
+/*******************************************************************************
+**
+** Function:        NFA_DisableDtamode
+**
+** Description:     Disable DTA Mode
+**
+** Returns:         none:
+**
+*******************************************************************************/
+void NFA_DisableDtamode(void) {
+  LOG(VERBOSE) << StringPrintf("%s: enter", __func__);
+  appl_dta_mode_flag = 0x0;
+  nfa_dm_cb.eDtaMode = NFA_DTA_APPL_MODE;
 }
 
 /*******************************************************************************
