@@ -16,6 +16,12 @@
 
 package android.nfc;
 
+import static android.nfc.cardemulation.CardEmulation.PROTOCOL_AND_TECHNOLOGY_ROUTE_DH;
+import static android.nfc.cardemulation.CardEmulation.PROTOCOL_AND_TECHNOLOGY_ROUTE_ESE;
+import static android.nfc.cardemulation.CardEmulation.PROTOCOL_AND_TECHNOLOGY_ROUTE_UICC;
+import static android.nfc.cardemulation.CardEmulation.routeIntToString;
+
+import android.Manifest;
 import android.annotation.CallbackExecutor;
 import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
@@ -23,8 +29,14 @@ import android.annotation.NonNull;
 import android.annotation.RequiresPermission;
 import android.annotation.SuppressLint;
 import android.annotation.SystemApi;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.nfc.cardemulation.ApduServiceInfo;
+import android.nfc.cardemulation.CardEmulation;
+import android.nfc.cardemulation.CardEmulation.ProtocolAndTechnologyRoute;
 import android.os.Binder;
+import android.os.Bundle;
 import android.os.RemoteException;
 import android.os.ResultReceiver;
 import android.util.Log;
@@ -42,6 +54,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -63,32 +76,24 @@ public final class NfcOemExtension {
     private boolean mIsRegistered = false;
     private final Map<Callback, Executor> mCallbackMap = new HashMap<>();
     private final Context mContext;
-    private Executor mExecutor = null;
-    private Callback mCallback = null;
     private final Object mLock = new Object();
-	private boolean mCardEmulationActivated = false;
+    private boolean mCardEmulationActivated = false;
     private boolean mRfFieldActivated = false;
     private boolean mRfDiscoveryStarted = false;
-    private boolean mSeListenActivated = false;
 
     /**
-     * Event that Host Card Emulation is activated.
-     */
-    public static final int HCE_ACTIVATE = 1;
-    /**
-     * Event that some data is transferred in Host Card Emulation.
-     */
-    /**
-     * Mode Type for {@link #setControllerAlwaysOn(int)}.
+     * Mode Type for {@link #setControllerAlwaysOnMode(int)}.
+     * Enables the controller in default mode when NFC is disabled (existing API behavior).
      * works same as {@link NfcAdapter#setControllerAlwaysOn(boolean)}.
      * @hide
      */
     @SystemApi
     @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
     public static final int ENABLE_DEFAULT = NfcAdapter.CONTROLLER_ALWAYS_ON_MODE_DEFAULT;
-	 /**
-     * Mode Type for {@link #setControllerAlwaysOn(int)}.
-     * Opens transport to communicate with controller
+
+    /**
+     * Mode Type for {@link #setControllerAlwaysOnMode(int)}.
+     * Enables the controller in transparent mode when NFC is disabled.
      * @hide
      */
     @SystemApi
@@ -96,9 +101,8 @@ public final class NfcOemExtension {
     public static final int ENABLE_TRANSPARENT = 2;
 
     /**
-     * Mode Type for {@link #setControllerAlwaysOn(int)}.
-     * Opens transport to communicate with controller
-     * and initializes and enables the EE subsystem
+     * Mode Type for {@link #setControllerAlwaysOnMode(int)}.
+     * Enables the controller and initializes and enables the EE subsystem when NFC is disabled.
      * @hide
      */
     @SystemApi
@@ -106,8 +110,9 @@ public final class NfcOemExtension {
     public static final int ENABLE_EE = 3;
 
     /**
-     * Mode Type for {@link #setControllerAlwaysOn(int)}.
-     * Disable the Controller Always On Mode
+     * Mode Type for {@link #setControllerAlwaysOnMode(int)}.
+     * Disable the Controller Always On Mode.
+     * works same as {@link NfcAdapter#setControllerAlwaysOn(boolean)}.
      * @hide
      */
     @SystemApi
@@ -115,7 +120,7 @@ public final class NfcOemExtension {
     public static final int DISABLE = NfcAdapter.CONTROLLER_ALWAYS_ON_DISABLE;
 
     /**
-     * Possible controller modes for {@link #setControllerAlwaysOn(int)}.
+     * Possible controller modes for {@link #setControllerAlwaysOnMode(int)}.
      *
      * @hide
      */
@@ -127,6 +132,14 @@ public final class NfcOemExtension {
     })
     @Retention(RetentionPolicy.SOURCE)
     public @interface ControllerMode{}
+
+    /**
+     * Event that Host Card Emulation is activated.
+     */
+    public static final int HCE_ACTIVATE = 1;
+    /**
+     * Event that some data is transferred in Host Card Emulation.
+     */
     public static final int HCE_DATA_TRANSFERRED = 2;
     /**
      * Event that Host Card Emulation is deactivated.
@@ -166,7 +179,6 @@ public final class NfcOemExtension {
     @Retention(RetentionPolicy.SOURCE)
     public @interface StatusCode {}
 
-
     /**
      * Interface for Oem extensions for NFC.
      */
@@ -179,34 +191,6 @@ public final class NfcOemExtension {
          * @param tag Tag details
          */
         void onTagConnected(boolean connected, @NonNull Tag tag);
-
-        /**
-        * Notifies NFC is activated in listen mode.
-        *
-        * @param isActivated true, if listen mode activated, else de-activated.
-        */
-        void onCardEmulationActivated(boolean isActivated);
-
-        /**
-        * Notifies the NFC RF Field status
-        *
-        * @param isActivated true, if RF Field is ON, else RF Field is OFF.
-        */
-        void onRfFieldActivated(boolean isActivated);
-
-        /**
-        * Notifies the NFC RF discovery status
-        *
-        * @param isDiscoveryStarted true, if RF discovery started, else RF state is Idle.
-        */
-        void onRfDiscoveryStarted(boolean isDiscoveryStarted);
-
-        /**
-        * Notifies the NFC SE Listen status
-        *
-        * @param isActivated true, if SE Listen is ON, else SE Listen is OFF.
-        */
-        void onSeListenActivated(boolean isActivated);
 
         /**
          * Update the Nfc Adapter State
@@ -301,6 +285,93 @@ public final class NfcOemExtension {
          * @param action Flag indicating actions to activate, start and stop cpu boost.
          */
         void onHceEventReceived(@HostCardEmulationAction int action);
+
+        /**
+         * API to notify when reader option has been changed using
+         * {@link NfcAdapter#enableReaderOption(boolean)} by some app.
+         * @param enabled Flag indicating ReaderMode enabled/disabled
+         */
+        void onReaderOptionChanged(boolean enabled);
+
+        /**
+        * Notifies NFC is activated in listen mode.
+        * NFC Forum NCI-2.3 ch.5.2.6 specification
+        *
+        * <p>NFCC is ready to communicate with a Card reader
+        *
+        * @param isActivated true, if card emulation activated, else de-activated.
+        */
+        void onCardEmulationActivated(boolean isActivated);
+
+        /**
+        * Notifies the Remote NFC Endpoint RF Field is activated.
+        * NFC Forum NCI-2.3 ch.5.3 specification
+        *
+        * @param isActivated true, if RF Field is ON, else RF Field is OFF.
+        */
+        void onRfFieldActivated(boolean isActivated);
+
+        /**
+        * Notifies the NFC RF discovery is started or in the IDLE state.
+        * NFC Forum NCI-2.3 ch.5.2 specification
+        *
+        * @param isDiscoveryStarted true, if RF discovery started, else RF state is Idle.
+        */
+        void onRfDiscoveryStarted(boolean isDiscoveryStarted);
+
+        /**
+         * Gets the intent to find the OEM package in the OEM App market. If the consumer returns
+         * {@code null} or a timeout occurs, the intent from the first available package will be
+         * used instead.
+         *
+         * @param packages the OEM packages name stored in the tag
+         * @param intentConsumer The {@link Consumer} to be completed.
+         *                       The {@link Consumer#accept(Object)} should be called with
+         *                       the Intent required.
+         *
+         */
+        void onGetOemAppSearchIntent(@NonNull List<String> packages,
+                                     @NonNull Consumer<Intent> intentConsumer);
+
+        /**
+         * Checks if the NDEF message contains any specific OEM package executable content
+         *
+         * @param tag        the {@link android.nfc.Tag Tag}
+         * @param message NDEF Message to read from tag
+         * @param hasOemExecutableContent The {@link Consumer} to be completed. If there is
+         *                                OEM package executable content, the
+         *                                {@link Consumer#accept(Object)} should be called with
+         *                                {@link Boolean#TRUE}, otherwise call with
+         *                                {@link Boolean#FALSE}.
+         */
+        void onNdefMessage(@NonNull Tag tag, @NonNull NdefMessage message,
+                           @NonNull Consumer<Boolean> hasOemExecutableContent);
+
+        /**
+         * Callback to indicate the app chooser activity should be launched for handling CE
+         * transaction. This is invoked for example when there are more than 1 app installed that
+         * can handle the HCE transaction. OEMs can launch the Activity based
+         * on their requirement.
+         *
+         * @param selectedAid the selected AID from APDU
+         * @param services {@link ApduServiceInfo} of the service triggering the activity
+         * @param failedComponent the component failed to be resolved
+         * @param category the category of the service
+         */
+        void onLaunchHceAppChooserActivity(@NonNull String selectedAid,
+                                           @NonNull List<ApduServiceInfo> services,
+                                           @NonNull ComponentName failedComponent,
+                                           @NonNull String category);
+
+        /**
+         * Callback to indicate tap again dialog should be launched for handling HCE transaction.
+         * This is invoked for example when a CE service needs the device to unlocked before
+         * handling the transaction. OEMs can launch the Activity based on their requirement.
+         *
+         * @param service {@link ApduServiceInfo} of the service triggering the dialog
+         * @param category the category of the service
+         */
+        void onLaunchHceTapAgainDialog(@NonNull ApduServiceInfo service, @NonNull String category);
     }
 
 
@@ -311,19 +382,6 @@ public final class NfcOemExtension {
         mContext = context;
         mAdapter = adapter;
         mOemNfcExtensionCallback = new NfcOemExtensionCallback();
-    }
-
-    /**
-     * Get NdefNfcee Object to write or read data from Ndef Nfcee
-     *
-     * @return NdefNfcee
-     * @hide
-     */
-    @SystemApi
-    @NonNull
-    @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
-    public NdefNfcee getNdefNfcee() {
-      return NdefNfcee.getInstance(mAdapter);
     }
 
     /**
@@ -355,14 +413,10 @@ public final class NfcOemExtension {
             }
             mCallbackMap.put(callback, executor);
             if (!mIsRegistered) {
-                try {
+                NfcAdapter.callService(() -> {
                     NfcAdapter.sService.registerOemExtensionCallback(mOemNfcExtensionCallback);
                     mIsRegistered = true;
-                } catch (RemoteException e) {
-                    Log.w(TAG, "Failed to register oem callback");
-                    mCallbackMap.remove(callback);
-                    throw e.rethrowFromSystemServer();
-                }
+                });
             } else {
                 updateNfCState(callback, executor);
             }
@@ -376,7 +430,6 @@ public final class NfcOemExtension {
                 callback.onCardEmulationActivated(mCardEmulationActivated);
                 callback.onRfFieldActivated(mRfFieldActivated);
                 callback.onRfDiscoveryStarted(mRfDiscoveryStarted);
-                callback.onSeListenActivated(mSeListenActivated);
             });
         }
     }
@@ -408,36 +461,6 @@ public final class NfcOemExtension {
             } else {
                 mCallbackMap.remove(callback);
             }
-        }
-    }
-
-    /**
-     * Pauses NFC tag reader mode polling for a {@code timeoutInMs} millisecond.
-     * In case of {@code timeoutInMs} is zero or invalid
-     * polling will be stopped indefinitely use {@link #resumePolling() to resume the polling.
-     * @param timeoutInMs the pause polling duration in millisecond
-     */
-    @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
-    @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
-    public void pausePolling(int timeoutInMs) {
-        try {
-            NfcAdapter.sService.pausePolling(timeoutInMs);
-        } catch (RemoteException e) {
-            mAdapter.attemptDeadServiceRecovery(e);
-        }
-    }
-
-    /**
-     * Resumes default NFC tag reader mode polling for the current device state if polling is
-     * paused. Calling this while already in polling is a no-op.
-     */
-    @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
-    @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
-    public void resumePolling () {
-        try {
-            NfcAdapter.sService.resumePolling();
-        } catch (RemoteException e) {
-            mAdapter.attemptDeadServiceRecovery(e);
         }
     }
 
@@ -484,139 +507,354 @@ public final class NfcOemExtension {
             NfcAdapter.sService.fetchActiveNfceeList(), new ArrayList<String>());
     }
 
-
     /**
      * Sets NFC controller always on feature.
      * <p>This API is for the NFCC internal state management. It allows to discriminate
      * the controller function from the NFC function by keeping the NFC controller on without
      * any NFC RF enabled if necessary.
-     * <p>This call is asynchronous.
-     * Register a listener {@link NfcAdapter.ControllerAlwaysOnListener}
+     * <p>This call is asynchronous, register listener {@link NfcAdapter.ControllerAlwaysOnListener}
      * by {@link NfcAdapter#registerControllerAlwaysOnListener} to find out when the operation is
      * complete.
-     * <p>If this returns true, then either NFCC always on state has been set based on the value,
-     * or a {@link NfcAdapter.ControllerAlwaysOnListener#onControllerAlwaysOnChanged(boolean)}
-     * will be invoked to indicate the state change.
-     * If this returns false, then there is some problem that prevents an attempt to turn NFCC
-     * always on.
-     * @params mode ref {@link ControllerMode}
-     * @throws UnsupportedOperationException if FEATURE_NFC,
-     * FEATURE_NFC_HOST_CARD_EMULATION, FEATURE_NFC_HOST_CARD_EMULATION_NFCF,
-     * FEATURE_NFC_OFF_HOST_CARD_EMULATION_UICC and FEATURE_NFC_OFF_HOST_CARD_EMULATION_ESE
-     * are unavailable
-     * @return void
+     * <p> Note: This adds more always on modes on top of existing
+     * {@link NfcAdapter#setControllerAlwaysOn(boolean)} API which can be used to set the NFCC in
+     * only {@link #ENABLE_DEFAULT} and {@link #DISABLE} modes.
+     * @param mode one of {@link ControllerMode} modes
+     * @throws UnsupportedOperationException if
+     *   <li> if FEATURE_NFC, FEATURE_NFC_HOST_CARD_EMULATION, FEATURE_NFC_HOST_CARD_EMULATION_NFCF,
+     *   FEATURE_NFC_OFF_HOST_CARD_EMULATION_UICC and FEATURE_NFC_OFF_HOST_CARD_EMULATION_ESE
+     *   are unavailable </li>
+     *   <li> if the feature is unavailable @see NfcAdapter#isNfcControllerAlwaysOnSupported() </li>
      * @hide
+     * @see NfcAdapter#setControllerAlwaysOn(boolean)
      */
     @SystemApi
     @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
     @RequiresPermission(android.Manifest.permission.NFC_SET_CONTROLLER_ALWAYS_ON)
-    public boolean setControllerAlwaysOn(@ControllerMode int mode) {
+    public void setControllerAlwaysOnMode(@ControllerMode int mode) {
         if (!NfcAdapter.sHasNfcFeature && !NfcAdapter.sHasCeFeature) {
             throw new UnsupportedOperationException();
         }
-        try {
-            return NfcAdapter.sService.setControllerAlwaysOn(mode);
-        } catch (RemoteException e) {
-            mAdapter.attemptDeadServiceRecovery(e);
-            // Try one more time
-            if (NfcAdapter.sService == null) {
-                Log.e(TAG, "Failed to recover NFC Service.");
-                return false;
-            }
-            try {
-                return NfcAdapter.sService.setControllerAlwaysOn(mode);
-            } catch (RemoteException ee) {
-                Log.e(TAG, "Failed to recover NFC Service.");
-            }
-            return false;
-        }
+        NfcAdapter.callService(() -> NfcAdapter.sService.setControllerAlwaysOn(mode));
+    }
+
+    /**
+     * Triggers NFC initialization. If OEM extension is registered
+     * (indicated via `enable_oem_extension` NFC overlay), the NFC stack initialization at bootup
+     * is delayed until the OEM extension app triggers the initialization via this call.
+     */
+    @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
+    @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
+    public void triggerInitialization() {
+        NfcAdapter.callService(() -> NfcAdapter.sService.triggerInitialization());
+    }
+
+    /**
+     * Gets the last user toggle status.
+     * @return true if NFC is set to ON, false otherwise
+     */
+    @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
+    @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
+    public boolean hasUserEnabledNfc() {
+        return NfcAdapter.callServiceReturn(() -> NfcAdapter.sService.getSettingStatus(), false);
+    }
+
+    /**
+     * Checks if the tag is present or not.
+     * @return true if the tag is present, false otherwise
+     */
+    @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
+    @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
+    public boolean isTagPresent() {
+        return NfcAdapter.callServiceReturn(() -> NfcAdapter.sService.isTagPresent(), false);
+    }
+
+    /**
+     * Pauses NFC tag reader mode polling for a {@code timeoutInMs} millisecond. If polling must be
+     * resumed before timeout, use {@link #resumePolling()}.
+     * @param timeoutInMs the pause polling duration in millisecond
+     */
+    @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
+    @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
+    public void pausePolling(int timeoutInMs) {
+        NfcAdapter.callService(() -> NfcAdapter.sService.pausePolling(timeoutInMs));
+    }
+
+    /**
+     * Resumes default NFC tag reader mode polling for the current device state if polling is
+     * paused. Calling this while polling is not paused is a no-op.
+     */
+    @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
+    @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
+    public void resumePolling() {
+        NfcAdapter.callService(() -> NfcAdapter.sService.resumePolling());
+    }
+
+    /**
+     * Set whether to enable auto routing change or not (enabled by default).
+     * If disabled, routing targets are limited to a single off-host destination.
+     *
+     * @param state status of auto routing change, true if enable, otherwise false
+     */
+    @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
+    @RequiresPermission(Manifest.permission.WRITE_SECURE_SETTINGS)
+    public void setAutoChangeEnabled(boolean state) {
+        NfcAdapter.callService(() ->
+                NfcAdapter.sCardEmulationService.setAutoChangeStatus(state));
+    }
+
+    /**
+     * Check if auto routing change is enabled or not.
+     *
+     * @return true if enabled, otherwise false
+     */
+    @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
+    @RequiresPermission(Manifest.permission.WRITE_SECURE_SETTINGS)
+    public boolean isAutoChangeEnabled() {
+        return NfcAdapter.callServiceReturn(() ->
+                NfcAdapter.sCardEmulationService.isAutoChangeEnabled(), false);
+    }
+
+    /**
+     * Get current routing status
+     *
+     * @return {@link RoutingStatus} indicating the default route, default ISO-DEP
+     * route and default off-host route.
+     */
+    @NonNull
+    @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
+    @RequiresPermission(Manifest.permission.WRITE_SECURE_SETTINGS)
+    public RoutingStatus getRoutingStatus() {
+        List<String> status = NfcAdapter.callServiceReturn(() ->
+                NfcAdapter.sCardEmulationService.getRoutingStatus(), new ArrayList<>());
+        return new RoutingStatus(routeStringToInt(status.get(0)),
+                routeStringToInt(status.get(1)),
+                routeStringToInt(status.get(2)));
+    }
+
+    /**
+     * Overwrites NFC controller routing table, which includes Protocol Route, Technology Route,
+     * and Empty AID Route.
+     *
+     * The parameter set to
+     * {@link ProtocolAndTechnologyRoute#PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET}
+     * can be used to keep current values for that entry. At least one route should be overridden
+     * when calling this API, otherwise throw {@link IllegalArgumentException}.
+     *
+     * @param protocol ISO-DEP route destination, where the possible inputs are defined in
+     *                 {@link ProtocolAndTechnologyRoute}.
+     * @param technology Tech-A, Tech-B and Tech-F route destination, where the possible inputs
+     *                   are defined in
+     *                   {@link ProtocolAndTechnologyRoute}
+     * @param emptyAid Zero-length AID route destination, where the possible inputs are defined in
+     *                 {@link ProtocolAndTechnologyRoute}
+     */
+    @RequiresPermission(Manifest.permission.WRITE_SECURE_SETTINGS)
+    @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
+    public void overwriteRoutingTable(
+            @CardEmulation.ProtocolAndTechnologyRoute int protocol,
+            @CardEmulation.ProtocolAndTechnologyRoute int technology,
+            @CardEmulation.ProtocolAndTechnologyRoute int emptyAid) {
+
+        String protocolRoute = routeIntToString(protocol);
+        String technologyRoute = routeIntToString(technology);
+        String emptyAidRoute = routeIntToString(emptyAid);
+
+        NfcAdapter.callService(() ->
+                NfcAdapter.sCardEmulationService.overwriteRoutingTable(
+                        mContext.getUser().getIdentifier(),
+                        emptyAidRoute,
+                        protocolRoute,
+                        technologyRoute
+                ));
     }
 
     private final class NfcOemExtensionCallback extends INfcOemExtensionCallback.Stub {
+
         @Override
         public void onTagConnected(boolean connected, Tag tag) throws RemoteException {
-            synchronized (mLock) {
-                if (mCallback == null || mExecutor == null) {
-                    return;
+            mCallbackMap.forEach((cb, ex) ->
+                    handleVoid2ArgCallback(connected, tag, cb::onTagConnected, ex));
+        }
+
+        @Override
+        public void onCardEmulationActivated(boolean isActivated) throws RemoteException {
+            mCardEmulationActivated = isActivated;
+            mCallbackMap.forEach((cb, ex) ->
+                    handleVoidCallback(isActivated, cb::onCardEmulationActivated, ex));
+        }
+
+        @Override
+        public void onRfFieldActivated(boolean isActivated) throws RemoteException {
+            mRfFieldActivated = isActivated;
+            mCallbackMap.forEach((cb, ex) ->
+                    handleVoidCallback(isActivated, cb::onRfFieldActivated, ex));
+        }
+
+        @Override
+        public void onRfDiscoveryStarted(boolean isDiscoveryStarted) throws RemoteException {
+            mRfDiscoveryStarted = isDiscoveryStarted;
+            mCallbackMap.forEach((cb, ex) ->
+                    handleVoidCallback(isDiscoveryStarted, cb::onRfDiscoveryStarted, ex));
+        }
+
+        @Override
+        public void onStateUpdated(int state) throws RemoteException {
+            mCallbackMap.forEach((cb, ex) ->
+                    handleVoidCallback(state, cb::onStateUpdated, ex));
+        }
+
+        @Override
+        public void onApplyRouting(ResultReceiver isSkipped) throws RemoteException {
+            mCallbackMap.forEach((cb, ex) ->
+                    handleVoidCallback(
+                        new ReceiverWrapper<>(isSkipped), cb::onApplyRouting, ex));
+        }
+        @Override
+        public void onNdefRead(ResultReceiver isSkipped) throws RemoteException {
+            mCallbackMap.forEach((cb, ex) ->
+                    handleVoidCallback(
+                        new ReceiverWrapper<>(isSkipped), cb::onNdefRead, ex));
+        }
+        @Override
+        public void onEnable(ResultReceiver isAllowed) throws RemoteException {
+            mCallbackMap.forEach((cb, ex) ->
+                    handleVoidCallback(
+                        new ReceiverWrapper<>(isAllowed), cb::onEnable, ex));
+        }
+        @Override
+        public void onDisable(ResultReceiver isAllowed) throws RemoteException {
+            mCallbackMap.forEach((cb, ex) ->
+                    handleVoidCallback(
+                        new ReceiverWrapper<>(isAllowed), cb::onDisable, ex));
+        }
+        @Override
+        public void onBootStarted() throws RemoteException {
+            mCallbackMap.forEach((cb, ex) ->
+                    handleVoidCallback(null, (Object input) -> cb.onBootStarted(), ex));
+        }
+        @Override
+        public void onEnableStarted() throws RemoteException {
+            mCallbackMap.forEach((cb, ex) ->
+                    handleVoidCallback(null, (Object input) -> cb.onEnableStarted(), ex));
+        }
+        @Override
+        public void onDisableStarted() throws RemoteException {
+            mCallbackMap.forEach((cb, ex) ->
+                    handleVoidCallback(null, (Object input) -> cb.onDisableStarted(), ex));
+        }
+        @Override
+        public void onBootFinished(int status) throws RemoteException {
+            mCallbackMap.forEach((cb, ex) ->
+                    handleVoidCallback(status, cb::onBootFinished, ex));
+        }
+        @Override
+        public void onEnableFinished(int status) throws RemoteException {
+            mCallbackMap.forEach((cb, ex) ->
+                    handleVoidCallback(status, cb::onEnableFinished, ex));
+        }
+        @Override
+        public void onDisableFinished(int status) throws RemoteException {
+            mCallbackMap.forEach((cb, ex) ->
+                    handleVoidCallback(status, cb::onDisableFinished, ex));
+        }
+        @Override
+        public void onTagDispatch(ResultReceiver isSkipped) throws RemoteException {
+            mCallbackMap.forEach((cb, ex) ->
+                    handleVoidCallback(
+                        new ReceiverWrapper<>(isSkipped), cb::onTagDispatch, ex));
+        }
+        @Override
+        public void onRoutingChanged() throws RemoteException {
+            mCallbackMap.forEach((cb, ex) ->
+                    handleVoidCallback(null, (Object input) -> cb.onRoutingChanged(), ex));
+        }
+        @Override
+        public void onHceEventReceived(int action) throws RemoteException {
+            mCallbackMap.forEach((cb, ex) ->
+                    handleVoidCallback(action, cb::onHceEventReceived, ex));
+        }
+
+        @Override
+        public void onReaderOptionChanged(boolean enabled) throws RemoteException {
+            mCallbackMap.forEach((cb, ex) ->
+                    handleVoidCallback(enabled, cb::onReaderOptionChanged, ex));
+        }
+
+        @Override
+        public void onGetOemAppSearchIntent(List<String> packages, ResultReceiver intentConsumer)
+                throws RemoteException {
+            mCallbackMap.forEach((cb, ex) ->
+                    handleVoid2ArgCallback(packages, new ReceiverWrapper<>(intentConsumer),
+                            cb::onGetOemAppSearchIntent, ex));
+        }
+
+        @Override
+        public void onNdefMessage(Tag tag, NdefMessage message,
+                                  ResultReceiver hasOemExecutableContent) throws RemoteException {
+            mCallbackMap.forEach((cb, ex) -> {
+                synchronized (mLock) {
+                    final long identity = Binder.clearCallingIdentity();
+                    try {
+                        ex.execute(() -> cb.onNdefMessage(
+                                tag, message, new ReceiverWrapper<>(hasOemExecutableContent)));
+                    } catch (RuntimeException exception) {
+                        throw exception;
+                    } finally {
+                        Binder.restoreCallingIdentity(identity);
+                    }
                 }
+            });
+        }
+
+        @Override
+        public void onLaunchHceAppChooserActivity(String selectedAid,
+                                                  List<ApduServiceInfo> services,
+                                                  ComponentName failedComponent, String category)
+                throws RemoteException {
+            mCallbackMap.forEach((cb, ex) -> {
+                synchronized (mLock) {
+                    final long identity = Binder.clearCallingIdentity();
+                    try {
+                        ex.execute(() -> cb.onLaunchHceAppChooserActivity(
+                                selectedAid, services, failedComponent, category));
+                    } catch (RuntimeException exception) {
+                        throw exception;
+                    } finally {
+                        Binder.restoreCallingIdentity(identity);
+                    }
+                }
+            });
+        }
+
+        @Override
+        public void onLaunchHceTapAgainActivity(ApduServiceInfo service, String category)
+                throws RemoteException {
+            mCallbackMap.forEach((cb, ex) ->
+                    handleVoid2ArgCallback(service, category, cb::onLaunchHceTapAgainDialog, ex));
+        }
+
+        private <T> void handleVoidCallback(
+                T input, Consumer<T> callbackMethod, Executor executor) {
+            synchronized (mLock) {
                 final long identity = Binder.clearCallingIdentity();
                 try {
-                    mExecutor.execute(() -> mCallback.onTagConnected(connected, tag));
+                    executor.execute(() -> callbackMethod.accept(input));
+                } catch (RuntimeException ex) {
+                    throw ex;
                 } finally {
                     Binder.restoreCallingIdentity(identity);
                 }
             }
         }
-        @Override
-        public void onStateUpdated(int state) throws RemoteException {
-            handleVoidCallback(state, mCallback::onStateUpdated);
-        }
-        @Override
-        public void onApplyRouting(ResultReceiver isSkipped) throws RemoteException {
-            handleVoidCallback(
-                    new ReceiverWrapper(isSkipped), mCallback::onApplyRouting);
-        }
-        @Override
-        public void onNdefRead(ResultReceiver isSkipped) throws RemoteException {
-            handleVoidCallback(
-                    new ReceiverWrapper(isSkipped), mCallback::onNdefRead);
-        }
-        @Override
-        public void onEnable(ResultReceiver isAllowed) throws RemoteException {
-            handleVoidCallback(
-                    new ReceiverWrapper(isAllowed), mCallback::onEnable);
-        }
-        @Override
-        public void onDisable(ResultReceiver isAllowed) throws RemoteException {
-            handleVoidCallback(
-                    new ReceiverWrapper(isAllowed), mCallback::onDisable);
-        }
-        @Override
-        public void onBootStarted() throws RemoteException {
-            handleVoidCallback(null, (Object input) -> mCallback.onBootStarted());
-        }
-        @Override
-        public void onEnableStarted() throws RemoteException {
-            handleVoidCallback(null, (Object input) -> mCallback.onEnableStarted());
-        }
-        @Override
-        public void onDisableStarted() throws RemoteException {
-            handleVoidCallback(null, (Object input) -> mCallback.onDisableStarted());
-        }
-        @Override
-        public void onBootFinished(int status) throws RemoteException {
-            handleVoidCallback(status, mCallback::onBootFinished);
-        }
-        @Override
-        public void onEnableFinished(int status) throws RemoteException {
-            handleVoidCallback(status, mCallback::onEnableFinished);
-        }
-        @Override
-        public void onDisableFinished(int status) throws RemoteException {
-            handleVoidCallback(status, mCallback::onDisableFinished);
-        }
-        @Override
-        public void onTagDispatch(ResultReceiver isSkipped) throws RemoteException {
-            handleVoidCallback(
-                    new ReceiverWrapper(isSkipped), mCallback::onTagDispatch);
-        }
-        @Override
-        public void onRoutingChanged() throws RemoteException {
-            handleVoidCallback(null, (Object input) -> mCallback.onRoutingChanged());
-        }
-        @Override
-        public void onHceEventReceived(int action) throws RemoteException {
-            handleVoidCallback(action, mCallback::onHceEventReceived);
-        }
 
-        private <T> void handleVoidCallback(T input, Consumer<T> callbackMethod) {
+        private <T1, T2> void handleVoid2ArgCallback(
+                T1 input1, T2 input2, BiConsumer<T1, T2> callbackMethod, Executor executor) {
             synchronized (mLock) {
-                if (mCallback == null || mExecutor == null) {
-                    return;
-                }
                 final long identity = Binder.clearCallingIdentity();
                 try {
-                    mExecutor.execute(() -> callbackMethod.accept(input));
+                    executor.execute(() -> callbackMethod.accept(input1, input2));
+                } catch (RuntimeException ex) {
+                    throw ex;
                 } finally {
                     Binder.restoreCallingIdentity(identity);
                 }
@@ -626,17 +864,12 @@ public final class NfcOemExtension {
         private <S, T> S handleNonVoidCallbackWithInput(
                 S defaultValue, T input, Function<T, S> callbackMethod) throws RemoteException {
             synchronized (mLock) {
-                if (mCallback == null) {
-                    return defaultValue;
-                }
                 final long identity = Binder.clearCallingIdentity();
                 S result = defaultValue;
                 try {
                     ExecutorService executor = Executors.newSingleThreadExecutor();
-                    FutureTask<S> futureTask = new FutureTask<>(
-                            () -> callbackMethod.apply(input)
-                    );
-                    executor.submit(futureTask);
+                    FutureTask<S> futureTask = new FutureTask<>(() -> callbackMethod.apply(input));
+                    var unused = executor.submit(futureTask);
                     try {
                         result = futureTask.get(
                                 OEM_EXTENSION_RESPONSE_THRESHOLD_MS, TimeUnit.MILLISECONDS);
@@ -658,17 +891,12 @@ public final class NfcOemExtension {
         private <T> T handleNonVoidCallbackWithoutInput(T defaultValue, Supplier<T> callbackMethod)
                 throws RemoteException {
             synchronized (mLock) {
-                if (mCallback == null) {
-                    return defaultValue;
-                }
                 final long identity = Binder.clearCallingIdentity();
                 T result = defaultValue;
                 try {
                     ExecutorService executor = Executors.newSingleThreadExecutor();
-                    FutureTask<T> futureTask = new FutureTask<>(
-                            callbackMethod::get
-                    );
-                    executor.submit(futureTask);
+                    FutureTask<T> futureTask = new FutureTask<>(callbackMethod::get);
+                    var unused = executor.submit(futureTask);
                     try {
                         result = futureTask.get(
                                 OEM_EXTENSION_RESPONSE_THRESHOLD_MS, TimeUnit.MILLISECONDS);
@@ -686,81 +914,18 @@ public final class NfcOemExtension {
                 return result;
             }
         }
-
-	   @Override
-        public void onCardEmulationActivated(boolean isActivated) throws RemoteException {
-            mCardEmulationActivated = isActivated;
-            synchronized (mLock) {
-                final long identity = Binder.clearCallingIdentity();
-                try {
-                    for (Callback callback : mCallbackMap.keySet()) {
-                        Executor executor = mCallbackMap.get(callback);
-                        executor.execute(() -> callback.onCardEmulationActivated(isActivated));
-                    }
-                } catch (RuntimeException ex) {
-                    throw ex;
-                } finally {
-                    Binder.restoreCallingIdentity(identity);
-                }
-            }
-        }
-
-        @Override
-        public void onRfFieldActivated(boolean isActivated) throws RemoteException {
-            mRfFieldActivated = isActivated;
-            synchronized (mLock) {
-                final long identity = Binder.clearCallingIdentity();
-                try {
-                    for (Callback callback : mCallbackMap.keySet()) {
-                        Executor executor = mCallbackMap.get(callback);
-                        executor.execute(() -> callback.onRfFieldActivated(isActivated));
-                    }
-                } catch (RuntimeException ex) {
-                    throw ex;
-                } finally {
-                    Binder.restoreCallingIdentity(identity);
-                }
-            }
-        }
-
-        @Override
-        public void onRfDiscoveryStarted(boolean isDiscoveryStarted) throws RemoteException {
-            mRfDiscoveryStarted = isDiscoveryStarted;
-            synchronized (mLock) {
-                final long identity = Binder.clearCallingIdentity();
-                try {
-                    for (Callback callback : mCallbackMap.keySet()) {
-                        Executor executor = mCallbackMap.get(callback);
-                        executor.execute(() -> callback.onRfDiscoveryStarted(isDiscoveryStarted));
-                    }
-                } catch (RuntimeException ex) {
-                    throw ex;
-                } finally {
-                    Binder.restoreCallingIdentity(identity);
-                }
-            }
-        }
-
-        @Override
-        public void onSeListenActivated(boolean isActivated) throws RemoteException {
-            mSeListenActivated = isActivated;
-            synchronized (mLock) {
-                final long identity = Binder.clearCallingIdentity();
-                try {
-                    for (Callback callback : mCallbackMap.keySet()) {
-                        Executor executor = mCallbackMap.get(callback);
-                        executor.execute(() -> callback.onSeListenActivated(isActivated));
-                    }
-                } catch (RuntimeException ex) {
-                    throw ex;
-                } finally {
-                    Binder.restoreCallingIdentity(identity);
-                }
-            }
-        }
     }
 
-    private class ReceiverWrapper implements Consumer<Boolean> {
+    private @CardEmulation.ProtocolAndTechnologyRoute int routeStringToInt(String route) {
+        return switch (route) {
+            case "DH" -> PROTOCOL_AND_TECHNOLOGY_ROUTE_DH;
+            case "eSE" -> PROTOCOL_AND_TECHNOLOGY_ROUTE_ESE;
+            case "SIM" -> PROTOCOL_AND_TECHNOLOGY_ROUTE_UICC;
+            default -> throw new IllegalStateException("Unexpected value: " + route);
+        };
+    }
+
+    private class ReceiverWrapper<T> implements Consumer<T> {
         private final ResultReceiver mResultReceiver;
 
         ReceiverWrapper(ResultReceiver resultReceiver) {
@@ -768,12 +933,19 @@ public final class NfcOemExtension {
         }
 
         @Override
-        public void accept(Boolean result) {
-            mResultReceiver.send(result ? 1 : 0, null);
+        public void accept(T result) {
+            if (result instanceof Boolean) {
+                mResultReceiver.send((Boolean) result ? 1 : 0, null);
+            } else if (result instanceof Intent) {
+                Bundle bundle = new Bundle();
+                bundle.putParcelable("intent", (Intent) result);
+                mResultReceiver.send(0, bundle);
+            }
+
         }
 
         @Override
-        public Consumer<Boolean> andThen(Consumer<? super Boolean> after) {
+        public Consumer<T> andThen(Consumer<? super T> after) {
             return Consumer.super.andThen(after);
         }
     }
