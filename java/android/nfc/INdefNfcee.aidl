@@ -22,9 +22,9 @@ package android.nfc;
  * @hide
  */
 interface  INdefNfcee {
-    int doWriteData(in byte[] fileId, in byte[] data);
-    byte[] doReadData(in byte[] fileId);
+    int doWriteData(in int fileId, in byte[] data);
+    byte[] doReadData(in int fileId);
     boolean doClearNdefData();
-    boolean getNdefNfceeStatus();
+    boolean isNdefOperationOnGoing();
     boolean isNdefNfceeEmulationSupported();
 }
