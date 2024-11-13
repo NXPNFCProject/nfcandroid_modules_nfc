@@ -63,10 +63,11 @@ tNFA_STATUS NFA_T4tNfcEeWrite(uint8_t* p_fileId, uint8_t* p_data, uint32_t len);
 **
 ** Function         NFA_T4tNfcEeRead
 **
-** Description      Read T4T message from NFCC area.of given file id
+** Description      Read T4T message from NFCC area.of given file id.
 **                  If file ID is of NDEF, perform the NDEF detection
-**                  procedure and read the NDEF tag data using the appropriate method
-**                  for NDEF EE. If File ID is Not NDEF then reads proprietary way
+**                  procedure and read the NDEF tag data using the appropriate
+**                  method for NDEF EE. If File ID is Not NDEF then reads
+**                  proprietary way
 **
 ** Returns:
 **                  NFA_STATUS_OK if successfully initiated

@@ -52,9 +52,8 @@ bit pos 5 = Screen Off lock
 
 #define T4T_NFCEE_READ_ALLOWED 0x00
 #define T4T_NFCEE_WRITE_NOT_ALLOWED 0xFF
-#define T4T_NFCEE_READ_FAILED_BYTE 0xFF
 
-/*Staus codes*/
+/*Status codes*/
 #define NFA_T4T_STATUS_INVALID_FILE_ID 0x05
 
 typedef struct {
@@ -130,13 +129,13 @@ typedef enum {
 typedef struct {
   tNFA_STATUS status;
   tNFA_T4TNFCEE_STATE t4tnfcee_state; /* T4T NFCEE state */
-  tNFA_T4TNFCEE_OP cur_op; /* Current operation */
-  tNFA_T4TNFCEE_RW_STATE rw_state; /* Read Write state */
-  tNFA_T4TNFCEE_MSG* p_pending_msg; /* Pending command */
-  uint8_t* p_dataBuf; /* Data buffer */
-  uint16_t cur_fileId; /* Current FileId */
-  uint16_t rd_offset; /* current read-offset of incoming NDEF data  */
-  uint32_t dataLen; /*length of the data*/
+  tNFA_T4TNFCEE_OP cur_op;            /* Current operation */
+  tNFA_T4TNFCEE_RW_STATE rw_state;    /* Read Write state */
+  tNFA_T4TNFCEE_MSG* p_pending_msg;   /* Pending command */
+  uint8_t* p_dataBuf;                 /* Data buffer */
+  uint16_t cur_fileId;                /* Current FileId */
+  uint16_t rd_offset;        /* current read-offset of incoming NDEF data  */
+  uint32_t dataLen;          /*length of the data*/
   bool ndefEmulationSupport; /* NDEF emulation support */
   uint8_t connId;            /* NDEF NFCEE CONN ID */
 } tNFA_T4TNFCEE_CB;
