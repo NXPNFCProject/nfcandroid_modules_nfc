@@ -37,4 +37,5 @@ extern jmethodID gCachedNfcManagerNotifyEeTechSelected;
 
 extern const char* gNativeNfcTagClassName;
 extern const char* gNativeNfcManagerClassName;
+extern const char* gNativeT4tNfceeClassName;
 }  // namespace android

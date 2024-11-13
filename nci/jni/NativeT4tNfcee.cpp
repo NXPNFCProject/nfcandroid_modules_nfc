@@ -116,7 +116,7 @@ void NativeT4tNfcee::onNfccShutdown() {
 jboolean NativeT4tNfcee::t4tClearData(JNIEnv* e, jobject o) {
   LOG(DEBUG) << StringPrintf("%s:Enter: ", __func__);
 
-  /*Local variable Initalization*/
+  /*Local variable Initialization*/
   uint8_t pFileId[] = {0xE1, 0x04};
   jbyteArray fileIdArray = e->NewByteArray(sizeof(pFileId));
   e->SetByteArrayRegion(fileIdArray, 0, sizeof(pFileId), (jbyte*)pFileId);
@@ -129,8 +129,6 @@ jboolean NativeT4tNfcee::t4tClearData(JNIEnv* e, jobject o) {
   switch (t4tNfceeStatus) {
     case STATUS_SUCCESS:
       /*NFC is ON*/
-    case ERROR_NFC_NOT_ON:
-      /*NFC is OFF*/
       clear_status = performT4tClearData(pFileId);
       break;
     default:
@@ -205,7 +203,7 @@ jboolean NativeT4tNfcee::getT4tStatus(JNIEnv* e, jobject o) {
 **
 ** Returns:         boolean : Indicates whether T4T NDEF NFCEE emulation is
 **                            supported or not
-**                  Return "True" emulation is supprted. else "False"
+**                  Return "True" emulation is supported. else "False"
 **
 *******************************************************************************/
 jboolean NativeT4tNfcee::isT4tNdefNfceeEmulationSupported(JNIEnv* e,
@@ -339,17 +337,15 @@ jbyteArray NativeT4tNfcee::t4tReadData(JNIEnv* e, jobject object,
       e->SetByteArrayRegion(result.get(), 0, sRxDataBuffer.size(),
                             (const jbyte*)sRxDataBuffer.data());
     } else {
-      char data[1] = {(char)T4T_NFCEE_READ_FAILED_BYTE};
-      result.reset(e->NewByteArray(0x01));
-      e->SetByteArrayRegion(result.get(), 0, 0x01, (jbyte*)data);
+      result.reset(e->NewByteArray(0x00));
+      e->SetByteArrayRegion(result.get(), 0, 0x00, (jbyte*){});
       LOG(ERROR) << StringPrintf("%s: Failed to allocate java byte array",
                                  __func__);
     }
     sRxDataBuffer.clear();
   } else if (mT4tOpStatus == NFA_T4T_STATUS_INVALID_FILE_ID) {
-    char data[1] = {(char)T4T_NFCEE_READ_FAILED_BYTE};
-    result.reset(e->NewByteArray(0x01));
-    e->SetByteArrayRegion(result.get(), 0, 0x01, (jbyte*)data);
+    result.reset(e->NewByteArray(0x00));
+    e->SetByteArrayRegion(result.get(), 0, 0x00, (jbyte*){});
   }
   /*Close connection and start discovery*/
   cleanup();

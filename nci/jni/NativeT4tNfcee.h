@@ -23,7 +23,6 @@
 #include "NfcJniUtil.h"
 #include "SyncEvent.h"
 #include "nfa_api.h"
-#define t4tNfcEe (NativeT4tNfcee::getInstance())
 
 typedef enum { OP_READ = 0, OP_WRITE, OP_CLEAR } T4TNFCEE_OPERATIONS_t;
 

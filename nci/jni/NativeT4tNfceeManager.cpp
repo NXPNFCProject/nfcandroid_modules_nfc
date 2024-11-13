@@ -41,11 +41,11 @@ namespace android {
 jint t4tNfceeManager_doClearNdefData(JNIEnv* e, jobject o) {
   LOG(DEBUG) << StringPrintf("%s: enter", __func__);
 
-  return t4tNfcEe.t4tClearData(e, o);
+  return NativeT4tNfcee::getInstance().t4tClearData(e, o);
 }
 /*******************************************************************************
 **
-** Function:        t4tNfceeManager_getNdefNfceeStatus
+** Function:        t4tNfceeManager_isNdefOperationOnGoing
 **
 ** Description:     This API will get NDEF NFCEE status.
 **
@@ -54,10 +54,10 @@ jint t4tNfceeManager_doClearNdefData(JNIEnv* e, jobject o) {
 **                  Return "True" when operation is in progress. else "False"
 **
 *******************************************************************************/
-jboolean t4tNfceeManager_getNdefNfceeStatus(JNIEnv* e, jobject o) {
+jboolean t4tNfceeManager_isNdefOperationOnGoing(JNIEnv* e, jobject o) {
   LOG(DEBUG) << StringPrintf("%s: enter", __func__);
 
-  return t4tNfcEe.getT4tStatus(e, o);
+  return NativeT4tNfcee::getInstance().getT4tStatus(e, o);
 }
 /*******************************************************************************
 **
@@ -74,7 +74,7 @@ jboolean t4tNfceeManager_getNdefNfceeStatus(JNIEnv* e, jobject o) {
 jboolean t4tNfceeManager_isNdefNfceeEmulationSupported(JNIEnv* e, jobject o) {
   LOG(DEBUG) << StringPrintf("%s: enter", __func__);
 
-  return t4tNfcEe.isT4tNdefNfceeEmulationSupported(e, o);
+  return NativeT4tNfcee::getInstance().isT4tNdefNfceeEmulationSupported(e, o);
 }
 /*******************************************************************************
  **
@@ -91,7 +91,7 @@ jint t4tNfceeManager_doWriteData(JNIEnv* e, jobject o, jbyteArray fileId,
                                  jbyteArray data) {
   LOG(DEBUG) << StringPrintf("%s: enter", __func__);
 
-  return t4tNfcEe.t4tWriteData(e, o, fileId, data);
+  return NativeT4tNfcee::getInstance().t4tWriteData(e, o, fileId, data);
 }
 /*******************************************************************************
 **
@@ -109,7 +109,7 @@ jint t4tNfceeManager_doWriteData(JNIEnv* e, jobject o, jbyteArray fileId,
 *******************************************************************************/
 jbyteArray t4tNfceeManager_doReadData(JNIEnv* e, jobject o, jbyteArray fileId) {
   LOG(DEBUG) << StringPrintf("%s: enter", __func__);
-  return t4tNfcEe.t4tReadData(e, o, fileId);
+  return NativeT4tNfcee::getInstance().t4tReadData(e, o, fileId);
 }
 /*******************************************************************************
 **
@@ -147,7 +147,8 @@ static JNINativeMethod gMethods[] = {
     {"doWriteData", "([B[B)I", (void*)t4tNfceeManager_doWriteData},
     {"doReadData", "([B)[B", (void*)t4tNfceeManager_doReadData},
     {"doClearNdefData", "()Z", (void*)t4tNfceeManager_doClearNdefData},
-    {"getNdefNfceeStatus", "()Z", (void*)t4tNfceeManager_getNdefNfceeStatus},
+    {"isNdefOperationOnGoing", "()Z",
+     (void*)t4tNfceeManager_isNdefOperationOnGoing},
     {"isNdefNfceeEmulationSupported", "()Z",
      (void*)t4tNfceeManager_isNdefNfceeEmulationSupported},
     {"getT4TNfceePowerState", "()I",
