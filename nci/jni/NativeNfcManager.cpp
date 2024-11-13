@@ -1439,6 +1439,10 @@ static jboolean nfcManager_doInitialize(JNIEnv* e, jobject o) {
         NFA_EnableDtamode((tNFA_eDtaModes)NFA_DTA_APPL_MODE);
       }
 
+      if (android_nfc_nfc_read_polling_loop() || android_nfc_nfc_vendor_cmd()) {
+        NFA_RegVSCback(true, &nfaVSCallback);
+      }
+
       stat = NFA_Enable(nfaDeviceManagementCallback, nfaConnectionCallback);
       if (stat == NFA_STATUS_OK) {
         sNfaEnableEvent.wait();  // wait for NFA command to finish
@@ -1519,9 +1523,6 @@ static jboolean nfcManager_doInitialize(JNIEnv* e, jobject o) {
 TheEnd:
   if (sIsNfaEnabled) {
     PowerSwitch::getInstance().setLevel(PowerSwitch::LOW_POWER);
-    if (android_nfc_nfc_read_polling_loop() || android_nfc_nfc_vendor_cmd()) {
-      NFA_RegVSCback(true, &nfaVSCallback);
-    }
   }
   LOG(DEBUG) << StringPrintf("%s: exit", __func__);
   return sIsNfaEnabled ? JNI_TRUE : JNI_FALSE;
@@ -2261,7 +2262,8 @@ static void nfcManager_setDiscoveryTech(JNIEnv* e, jobject o, jint pollTech,
 
   // Need listen tech routing update in routing table
   // for addition of blocking bit
-  RoutingManager::getInstance().setEeTechRouteUpdateRequired();
+  //RoutingManager::getInstance().setEeTechRouteUpdateRequired();
+  LOG(DEBUG) << StringPrintf("%s: EeTechRouteUpdate Disbaled!", __func__);
 
   nativeNfcTag_acquireRfInterfaceMutexLock();
   SyncEventGuard guard(sNfaEnableDisablePollingEvent);

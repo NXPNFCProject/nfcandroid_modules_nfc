@@ -489,6 +489,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
     private  INfcVendorNciCallback mNfcVendorNciCallBack = null;
     private  INfcOemExtensionCallback mNfcOemExtensionCallback = null;
+
+    private Object mDiscoveryLock = new Object();
+
     private final DisplayListener mDisplayListener = new DisplayListener() {
         @Override
         public void onDisplayAdded(int displayId) {
@@ -744,7 +747,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
     @Override
     public void onRfDiscoveryEvent(boolean isDiscoveryStarted) {
-        mRfDiscoveryStarted = isDiscoveryStarted;
+        synchronized (mDiscoveryLock) {
+            mRfDiscoveryStarted = isDiscoveryStarted;
+        }
         try {
             if (mNfcOemExtensionCallback != null) {
                 mNfcOemExtensionCallback.onRfDiscoveryStarted(mRfDiscoveryStarted);
@@ -1640,6 +1645,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 watchDog.cancel();
             }
 
+            if (mIsHceCapable) {
+                // Generate the initial card emulation routing table
+                mCardEmulationManager.onNfcEnabled();
+            }
+
             mSkipNdefRead = NfcProperties.skipNdefRead().orElse(false);
             nci_version = getNciVersion();
             Log.d(TAG, "NCI_Version: " + nci_version);
@@ -1691,11 +1701,6 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                         && mAlwaysOnState != NfcAdapter.STATE_TURNING_OFF)) {
                 /* Start polling loop */
                 applyRouting(true);
-            }
-
-            if (mIsHceCapable) {
-                // Generate the initial card emulation routing table
-                mCardEmulationManager.onNfcEnabled();
             }
 
             if (mIsRecovering) {
@@ -2203,15 +2208,19 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         @Override
         public void pausePolling(int timeoutInMs) {
             NfcPermissions.enforceAdminPermissions(mContext);
-
-            if (timeoutInMs <= 0 || timeoutInMs > MAX_POLLING_PAUSE_TIMEOUT) {
-                Log.e(TAG, "Refusing to pause polling for " + timeoutInMs + "ms.");
-                return;
+            synchronized (mDiscoveryLock) {
+                if (!mRfDiscoveryStarted) {
+                    if (DBG) Log.d(TAG, "Polling is already disabled!");
+                    return;
+                }
             }
-
             synchronized (NfcService.this) {
                 mPollingPaused = true;
                 mDeviceHost.disableDiscovery();
+                if (timeoutInMs <= 0 || timeoutInMs > MAX_POLLING_PAUSE_TIMEOUT) {
+                    Log.d(TAG, "Invalid timeout " + timeoutInMs + "ms, hence no resume polling!");
+                    return;
+                }
                 mHandler.sendMessageDelayed(
                         mHandler.obtainMessage(MSG_RESUME_POLLING), timeoutInMs);
             }
@@ -2220,12 +2229,19 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         @Override
         public void resumePolling() {
             NfcPermissions.enforceAdminPermissions(mContext);
-
+            boolean rfDiscoveryStarted;
+            synchronized (mDiscoveryLock) {
+                rfDiscoveryStarted = mRfDiscoveryStarted;
+            }
             synchronized (NfcService.this) {
                 if (!mPollingPaused) {
-                    return;
+                    if (rfDiscoveryStarted) {
+                        if (DBG) Log.d(TAG, "Polling is already enabled!");
+                        return;
+                    } else {
+                        if (DBG) Log.d(TAG, "Enable polling explicitly!");
+                    }
                 }
-
                 mHandler.removeMessages(MSG_RESUME_POLLING);
                 mPollingPaused = false;
                 new ApplyRoutingTask().execute();
@@ -3855,8 +3871,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 }
             }
             if (mPollingPaused) {
-                Log.d(TAG, "Not updating discovery parameters, polling paused.");
-                return;
+                //Log.d(TAG, "Not updating discovery parameters, polling paused.");
+                //return;
+                Log.d(TAG, "polling paused - updating discovery parameters.");
             }
             // Special case: if we're transitioning to unlocked state while
             // still talking to a tag, postpone re-configuration.
