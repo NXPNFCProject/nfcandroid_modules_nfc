@@ -15,6 +15,7 @@
  */
 package com.android.nfc.dhimpl;
 
+import android.nfc.NdefCcFileInfo;
 import com.android.nfc.DeviceHost;
 
 public class NativeT4tNfceeManager {
@@ -31,4 +32,7 @@ public class NativeT4tNfceeManager {
   public native int getNdefNfceeRouteId();
 
   public native int getT4TNfceePowerState();
+
+  public native NdefCcFileInfo readCcfile();
 }
+

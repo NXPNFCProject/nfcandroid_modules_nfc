@@ -585,6 +585,12 @@ void NativeT4tNfcee::eventHandler(uint8_t event,
       t4tClearComplete(eventData->status);
       break;
 
+    case NFA_T4TNFCEE_READ_CC_DATA_CPLT_EVT:
+      LOG(DEBUG) << StringPrintf("%s: NFA_T4TNFCEE_READ_CC_DATA_CPLT_EVT",
+                                 __func__);
+      t4tReadComplete(eventData->status, eventData->data);
+      break;
+
     default:
       LOG(DEBUG) << StringPrintf("%s: unknown Event", __func__);
       break;

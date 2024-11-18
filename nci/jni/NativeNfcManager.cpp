@@ -637,6 +637,7 @@ static void nfaConnectionCallback(uint8_t connEvent,
     case NFA_T4TNFCEE_READ_CPLT_EVT:
     case NFA_T4TNFCEE_WRITE_CPLT_EVT:
     case NFA_T4TNFCEE_CLEAR_CPLT_EVT:
+    case NFA_T4TNFCEE_READ_CC_DATA_CPLT_EVT:
       NativeT4tNfcee::getInstance().eventHandler(connEvent, eventData);
       break;
 
