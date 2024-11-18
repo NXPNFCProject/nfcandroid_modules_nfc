@@ -561,13 +561,7 @@ void RoutingManager::notifyDeactivated(uint8_t technology) {
     LOG(ERROR) << "jni env is null";
     return;
   }
-  e->CallVoidMethod(mNativeData->manager,
-                    android::gCachedNfcManagerNotifySeListenActivated,
-                    JNI_FALSE);
-  if (e->ExceptionCheck()) {
-    e->ExceptionClear();
-    LOG(ERROR) << StringPrintf("Fail to notify se listen active status.");
-  }
+
   e->CallVoidMethod(mNativeData->manager,
                     android::gCachedNfcManagerNotifyHostEmuDeactivated,
                     (int)technology);
