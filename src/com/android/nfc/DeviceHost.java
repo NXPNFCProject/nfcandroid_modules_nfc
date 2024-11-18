@@ -57,6 +57,8 @@ public interface DeviceHost {
 
         public void onRfDiscoveryEvent(boolean isDiscoveryStarted);
 
+        public void onEeListenActivated(boolean isActivated);
+
         public void onSeSelected();
     }
 

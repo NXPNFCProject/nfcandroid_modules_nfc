@@ -109,6 +109,7 @@ jmethodID gCachedNfcManagerNotifyRfDiscoveryEvent;
 jmethodID gCachedNfcManagerNotifyEeAidSelected;
 jmethodID gCachedNfcManagerNotifyEeProtocolSelected;
 jmethodID gCachedNfcManagerNotifyEeTechSelected;
+jmethodID gCachedNfcManagerNotifyEeListenActivated;
 const char* gNativeNfcTagClassName = "com/android/nfc/dhimpl/NativeNfcTag";
 const char* gNativeNfcManagerClassName =
     "com/android/nfc/dhimpl/NativeNfcManager";
@@ -478,8 +479,8 @@ static void nfaConnectionCallback(uint8_t connEvent,
           return;
         }
         e->CallVoidMethod(nat->manager,
-                          android::gCachedNfcManagerNotifyHostEmuActivated,
-                          (int)activatedProtocol);
+                          android::gCachedNfcManagerNotifyEeListenActivated,
+                          JNI_TRUE);
       }
     } break;
     case NFA_DEACTIVATED_EVT:  // NFC link/protocol deactivated
@@ -521,8 +522,8 @@ static void nfaConnectionCallback(uint8_t connEvent,
             return;
           }
           e->CallVoidMethod(nat->manager,
-                            android::gCachedNfcManagerNotifyHostEmuDeactivated,
-                            NFA_TECHNOLOGY_MASK_A);
+                            android::gCachedNfcManagerNotifyEeListenActivated,
+                            JNI_FALSE);
         }
       }
 
@@ -727,6 +728,9 @@ static jboolean nfcManager_initNativeStruc(JNIEnv* e, jobject o) {
 
   gCachedNfcManagerNotifyRfDiscoveryEvent =
       e->GetMethodID(cls.get(), "notifyRFDiscoveryEvent", "(Z)V");
+
+  gCachedNfcManagerNotifyEeListenActivated =
+      e->GetMethodID(cls.get(), "notifyEeListenActivated", "(Z)V");
 
   gCachedNfcManagerNotifyEeAidSelected = e->GetMethodID(
       cls.get(), "notifyEeAidSelected", "([BLjava/lang/String;)V");
