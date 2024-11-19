@@ -1656,6 +1656,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 watchDog.cancel();
             }
 
+        if (mIsHceCapable) {
+        // Generate the initial card emulation routing table
+        mCardEmulationManager.onNfcEnabled();
+        }
+
             mSkipNdefRead = NfcProperties.skipNdefRead().orElse(false);
             nci_version = getNciVersion();
             Log.d(TAG, "NCI_Version: " + nci_version);
@@ -1707,11 +1712,6 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                         && mAlwaysOnState != NfcAdapter.STATE_TURNING_OFF)) {
                 /* Start polling loop */
                 applyRouting(true);
-            }
-
-            if (mIsHceCapable) {
-                // Generate the initial card emulation routing table
-                mCardEmulationManager.onNfcEnabled();
             }
 
             if (mIsRecovering) {
@@ -3910,8 +3910,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             }
             refreshTagDispatcherInProvisionMode();
             if (mPollingPaused) {
-                Log.d(TAG, "Not updating discovery parameters, polling paused.");
-                return;
+                //Log.d(TAG, "Not updating discovery parameters, polling paused.");
+                //return;
+                Log.d(TAG, "polling paused - updating discovery parameters.");
             }
             // Special case: if we're transitioning to unlocked state while
             // still talking to a tag, postpone re-configuration.
