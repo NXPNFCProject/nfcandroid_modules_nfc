@@ -5,6 +5,7 @@ package android.nfc {
     method public boolean doClearNdefData();
     method @NonNull public byte[] doReadData(@IntRange(from=0, to=65535) @NonNull int);
     method @NonNull public int doWriteData(@IntRange(from=0, to=65535) @NonNull int, @NonNull byte[]);
+    method public android.nfc.NdefCcFileInfo readCcfile();
     method public boolean isNdefNfceeEmulationSupported();
     method public boolean isNdefOperationOnGoing();
     field public static final int WRITE_DATA_ERROR_CONNECTION_FAILED = -6; // 0xfffffffa

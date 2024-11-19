@@ -25,6 +25,8 @@ import android.util.Log;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import android.nfc.NdefCcFileInfo;
+import android.nfc.INdefNfcee;
 
 /**
  * This class can be used to read/write T4T Ndef data.
@@ -187,6 +189,24 @@ public final class NdefNfcee {
             Log.e(TAG, "NdefNfceeService is not available.");
             mAdapter.attemptDeadServiceRecovery(e);
             return false;
+        }
+    }
+
+    /**
+     * This API performs reading of T4T NDEF NFCEE CC file content.
+     *
+     * @return read bytes :-Returns CC file content if success
+     * Returns null if failed to read
+     * @hide
+     */
+    @SystemApi
+    public NdefCcFileInfo readCcfile() {
+        try {
+            return sNdefNfceeService.readCcfile();
+        } catch (RemoteException e) {
+            Log.e(TAG, "NdefNfceeService is not available.");
+            mAdapter.attemptDeadServiceRecovery(e);
+            return null;
         }
     }
 }
