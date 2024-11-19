@@ -155,7 +155,8 @@ static uint8_t nfa_dm_get_rf_discover_config(
     tNFA_DM_DISC_TECH_PROTO_MASK dm_disc_mask,
     tNFC_DISCOVER_PARAMS disc_params[], uint8_t max_params) {
   uint8_t num_params = 0;
-
+  LOG(VERBOSE) << StringPrintf("nfa_dm_get_rf_discover_config 0x%x",
+                                 dm_disc_mask);
   if (nfa_dm_cb.flags & NFA_DM_FLAGS_LISTEN_DISABLED) {
     LOG(VERBOSE) << StringPrintf("listen disabled, rm listen from 0x%x",
                                  dm_disc_mask);
