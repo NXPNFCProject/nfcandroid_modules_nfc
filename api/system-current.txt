@@ -1,13 +1,28 @@
 // Signature format: 2.0
 package android.nfc {
 
+  @FlaggedApi("android.nfc.nfc_oem_extension") public final class NdefCcFileInfo implements android.os.Parcelable {
+    ctor public NdefCcFileInfo(int, int, int, int, int, int, int, int);
+    method public int describeContents();
+    method public int getCclen();
+    method public int getMaxLc();
+    method public int getMaxLe();
+    method public int getNdefFileId();
+    method public int getNdefMaxFileSize();
+    method public int getNdefReadAccess();
+    method public int getNdefWriteAccess();
+    method public int getVersion();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.nfc.NdefCcFileInfo> CREATOR;
+  }
+
   @FlaggedApi("android.nfc.nfc_oem_extension") public final class NdefNfcee {
     method public boolean doClearNdefData();
     method @NonNull public byte[] doReadData(@IntRange(from=0, to=65535) @NonNull int);
     method @NonNull public int doWriteData(@IntRange(from=0, to=65535) @NonNull int, @NonNull byte[]);
-    method public android.nfc.NdefCcFileInfo readCcfile();
     method public boolean isNdefNfceeEmulationSupported();
     method public boolean isNdefOperationOnGoing();
+    method @Nullable public android.nfc.NdefCcFileInfo readCcfile();
     field public static final int WRITE_DATA_ERROR_CONNECTION_FAILED = -6; // 0xfffffffa
     field public static final int WRITE_DATA_ERROR_EMPTY_PAYLOAD = -7; // 0xfffffff9
     field public static final int WRITE_DATA_ERROR_INVALID_FILE_ID = -4; // 0xfffffffc
@@ -76,11 +91,11 @@ package android.nfc {
   @FlaggedApi("android.nfc.nfc_oem_extension") public final class NfcOemExtension {
     method @FlaggedApi("android.nfc.nfc_oem_extension") @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) public void clearPreference();
     method @FlaggedApi("android.nfc.nfc_oem_extension") @NonNull public java.util.List<java.lang.String> getActiveNfceeList();
+    method @FlaggedApi("android.nfc.nfc_oem_extension") @NonNull public android.nfc.NdefNfcee getNdefNfcee();
     method @FlaggedApi("android.nfc.nfc_oem_extension") @NonNull @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) public android.nfc.RoutingStatus getRoutingStatus();
     method @FlaggedApi("android.nfc.nfc_oem_extension") @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) public boolean hasUserEnabledNfc();
     method @FlaggedApi("android.nfc.nfc_oem_extension") @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) public boolean isAutoChangeEnabled();
     method @FlaggedApi("android.nfc.nfc_oem_extension") @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) public boolean isTagPresent();
-    method @FlaggedApi("android.nfc.nfc_oem_extension") @NonNull public android.nfc.NdefNfcee getNdefNfcee();
     method @FlaggedApi("android.nfc.nfc_oem_extension") @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) public void maybeTriggerFirmwareUpdate();
     method @FlaggedApi("android.nfc.nfc_oem_extension") @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) public void overwriteRoutingTable(int, int, int);
     method @FlaggedApi("android.nfc.nfc_oem_extension") @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) public void pausePolling(int);

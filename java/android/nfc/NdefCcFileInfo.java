@@ -16,12 +16,18 @@
 
 package android.nfc;
 
+import android.annotation.FlaggedApi;
+import android.annotation.NonNull;
+import android.annotation.SystemApi;
 import android.os.Parcel;
 import android.os.Parcelable;
 
 /**
  * Represents NDEF NFCEE CC File data
+ * @hide
  */
+@FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
+@SystemApi
 public final class NdefCcFileInfo implements Parcelable {
     /**
      * Indicates the size of this capability container (called “CC File”)<p>
@@ -73,7 +79,7 @@ public final class NdefCcFileInfo implements Parcelable {
     }
 
     @Override
-    public void writeToParcel(Parcel dest, int flags) {
+    public void writeToParcel(@NonNull Parcel dest, int flags) {
 
         dest.writeInt(mCclen);
         dest.writeInt(mVersion);

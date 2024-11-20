@@ -20,6 +20,7 @@ import android.annotation.IntDef;
 import android.annotation.IntRange;
 import android.annotation.NonNull;
 import android.annotation.SystemApi;
+import android.annotation.Nullable;
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -200,6 +201,7 @@ public final class NdefNfcee {
      * @hide
      */
     @SystemApi
+    @Nullable
     public NdefCcFileInfo readCcfile() {
         try {
             return sNdefNfceeService.readCcfile();
