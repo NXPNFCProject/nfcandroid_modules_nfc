@@ -18,6 +18,8 @@
 
 package android.nfc;
 
+import android.nfc.NdefCcFileInfo;
+
 /**
  * @hide
  */
@@ -27,4 +29,5 @@ interface  INdefNfcee {
     boolean doClearNdefData();
     boolean isNdefOperationOnGoing();
     boolean isNdefNfceeEmulationSupported();
+    NdefCcFileInfo readCcfile();
 }
