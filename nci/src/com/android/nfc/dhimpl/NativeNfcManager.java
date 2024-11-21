@@ -22,7 +22,6 @@ import static com.android.nfc.NfcStatsLog.NFC_PROPRIETARY_CAPABILITIES_REPORTED_
 
 import android.content.Context;
 import android.nfc.cardemulation.PollingFrame;
-import android.nfc.NdefCcFileInfo;
 import android.nfc.tech.Ndef;
 import android.nfc.tech.TagTechnology;
 import android.os.Bundle;
@@ -256,18 +255,13 @@ public class NativeNfcManager implements DeviceHost {
     }
 
     @Override
-    public boolean isNdefOperationOnGoing() {
-        return mT4tNfceeMgr.isNdefOperationOnGoing();
+    public boolean isNdefOperationOngoing() {
+        return mT4tNfceeMgr.isNdefOperationOngoing();
     }
 
     @Override
     public boolean isNdefNfceeEmulationSupported() {
         return mT4tNfceeMgr.isNdefNfceeEmulationSupported();
-    }
-
-    @Override
-    public NdefCcFileInfo readCcfile() {
-        return mT4tNfceeMgr.readCcfile();
     }
 
     @Override
