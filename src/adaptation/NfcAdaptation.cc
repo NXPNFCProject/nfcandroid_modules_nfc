@@ -115,10 +115,10 @@ void initializeGlobalDebugEnabledFlag() {
       (NfcConfig::getUnsigned(NAME_NFC_DEBUG_ENABLED, 0) != 0) ||
       property_get_bool("persist.nfc.debug_enabled", true);
 
-  android::base::SetMinimumLogSeverity(nfc_debug_enabled ? android::base::VERBOSE
+  android::base::SetMinimumLogSeverity(nfc_debug_enabled ? android::base::DEBUG
                                                          : android::base::INFO);
 
-  LOG(VERBOSE) << StringPrintf("%s: level(VERBOSE)=%u", __func__, nfc_debug_enabled);
+  LOG(VERBOSE) << StringPrintf("%s: level=%u", __func__, nfc_debug_enabled);
 }
 
 // initialize NciResetType Flag
@@ -392,12 +392,10 @@ void NfcAdaptation::GetVendorConfigs(
                       ConfigValue((uint8_t)aidlConfigValue.offHostSIMPipeId));
     configMap.emplace(NAME_OFF_HOST_ESE_PIPE_ID,
                       ConfigValue((uint8_t)aidlConfigValue.offHostESEPipeId));
-    configMap.emplace(NAME_T4T_NFCEE_ENABLE,
-                      ConfigValue(aidlConfigValue.t4tNfceeEnable ? 1 : 0));
 
     if (aidlConfigValue.offHostSimPipeIds.size() != 0) {
       configMap.emplace(NAME_OFF_HOST_SIM_PIPE_IDS,
-                      ConfigValue(aidlConfigValue.offHostSimPipeIds));
+                        ConfigValue(aidlConfigValue.offHostSimPipeIds));
     }
     configMap.emplace(NAME_ISO_DEP_MAX_TRANSCEIVE,
                       ConfigValue(aidlConfigValue.maxIsoDepTransceiveLength));

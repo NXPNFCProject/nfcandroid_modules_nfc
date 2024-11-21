@@ -13,6 +13,10 @@ cc_test {
     include_dirs: [
         "system/nfc/src/include",
         "system/nfc/utils/include",
+        "system/nfc/src/nfc/include",
+        "system/nfc/src/gki/common",
+        "system/nfc/src/gki/ulinux",
+        "system/nfc/src/nfa/include",
     ],
     cflags: [
         "-Wall",
@@ -31,7 +35,6 @@ cc_test {
         misc_undefined: ["bounds"],
         scs: true,
     },
-    test_suites: ["device-tests"],
     srcs: [
         "**/*.cc",
     ],
@@ -39,8 +42,45 @@ cc_test {
         "libgmock",
         "libnfc-nci",
         "libnfcutils",
+        "android.hardware.nfc@1.0",
+        "android.hardware.nfc@1.1",
+        "android.hardware.nfc@1.2",
+        // Add for AIDL
+        "android.hardware.nfc-V2-ndk",
+        "libnfc-nci_flags",
+        "libstatslog_nfc",
     ],
     shared_libs: [
+        "libcutils",
+        "liblog",
+        "libdl",
+        "libz",
         "libbase",
+        // Treble configuration
+        "libhidlbase",
+        "libutils",
+        "libbinder_ndk",
+        "libstatssocket",
+        "server_configurable_flags",
+        "libaconfig_storage_read_api_cc",
     ],
+    test_suites: [
+        "general-tests",
+        "mts-nfc",
+    ],
+    test_config_template: "nfc_test_config_template.xml",
+    // Support multilib variants (using different suffix per sub-architecture), which is needed on
+    // build targets with secondary architectures, as the MTS test suite packaging logic flattens
+    // all test artifacts into a single `testcases` directory.
+    compile_multilib: "both",
+    multilib: {
+        lib32: {
+            suffix: "32",
+        },
+        lib64: {
+            suffix: "64",
+        },
+    },
+    auto_gen_config: true,
+    min_sdk_version: "current",
 }
