@@ -30,7 +30,7 @@ import android.nfc.INfcCardEmulation;
 import android.nfc.INfcFCardEmulation;
 import android.nfc.INfcOemExtensionCallback;
 import android.nfc.INfcUnlockHandler;
-import android.nfc.INdefNfcee;
+import android.nfc.IT4tNdefNfcee;
 import android.nfc.ITagRemovedCallback;
 import android.nfc.INfcDta;
 import android.nfc.INfcWlcStateListener;
@@ -118,5 +118,5 @@ interface INfcAdapter
     void triggerInitialization();
     boolean getSettingStatus();
     boolean isTagPresent();
-    INdefNfcee getNdefNfceeInterface();
+    IT4tNdefNfcee getT4tNdefNfceeInterface();
 }

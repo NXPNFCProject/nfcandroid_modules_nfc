@@ -16,5 +16,5 @@
 
 package android.nfc;
 
-parcelable NdefCcFileInfo;
+parcelable T4tNdefNfceeCcFileInfo;
 

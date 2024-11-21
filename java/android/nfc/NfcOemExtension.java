@@ -401,8 +401,8 @@ public final class NfcOemExtension {
     @SystemApi
     @NonNull
     @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
-    public NdefNfcee getNdefNfcee() {
-        return NdefNfcee.getInstance(mAdapter);
+    public T4tNdefNfcee getT4tNdefNfcee() {
+        return T4tNdefNfcee.getInstance();
     }
 
     /**

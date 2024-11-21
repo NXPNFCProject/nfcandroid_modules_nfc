@@ -18,16 +18,16 @@
 
 package android.nfc;
 
-import android.nfc.NdefCcFileInfo;
+import android.nfc.T4tNdefNfceeCcFileInfo;
 
 /**
  * @hide
  */
-interface  INdefNfcee {
-    int doWriteData(in int fileId, in byte[] data);
-    byte[] doReadData(in int fileId);
-    boolean doClearNdefData();
-    boolean isNdefOperationOnGoing();
+interface IT4tNdefNfcee {
+    int writeData(in int fileId, in byte[] data);
+    byte[] readData(in int fileId);
+    int clearNdefData();
+    boolean isNdefOperationOngoing();
     boolean isNdefNfceeEmulationSupported();
-    NdefCcFileInfo readCcfile();
+    T4tNdefNfceeCcFileInfo readCcfile();
 }
