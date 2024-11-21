@@ -588,7 +588,7 @@ public final class NfcAdapter {
     static INfcTag sTagService;
     static INfcCardEmulation sCardEmulationService;
     static INfcFCardEmulation sNfcFCardEmulationService;
-    static INdefNfcee sNdefNfceeService;
+    static IT4tNdefNfcee sNdefNfceeService;
 
     /**
      * The NfcAdapter object for each application context.
@@ -828,7 +828,7 @@ public final class NfcAdapter {
                 }
             }
             try {
-                sNdefNfceeService = sService.getNdefNfceeInterface();
+                sNdefNfceeService = sService.getT4tNdefNfceeInterface();
             } catch (RemoteException e) {
                 sNdefNfceeService = null;
                 Log.e(TAG, "could not retrieve NDEF NFCEE service");
