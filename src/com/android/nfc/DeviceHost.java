@@ -17,6 +17,7 @@
 package com.android.nfc;
 
 import android.annotation.Nullable;
+import android.nfc.NdefCcFileInfo;
 import android.nfc.NdefMessage;
 import android.nfc.cardemulation.PollingFrame;
 import android.os.Bundle;
@@ -205,6 +206,8 @@ public interface DeviceHost {
      * @return "True" when feature supported. else "False"
      */
     boolean isNdefNfceeEmulationSupported();
+
+    public NdefCcFileInfo readCcfile();
 
     public boolean commitRouting();
 

@@ -55,6 +55,7 @@ import android.media.SoundPool;
 import android.media.SoundPool.OnLoadCompleteListener;
 import android.net.Uri;
 import android.nfc.AvailableNfcAntenna;
+import android.nfc.NdefCcFileInfo;
 import android.nfc.Constants;
 import android.nfc.Entry;
 import android.nfc.ErrorCodes;
@@ -200,6 +201,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     static final int NATIVE_CRASH_FILE_SIZE = 1024 * 1024;
     private static final String WAIT_FOR_OEM_ALLOW_BOOT_TIMER_TAG = "NfcWaitForSimTag";
     static final String DEFAULT_T4T_NFCEE_AID = "D2760000850101";
+    static final byte[] T4T_NFCEE_CC_FILE_ID = {(byte) (0xE1), (byte) (0x03)};
     @VisibleForTesting
     public static final int WAIT_FOR_OEM_ALLOW_BOOT_TIMEOUT_MS = 5_000;
 
@@ -3798,6 +3800,38 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             throw new IllegalStateException("Ndef Nfcee read failed");
           }
           return readData;
+        }
+
+        public NdefCcFileInfo readCcfile() {
+            NfcPermissions.enforceUserPermissions(mContext);
+            NdefCcFileInfo ccFileInfo = null;
+            byte[] readData = {};
+
+            try {
+                readData = mDeviceHost.doReadData(T4T_NFCEE_CC_FILE_ID);
+                if (readData.length >= 15) {
+                    int cclen = ((Byte.toUnsignedInt(readData[0])) << 8)
+                            + (Byte.toUnsignedInt(readData[1]));
+                    int version = Byte.toUnsignedInt(readData[2]);
+                    int maxLe = ((Byte.toUnsignedInt(readData[3])) << 8)
+                            + Byte.toUnsignedInt(readData[4]);
+                    int maxLc = ((Byte.toUnsignedInt(readData[5])) << 8)
+                            + Byte.toUnsignedInt(readData[6]);
+                    int ndefFileId = ((Byte.toUnsignedInt(readData[9])) << 8)
+                            + Byte.toUnsignedInt(readData[10]);
+                    int ndefMaxFileSize = ((Byte.toUnsignedInt(readData[11])) << 8)
+                            + Byte.toUnsignedInt(readData[12]);
+                    int ndefReadAccess = Byte.toUnsignedInt(readData[13]);
+                    int ndefWriteAccess = Byte.toUnsignedInt(readData[14]);
+                    ccFileInfo = new NdefCcFileInfo(cclen,  version,  maxLe,  maxLc,
+                            ndefFileId,  ndefMaxFileSize, ndefReadAccess,  ndefWriteAccess);
+                } else {
+                    Log.e(TAG, "Empty data received while reading T4T NDEF NFCEE CC data");
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Exception occured while reading NDEF NFCEE CC FIle data", e);
+            }
+            return ccFileInfo;
         }
 
         public boolean doClearNdefData() {
