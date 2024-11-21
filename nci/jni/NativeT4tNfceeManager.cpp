@@ -54,7 +54,7 @@ jint t4tNfceeManager_doClearNdefData(JNIEnv* e, jobject o) {
 **                  Return "True" when operation is in progress. else "False"
 **
 *******************************************************************************/
-jboolean t4tNfceeManager_isNdefOperationOnGoing(JNIEnv* e, jobject o) {
+jboolean t4tNfceeManager_isNdefOperationOngoing(JNIEnv* e, jobject o) {
   LOG(DEBUG) << StringPrintf("%s: enter", __func__);
 
   return NativeT4tNfcee::getInstance().getT4tStatus(e, o);
@@ -147,8 +147,8 @@ static JNINativeMethod gMethods[] = {
     {"doWriteData", "([B[B)I", (void*)t4tNfceeManager_doWriteData},
     {"doReadData", "([B)[B", (void*)t4tNfceeManager_doReadData},
     {"doClearNdefData", "()Z", (void*)t4tNfceeManager_doClearNdefData},
-    {"isNdefOperationOnGoing", "()Z",
-     (void*)t4tNfceeManager_isNdefOperationOnGoing},
+    {"isNdefOperationOngoing", "()Z",
+     (void*)t4tNfceeManager_isNdefOperationOngoing},
     {"isNdefNfceeEmulationSupported", "()Z",
      (void*)t4tNfceeManager_isNdefNfceeEmulationSupported},
     {"getT4TNfceePowerState", "()I",

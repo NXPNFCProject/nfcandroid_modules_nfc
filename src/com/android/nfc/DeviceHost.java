@@ -17,7 +17,6 @@
 package com.android.nfc;
 
 import android.annotation.Nullable;
-import android.nfc.NdefCcFileInfo;
 import android.nfc.NdefMessage;
 import android.nfc.cardemulation.PollingFrame;
 import android.os.Bundle;
@@ -199,15 +198,13 @@ public interface DeviceHost {
      * @return Indicates whether NDEF NFCEE Read or write operation is under process
      *         Return "True" when operation is in progress. else "False"
      */
-    boolean isNdefOperationOnGoing();
+    boolean isNdefOperationOngoing();
 
     /**
      * This API will tell whether NDEF NFCEE emulation is supported or not.
      * @return "True" when feature supported. else "False"
      */
     boolean isNdefNfceeEmulationSupported();
-
-    public NdefCcFileInfo readCcfile();
 
     public boolean commitRouting();
 

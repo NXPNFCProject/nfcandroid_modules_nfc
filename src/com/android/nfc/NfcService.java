@@ -55,13 +55,12 @@ import android.media.SoundPool;
 import android.media.SoundPool.OnLoadCompleteListener;
 import android.net.Uri;
 import android.nfc.AvailableNfcAntenna;
-import android.nfc.NdefCcFileInfo;
 import android.nfc.Constants;
 import android.nfc.Entry;
 import android.nfc.ErrorCodes;
 import android.nfc.FormatException;
 import android.nfc.IAppCallback;
-import android.nfc.INdefNfcee;
+import android.nfc.IT4tNdefNfcee;
 import android.nfc.INfcAdapter;
 import android.nfc.INfcAdapterExtras;
 import android.nfc.INfcCardEmulation;
@@ -78,7 +77,8 @@ import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
 import android.nfc.NfcAntennaInfo;
 import android.nfc.NfcOemExtension;
-import android.nfc.NdefNfcee;
+import android.nfc.T4tNdefNfcee;
+import android.nfc.T4tNdefNfceeCcFileInfo;
 import android.nfc.OemLogItems;
 import android.nfc.Tag;
 import android.nfc.TechListParcel;
@@ -329,6 +329,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     private static final int NCI_GID_PROP = 0x0F;
     private static final int NCI_MSG_PROP_ANDROID = 0x0C;
     private static final int NCI_MSG_PROP_ANDROID_POWER_SAVING = 0x01;
+    private static final int NCI_PROP_ANDROID_QUERY_POWER_SAVING_STATUS_CMD = 0x05;
     private static final int POWER_STATE_SWITCH_ON = 0x01;
 
     public static final int WAIT_FOR_OEM_CALLBACK_TIMEOUT_MS = 3000;
@@ -434,7 +435,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     int mErrorSound;
     SoundPool mSoundPool; // playback synchronized on this
     TagService mNfcTagService;
-    NdefNfceeService mNdefNfceeService;
+    T4tNdefNfceeService mT4tNdefNfceeService;
     NfcAdapterService mNfcAdapter;
     NfcDtaService mNfcDtaService;
     RoutingTableParser mRoutingTableParser;
@@ -504,8 +505,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
     private int mAidMatchingExactOnly = 0x02;
     public static final int T4TNFCEE_STATUS_FAILED = -1;
-    private Object mNdefNfcEeObj = new Object();
-    private Bundle mNdefNfceeReturnBundle = new Bundle();
+    private Object mT4tNdefNfcEeObj = new Object();
+    private Bundle mT4tNdefNfceeReturnBundle = new Bundle();
     private final FeatureFlags mFeatureFlags;
     private final Set<INfcWlcStateListener> mWlcStateListener =
             Collections.synchronizedSet(new HashSet<>());
@@ -980,7 +981,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         mNfcTagService = new TagService();
         mNfcAdapter = new NfcAdapterService();
         mRoutingTableParser = mNfcInjector.getRoutingTableParser();
-        mNdefNfceeService = new NdefNfceeService();
+        mT4tNdefNfceeService = new T4tNdefNfceeService();
         Log.i(TAG, "Starting NFC service");
 
         sService = this;
@@ -2680,8 +2681,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         }
 
         @Override
-        public INdefNfcee getNdefNfceeInterface() throws RemoteException {
-            return mNdefNfceeService;
+        public IT4tNdefNfcee getT4tNdefNfceeInterface() throws RemoteException {
+            return mT4tNdefNfceeService;
         }
 
         @Override
@@ -3773,25 +3774,27 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
     };
 
-    class NdefNfceeService extends INdefNfcee.Stub {
+    class T4tNdefNfceeService extends IT4tNdefNfcee.Stub {
 
-        public int doWriteData(final int fileId, byte[] data) {
-          NfcPermissions.enforceUserPermissions(mContext);
-          int status = NCI_STATUS_FAILED;
+        @Override
+        public int writeData(final int fileId, byte[] data) {
+          NfcPermissions.enforceAdminPermissions(mContext);
+          int status = T4tNdefNfcee.WRITE_DATA_ERROR_INTERNAL;
           try {
             ByteBuffer fileIdInBytes = ByteBuffer.allocate(2);
             fileIdInBytes.putShort((short)fileId);
             status = mDeviceHost.doWriteData(fileIdInBytes.array(), data);
-            if(status > 0) status = NdefNfcee.WRITE_DATA_STATUS_SUCCESS;
+            if(status > 0) status = T4tNdefNfcee.WRITE_DATA_SUCCESS;
           } catch (Exception e) {
             Log.e(TAG, "Exception occurred while writing NDEF NFCEE data", e);
           }
-          Log.i(TAG, "doWriteData : " + status);
+          Log.i(TAG, "writeData : " + status);
           return status;
         }
 
-        public byte[] doReadData(final int fileId) {
-          NfcPermissions.enforceUserPermissions(mContext);
+        @Override
+        public byte[] readData(final int fileId) {
+          NfcPermissions.enforceAdminPermissions(mContext);
           byte[] readData = {};
           ByteBuffer fileIdInBytes = ByteBuffer.allocate(2);
           fileIdInBytes.putShort((short)fileId);
@@ -3802,9 +3805,10 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
           return readData;
         }
 
-        public NdefCcFileInfo readCcfile() {
-            NfcPermissions.enforceUserPermissions(mContext);
-            NdefCcFileInfo ccFileInfo = null;
+        @Override
+        public T4tNdefNfceeCcFileInfo readCcfile() {
+            NfcPermissions.enforceAdminPermissions(mContext);
+            T4tNdefNfceeCcFileInfo ccFileInfo = null;
             byte[] readData = {};
 
             try {
@@ -3823,35 +3827,40 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                             + Byte.toUnsignedInt(readData[12]);
                     int ndefReadAccess = Byte.toUnsignedInt(readData[13]);
                     int ndefWriteAccess = Byte.toUnsignedInt(readData[14]);
-                    ccFileInfo = new NdefCcFileInfo(cclen,  version,  maxLe,  maxLc,
+                    ccFileInfo = new T4tNdefNfceeCcFileInfo(cclen,  version,  maxLe,  maxLc,
                             ndefFileId,  ndefMaxFileSize, ndefReadAccess,  ndefWriteAccess);
                 } else {
                     Log.e(TAG, "Empty data received while reading T4T NDEF NFCEE CC data");
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Exception occured while reading NDEF NFCEE CC FIle data", e);
+                Log.e(TAG, "Exception occurred while reading NDEF NFCEE CC File data", e);
             }
             return ccFileInfo;
         }
 
-        public boolean doClearNdefData() {
-            NfcPermissions.enforceUserPermissions(mContext);
+        @Override
+        public int clearNdefData() {
+            NfcPermissions.enforceAdminPermissions(mContext);
             boolean status  = mDeviceHost.doClearNdefData();
             Log.i(TAG, "doClearNdefT4tData : " + status);
+            return status
+                    ? T4tNdefNfcee.CLEAR_DATA_SUCCESS
+                    : T4tNdefNfcee.CLEAR_DATA_FAILED_INTERNAL;
+        }
+
+        @Override
+        public boolean isNdefOperationOngoing() {
+            NfcPermissions.enforceAdminPermissions(mContext);
+            boolean status  = mDeviceHost.isNdefOperationOngoing();
+            Log.i(TAG, "isNdefOperationOngoing : " + status);
             return status;
         }
 
-        public boolean isNdefOperationOnGoing() {
-            NfcPermissions.enforceUserPermissions(mContext);
-            boolean status  = mDeviceHost.isNdefOperationOnGoing();
-            Log.i(TAG, "isNdefOperationOnGoing : " + status);
-            return status;
-        }
-
+        @Override
         public boolean isNdefNfceeEmulationSupported() {
-            NfcPermissions.enforceUserPermissions(mContext);
+            NfcPermissions.enforceAdminPermissions(mContext);
             boolean status  = mDeviceHost.isNdefNfceeEmulationSupported();
-            Log.i(TAG, "isNdefNfceeEmulationSupported : " + status);
+            Log.i(TAG, "isT4tNdefNfceeEmulationSupported : " + status);
             return status;
         }
     }
@@ -4275,7 +4284,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     /**
      * get default T4TNfcee power state supported
      */
-    public int getT4TNfceePowerState() {
+    private int getT4tNfceePowerState() {
         int powerState = mDeviceHost.getT4TNfceePowerState();
         synchronized (NfcService.this) {
             if (mIsSecureNfcEnabled) {
@@ -5481,12 +5490,13 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     /**
      * Add NDEF NFCEE into routing table
      */
-    public void addT4TNfceeAid() {
+    public void addT4tNfceeAid() {
+        if (!mDeviceHost.isNdefNfceeEmulationSupported()) return;
         Log.i(TAG, "Add T4T Nfcee AID");
         int ndefNfceeRouteId = mDeviceHost.getNdefNfceeRouteId();
         routeAids(DEFAULT_T4T_NFCEE_AID, ndefNfceeRouteId,
                 mAidMatchingExactOnly,
-                getT4TNfceePowerState());
+                getT4tNfceePowerState());
     }
 
     /**
