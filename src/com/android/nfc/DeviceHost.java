@@ -22,7 +22,6 @@ import android.nfc.cardemulation.PollingFrame;
 import android.os.Bundle;
 
 import java.io.FileDescriptor;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
 
@@ -161,52 +160,6 @@ public interface DeviceHost {
 
     public boolean unrouteAid(byte[] aid);
 
-    /**
-     * Get the T4T Nfcee power state supported.
-     * @return T4T Nfcee power state
-     */
-    int getT4TNfceePowerState();
-
-    /**
-     * Get the NDEF NFCEE Route ID.
-     * @return NDEF NFCEE Route ID
-     */
-    int getNdefNfceeRouteId();
-
-    /**
-     * Write the data into the NDEF NFCEE file of the specific file ID
-     * @param fileId
-     * @param data
-     * @return number of data bytes written
-     */
-    int doWriteData(byte[] fileId, byte[] data);
-
-    /**
-     * Read the data from the NDEF NFCEE file of the specific file ID.
-     * @param fileId
-     * @return read data buffer
-     */
-    byte[] doReadData(byte[] fileId);
-
-    /**
-     * This API will set all the NFCEE NDEF data to zero.
-     * @return "True" when operation is successful. else "False"
-     */
-    boolean doClearNdefData();
-
-    /**
-     * This API will get NDEF NFCEE status.
-     * @return Indicates whether NDEF NFCEE Read or write operation is under process
-     *         Return "True" when operation is in progress. else "False"
-     */
-    boolean isNdefOperationOngoing();
-
-    /**
-     * This API will tell whether NDEF NFCEE emulation is supported or not.
-     * @return "True" when feature supported. else "False"
-     */
-    boolean isNdefNfceeEmulationSupported();
-
     public boolean commitRouting();
 
     public void registerT3tIdentifier(byte[] t3tIdentifier);
@@ -283,7 +236,11 @@ public interface DeviceHost {
     boolean isMultiTag();
 
     void setIsoDepProtocolRoute(int route);
-    void setTechnologyABFRoute(int route);
+    /**
+    * Set NFCC technology routing for ABF listening
+    */
+    void setTechnologyABFRoute(int route, int felicaRoute);
+    void setSystemCodeRoute(int route);
     void clearRoutingEntry(int clearFlags);
 
     /**

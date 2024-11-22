@@ -44,6 +44,9 @@ const JNINativeMethod RoutingManager::sMethods[] = {
     {"doGetDefaultOffHostRouteDestination", "()I",
      (void*)RoutingManager::
          com_android_nfc_cardemulation_doGetDefaultOffHostRouteDestination},
+    {"doGetDefaultFelicaRouteDestination", "()I",
+     (void*)RoutingManager::
+         com_android_nfc_cardemulation_doGetDefaultFelicaRouteDestination},
     {"doGetOffHostUiccDestination", "()[B",
      (void*)RoutingManager::
          com_android_nfc_cardemulation_doGetOffHostUiccDestination},
@@ -54,7 +57,10 @@ const JNINativeMethod RoutingManager::sMethods[] = {
      (void*)RoutingManager::com_android_nfc_cardemulation_doGetAidMatchingMode},
     {"doGetDefaultIsoDepRouteDestination", "()I",
      (void*)RoutingManager::
-         com_android_nfc_cardemulation_doGetDefaultIsoDepRouteDestination}};
+         com_android_nfc_cardemulation_doGetDefaultIsoDepRouteDestination},
+    {"doGetDefaultScRouteDestination", "()I",
+     (void*)RoutingManager::
+         com_android_nfc_cardemulation_doGetDefaultScRouteDestination}};
 
 static const int MAX_NUM_EE = 5;
 // SCBR from host works only when App is in foreground
@@ -716,6 +722,24 @@ void RoutingManager::updateIsoDepProtocolRoute(int route) {
   updateDefaultProtocolRoute();
 }
 
+/*******************************************************************************
+**
+** Function:        updateSystemCodeRoute
+**
+** Description:     Updates the route for System Code
+**
+** Returns:         None
+**
+*******************************************************************************/
+void RoutingManager::updateSystemCodeRoute(int route) {
+  static const char fn[] = "RoutingManager::updateSystemCodeRoute";
+  LOG(DEBUG) << StringPrintf("%s; New default SC route: 0x%x", fn,
+                             route);
+  mEeInfoChanged = true;
+  mDefaultSysCodeRoute = route;
+  updateDefaultRoute();
+}
+
 void RoutingManager::updateDefaultProtocolRoute() {
   static const char fn[] = "RoutingManager::updateDefaultProtocolRoute";
 
@@ -802,7 +826,8 @@ void RoutingManager::updateDefaultRoute() {
   }
 }
 
-tNFA_TECHNOLOGY_MASK RoutingManager::updateTechnologyABFRoute(int route) {
+tNFA_TECHNOLOGY_MASK RoutingManager::updateTechnologyABFRoute(int route,
+                                                              int felicaRoute) {
   static const char fn[] = "RoutingManager::updateTechnologyABFRoute";
 
   tNFA_STATUS nfaStat;
@@ -823,7 +848,7 @@ tNFA_TECHNOLOGY_MASK RoutingManager::updateTechnologyABFRoute(int route) {
   else
     LOG(ERROR) << fn << "Fail to clear Default Felica route";
 
-  mDefaultFelicaRoute = route;
+  mDefaultFelicaRoute = felicaRoute;
   mDefaultOffHostRoute = route;
   return updateEeTechRouteSetting();
 }
@@ -835,6 +860,9 @@ tNFA_TECHNOLOGY_MASK RoutingManager::updateEeTechRouteSetting() {
   LOG(DEBUG) << fn << ": Number of EE is " << (int)mEeInfo.num_ee;
 
   tNFA_STATUS nfaStat;
+
+  bool offHostRouteFound = false;
+  bool felicaRouteFound = false;
   for (uint8_t i = 0; i < mEeInfo.num_ee; i++) {
     tNFA_HANDLE eeHandle = mEeInfo.ee_disc_info[i].ee_handle;
     tNFA_TECHNOLOGY_MASK seTechMask = 0;
@@ -849,6 +877,7 @@ tNFA_TECHNOLOGY_MASK RoutingManager::updateEeTechRouteSetting() {
 
     if ((mDefaultOffHostRoute != 0) &&
         (eeHandle == (mDefaultOffHostRoute | NFA_HANDLE_GROUP_EE))) {
+      offHostRouteFound = true;
       if (mEeInfo.ee_disc_info[i].la_protocol != 0)
         seTechMask |= NFA_TECHNOLOGY_MASK_A;
       if (mEeInfo.ee_disc_info[i].lb_protocol != 0)
@@ -856,8 +885,11 @@ tNFA_TECHNOLOGY_MASK RoutingManager::updateEeTechRouteSetting() {
     }
     if ((mDefaultFelicaRoute != 0) &&
         (eeHandle == (mDefaultFelicaRoute | NFA_HANDLE_GROUP_EE))) {
+      felicaRouteFound = true;
       if (mEeInfo.ee_disc_info[i].lf_protocol != 0)
         seTechMask |= NFA_TECHNOLOGY_MASK_F;
+      else
+        mDefaultFelicaRoute = NFC_DH_ID;
     }
 
     // If OFFHOST_LISTEN_TECH_MASK exists,
@@ -890,13 +922,26 @@ tNFA_TECHNOLOGY_MASK RoutingManager::updateEeTechRouteSetting() {
     }
   }
 
-  if (mDefaultOffHostRoute == NFC_DH_ID) {
-    tNFA_TECHNOLOGY_MASK hostTechMask = 0;
-    LOG(DEBUG) << StringPrintf(
-        "%s: Setting technology route to host with A,B and F type", fn);
-    hostTechMask |= NFA_TECHNOLOGY_MASK_A;
-    hostTechMask |= NFA_TECHNOLOGY_MASK_B;
-    hostTechMask |= NFA_TECHNOLOGY_MASK_F;
+  if (!offHostRouteFound) {
+    mDefaultOffHostRoute = NFC_DH_ID;
+  }
+  if (!felicaRouteFound) {
+    mDefaultFelicaRoute = NFC_DH_ID;
+  }
+
+  tNFA_TECHNOLOGY_MASK hostTechMask = 0;
+  if (mDefaultOffHostRoute == NFC_DH_ID || mDefaultFelicaRoute == NFC_DH_ID) {
+    if (mDefaultOffHostRoute == NFC_DH_ID) {
+      LOG(DEBUG) << StringPrintf(
+          "%s: Setting technology route to host with A,B type", fn);
+      hostTechMask |= NFA_TECHNOLOGY_MASK_A;
+      hostTechMask |= NFA_TECHNOLOGY_MASK_B;
+    }
+    if (mDefaultFelicaRoute == NFC_DH_ID) {
+      LOG(DEBUG) << StringPrintf(
+          "%s: Setting technology route to host with F type", fn);
+      hostTechMask |= NFA_TECHNOLOGY_MASK_F;
+    }
     hostTechMask &= mHostListenTechMask;
     nfaStat = NFA_EeSetDefaultTechRouting(NFC_DH_ID, hostTechMask, 0, 0,
                                           mSecureNfcEnabled ? 0 : hostTechMask,
@@ -904,7 +949,9 @@ tNFA_TECHNOLOGY_MASK RoutingManager::updateEeTechRouteSetting() {
                                           mSecureNfcEnabled ? 0 : hostTechMask);
     if (nfaStat != NFA_STATUS_OK)
       LOG(ERROR) << fn << "Failed to configure DH technology routing.";
-    return hostTechMask;
+    nfaStat = NFA_CeConfigureUiccListenTech(NFC_DH_ID, hostTechMask);
+    if (nfaStat != NFA_STATUS_OK)
+      LOG(ERROR) << fn << "Failed to configure DH UICC listen technologies.";
   }
 
   // Clear DH technology route on NFC-A
@@ -1389,6 +1436,11 @@ int RoutingManager::
   return getInstance().mDefaultOffHostRoute;
 }
 
+int RoutingManager::
+    com_android_nfc_cardemulation_doGetDefaultFelicaRouteDestination(JNIEnv*) {
+  return getInstance().mDefaultFelicaRoute;
+}
+
 jbyteArray
 RoutingManager::com_android_nfc_cardemulation_doGetOffHostUiccDestination(
     JNIEnv* e) {
@@ -1425,4 +1477,18 @@ int RoutingManager::com_android_nfc_cardemulation_doGetAidMatchingMode(
 int RoutingManager::
     com_android_nfc_cardemulation_doGetDefaultIsoDepRouteDestination(JNIEnv*) {
   return getInstance().mDefaultIsoDepRoute;
+}
+
+/*******************************************************************************
+**
+** Function:        com_android_nfc_cardemulation_doGetDefaultScRouteDestination
+**
+** Description:     Retrieves the default NFCEE route
+**
+** Returns:         default NFCEE route
+**
+*******************************************************************************/
+int RoutingManager::com_android_nfc_cardemulation_doGetDefaultScRouteDestination(
+    JNIEnv*) {
+  return getInstance().mDefaultSysCodeRoute;
 }
