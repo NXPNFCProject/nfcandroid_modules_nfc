@@ -17,6 +17,7 @@
 package android.nfc.cardemulation;
 
 import android.Manifest;
+import android.annotation.CallbackExecutor;
 import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
 import android.annotation.NonNull;
@@ -33,15 +34,18 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.nfc.ComponentNameAndUser;
 import android.nfc.Constants;
 import android.nfc.Flags;
 import android.nfc.INfcCardEmulation;
+import android.nfc.INfcEventListener;
 import android.nfc.NfcAdapter;
 import android.os.Build;
 import android.os.RemoteException;
 import android.os.UserHandle;
 import android.provider.Settings;
 import android.provider.Settings.SettingNotFoundException;
+import android.util.ArrayMap;
 import android.util.Log;
 
 import java.lang.annotation.Retention;
@@ -50,6 +54,8 @@ import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.concurrent.Executor;
 import java.util.regex.Pattern;
 
 /**
@@ -178,6 +184,65 @@ public final class CardEmulation {
      */
     @FlaggedApi(Flags.FLAG_NFC_OVERRIDE_RECOVER_ROUTING_TABLE)
     public static final int PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET = -1;
+
+    /**
+     * Status code returned when {@link #setServiceEnabledForCategoryOther(ComponentName, boolean)}
+     * succeeded.
+     * @hide
+     */
+    @SystemApi
+    @FlaggedApi(Flags.FLAG_NFC_SET_SERVICE_ENABLED_FOR_CATEGORY_OTHER)
+    public static final int SET_SERVICE_ENABLED_STATUS_OK = 0;
+
+    /**
+     * Status code returned when {@link #setServiceEnabledForCategoryOther(ComponentName, boolean)}
+     * failed due to the unsupported feature.
+     * @hide
+     */
+    @SystemApi
+    @FlaggedApi(Flags.FLAG_NFC_SET_SERVICE_ENABLED_FOR_CATEGORY_OTHER)
+    public static final int SET_SERVICE_ENABLED_STATUS_FAILURE_FEATURE_UNSUPPORTED = 1;
+
+    /**
+     * Status code returned when {@link #setServiceEnabledForCategoryOther(ComponentName, boolean)}
+     * failed due to the invalid service.
+     * @hide
+     */
+    @SystemApi
+    @FlaggedApi(Flags.FLAG_NFC_SET_SERVICE_ENABLED_FOR_CATEGORY_OTHER)
+    public static final int SET_SERVICE_ENABLED_STATUS_FAILURE_INVALID_SERVICE = 2;
+
+    /**
+     * Status code returned when {@link #setServiceEnabledForCategoryOther(ComponentName, boolean)}
+     * failed due to the service is already set to the requested status.
+     * @hide
+     */
+    @SystemApi
+    @FlaggedApi(Flags.FLAG_NFC_SET_SERVICE_ENABLED_FOR_CATEGORY_OTHER)
+    public static final int SET_SERVICE_ENABLED_STATUS_FAILURE_ALREADY_SET = 3;
+
+    /**
+     * Status code returned when {@link #setServiceEnabledForCategoryOther(ComponentName, boolean)}
+     * failed due to unknown error.
+     * @hide
+     */
+    @SystemApi
+    @FlaggedApi(Flags.FLAG_NFC_SET_SERVICE_ENABLED_FOR_CATEGORY_OTHER)
+    public static final int SET_SERVICE_ENABLED_STATUS_FAILURE_UNKNOWN_ERROR = 4;
+
+    /**
+     * Status code returned by {@link #setServiceEnabledForCategoryOther(ComponentName, boolean)}
+     * @hide
+     */
+    @IntDef(prefix = "SET_SERVICE_ENABLED_STATUS_", value = {
+            SET_SERVICE_ENABLED_STATUS_OK,
+            SET_SERVICE_ENABLED_STATUS_FAILURE_FEATURE_UNSUPPORTED,
+            SET_SERVICE_ENABLED_STATUS_FAILURE_INVALID_SERVICE,
+            SET_SERVICE_ENABLED_STATUS_FAILURE_ALREADY_SET,
+            SET_SERVICE_ENABLED_STATUS_FAILURE_UNKNOWN_ERROR
+    })
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface SetServiceEnabledStatusCode {}
 
     static boolean sIsInitialized = false;
     static HashMap<Context, CardEmulation> sCardEmus = new HashMap<Context, CardEmulation>();
@@ -877,22 +942,24 @@ public final class CardEmulation {
     }
 
     /**
-     * Allows to set or unset preferred service (category other) to avoid  AID Collision.
+     * Allows to set or unset preferred service (category other) to avoid AID Collision. The user
+     * should use corresponding context using {@link Context#createContextAsUser(UserHandle, int)}
      *
      * @param service The ComponentName of the service
      * @param status  true to enable, false to disable
-     * @param userId the user handle of the user whose information is being requested.
-     * @return set service for the category and true if service is already set return false.
+     * @return true if preferred service is successfully set or unset, otherwise return false.
      *
      * @hide
      */
-    public boolean setServiceEnabledForCategoryOther(ComponentName service, boolean status,
-                                                     int userId) {
-        if (service == null) {
-            throw new NullPointerException("activity or service or category is null");
-        }
+    @SystemApi
+    @FlaggedApi(Flags.FLAG_NFC_SET_SERVICE_ENABLED_FOR_CATEGORY_OTHER)
+    @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
+    @SetServiceEnabledStatusCode
+    public int setServiceEnabledForCategoryOther(@NonNull ComponentName service,
+            boolean status) {
         return callServiceReturn(() ->
-                sService.setServiceEnabledForCategoryOther(userId, service, status), false);
+                sService.setServiceEnabledForCategoryOther(mContext.getUser().getIdentifier(),
+                        service, status), SET_SERVICE_ENABLED_STATUS_FAILURE_UNKNOWN_ERROR);
     }
 
     /** @hide */
@@ -1075,5 +1142,108 @@ public final class CardEmulation {
             case PROTOCOL_AND_TECHNOLOGY_ROUTE_DEFAULT -> "default";
             default -> throw new IllegalStateException("Unexpected value: " + route);
         };
+    }
+
+    /** Listener for preferred service state changes. */
+    @FlaggedApi(android.nfc.Flags.FLAG_NFC_EVENT_LISTENER)
+    public interface NfcEventListener {
+        /**
+         * This method is called when this package gains or loses preferred Nfc service status,
+         * either the Default Wallet Role holder (see {@link
+         * android.app.role.RoleManager#ROLE_WALLET}) or the preferred service of the foreground
+         * activity set with {@link #setPreferredService(Activity, ComponentName)}
+         *
+         * @param isPreferred true is this service has become the preferred Nfc service, false if it
+         *     is no longer the preferred service
+         */
+        @FlaggedApi(android.nfc.Flags.FLAG_NFC_EVENT_LISTENER)
+        default void onPreferredServiceChanged(boolean isPreferred) {}
+
+        /**
+         * This method is called when observe mode has been enabled or disabled.
+         *
+         * @param isEnabled true if observe mode has been enabled, false if it has been disabled
+         */
+        @FlaggedApi(android.nfc.Flags.FLAG_NFC_EVENT_LISTENER)
+        default void onObserveModeStateChanged(boolean isEnabled) {}
+    }
+
+    private final ArrayMap<NfcEventListener, Executor> mNfcEventListeners = new ArrayMap<>();
+
+    final INfcEventListener mINfcEventListener =
+            new INfcEventListener.Stub() {
+                public void onPreferredServiceChanged(ComponentNameAndUser componentNameAndUser) {
+                    if (!android.nfc.Flags.nfcEventListener()) {
+                        return;
+                    }
+                    boolean isPreferred =
+                            componentNameAndUser != null
+                                    && componentNameAndUser.getUserId()
+                                            == mContext.getUser().getIdentifier()
+                                    && componentNameAndUser.getComponentName() != null
+                                    && Objects.equals(
+                                            mContext.getPackageName(),
+                                            componentNameAndUser.getComponentName()
+                                                    .getPackageName());
+                    synchronized (mNfcEventListeners) {
+                        mNfcEventListeners.forEach(
+                                (listener, executor) -> {
+                                    executor.execute(
+                                            () -> listener.onPreferredServiceChanged(isPreferred));
+                                });
+                    }
+                }
+
+                public void onObserveModeStateChanged(boolean isEnabled) {
+                    if (!android.nfc.Flags.nfcEventListener()) {
+                        return;
+                    }
+                    synchronized (mNfcEventListeners) {
+                        mNfcEventListeners.forEach(
+                                (listener, executor) -> {
+                                    executor.execute(
+                                            () -> listener.onObserveModeStateChanged(isEnabled));
+                                });
+                    }
+                }
+            };
+
+    /**
+     * Register a listener for NFC Events.
+     *
+     * @param executor The Executor to run the call back with
+     * @param listener The listener to register
+     */
+    @FlaggedApi(android.nfc.Flags.FLAG_NFC_EVENT_LISTENER)
+    public void registerNfcEventListener(
+            @NonNull @CallbackExecutor Executor executor, @NonNull NfcEventListener listener) {
+        if (!android.nfc.Flags.nfcEventListener()) {
+            return;
+        }
+        synchronized (mNfcEventListeners) {
+            mNfcEventListeners.put(listener, executor);
+            if (mNfcEventListeners.size() == 1) {
+                callService(() -> sService.registerNfcEventListener(mINfcEventListener));
+            }
+        }
+    }
+
+    /**
+     * Unregister a preferred service listener that was previously registered with {@link
+     * #registerNfcEventListener(Executor, NfcEventListener)}
+     *
+     * @param listener The previously registered listener to unregister
+     */
+    @FlaggedApi(android.nfc.Flags.FLAG_NFC_EVENT_LISTENER)
+    public void unregisterNfcEventListener(@NonNull NfcEventListener listener) {
+        if (!android.nfc.Flags.nfcEventListener()) {
+            return;
+        }
+        synchronized (mNfcEventListeners) {
+            mNfcEventListeners.remove(listener);
+            if (mNfcEventListeners.size() == 0) {
+                callService(() -> sService.unregisterNfcEventListener(mINfcEventListener));
+            }
+        }
     }
 }

@@ -588,7 +588,6 @@ public final class NfcAdapter {
     static INfcTag sTagService;
     static INfcCardEmulation sCardEmulationService;
     static INfcFCardEmulation sNfcFCardEmulationService;
-    static IT4tNdefNfcee sNdefNfceeService;
 
     /**
      * The NfcAdapter object for each application context.
@@ -826,13 +825,6 @@ public final class NfcAdapter {
                     Log.e(TAG, "could not retrieve card emulation service");
                     throw new UnsupportedOperationException();
                 }
-            }
-            try {
-                sNdefNfceeService = sService.getT4tNdefNfceeInterface();
-            } catch (RemoteException e) {
-                sNdefNfceeService = null;
-                Log.e(TAG, "could not retrieve NDEF NFCEE service");
-                throw new UnsupportedOperationException();
             }
             sIsInitialized = true;
         }
@@ -1157,8 +1149,9 @@ public final class NfcAdapter {
     }
 
     /**
-     * Pauses polling for a {@code timeoutInMs} millis. If polling must be resumed before timeout,
-     * use {@link #resumePolling()}.
+     * Pauses NFC tag reader mode polling for a {@code timeoutInMs} millisecond.
+     * In case of {@code timeoutInMs} is zero or invalid polling will be stopped indefinitely
+     * use {@link #resumePolling() to resume the polling.
      * @hide
      */
     public void pausePolling(int timeoutInMs) {
@@ -1217,9 +1210,8 @@ public final class NfcAdapter {
     }
 
     /**
-     * Resumes default polling for the current device state if polling is paused. Calling
-     * this while polling is not paused is a no-op.
-     *
+     * Resumes default NFC tag reader mode polling for the current device state if polling is
+     * paused. Calling this while already in polling is a no-op.
      * @hide
      */
     public void resumePolling() {
@@ -2802,11 +2794,8 @@ public final class NfcAdapter {
             @IntRange(from = 0, to = 15) int gid, @IntRange(from = 0) int oid,
             @NonNull byte[] payload) {
         Objects.requireNonNull(payload, "Payload must not be null");
-        try {
-            return sService.sendVendorNciMessage(mt, gid, oid, payload);
-        } catch (RemoteException e) {
-            throw e.rethrowFromSystemServer();
-        }
+        return callServiceReturn(() ->  sService.sendVendorNciMessage(mt, gid, oid, payload),
+                SEND_VENDOR_NCI_STATUS_FAILED);
     }
 
     /**
@@ -2877,6 +2866,18 @@ public final class NfcAdapter {
         @FlaggedApi(Flags.FLAG_NFC_VENDOR_CMD)
         void onVendorNciNotification(
                 @IntRange(from = 9, to = 15) int gid, int oid, @NonNull byte[] payload);
+    }
+
+    /**
+     * Used by data migration to indicate data migration is in progrerss or not.
+     *
+     * Note: This is @hide intentionally since the client is inside the NFC apex.
+     * @param inProgress true if migration is in progress, false once done.
+     * @hide
+     */
+    @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
+    public void indicateDataMigration(boolean inProgress) {
+        callService(() -> sService.indicateDataMigration(inProgress, mContext.getPackageName()));
     }
 
     /**

@@ -18,6 +18,7 @@ package android.nfc;
 
 import android.app.PendingIntent;
 import android.content.IntentFilter;
+import android.nfc.Entry;
 import android.nfc.NdefMessage;
 import android.nfc.Tag;
 import android.nfc.TechListParcel;
@@ -30,7 +31,6 @@ import android.nfc.INfcCardEmulation;
 import android.nfc.INfcFCardEmulation;
 import android.nfc.INfcOemExtensionCallback;
 import android.nfc.INfcUnlockHandler;
-import android.nfc.IT4tNdefNfcee;
 import android.nfc.ITagRemovedCallback;
 import android.nfc.INfcDta;
 import android.nfc.INfcWlcStateListener;
@@ -118,5 +118,6 @@ interface INfcAdapter
     void triggerInitialization();
     boolean getSettingStatus();
     boolean isTagPresent();
-    IT4tNdefNfcee getT4tNdefNfceeInterface();
+    List<Entry> getRoutingTableEntryList();
+    void indicateDataMigration(boolean inProgress, String pkg);
 }
