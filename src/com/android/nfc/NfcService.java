@@ -5502,6 +5502,13 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
      */
     public void addT4tNfceeAid() {
         if (!mDeviceHost.isNdefNfceeEmulationSupported()) return;
+        if (mIsAlwaysOnSupported && (mAlwaysOnState == NfcAdapter.STATE_TURNING_ON
+                || mAlwaysOnState == NfcAdapter.STATE_ON)) {
+            if (mAlwaysOnMode == NfcOemExtension.ENABLE_TRANSPARENT) {
+                Log.i(TAG, "Skip T4T AID Route!");
+                return;
+            }
+        }
         Log.i(TAG, "Add T4T Nfcee AID");
         int ndefNfceeRouteId = mDeviceHost.getNdefNfceeRouteId();
         routeAids(DEFAULT_T4T_NFCEE_AID, ndefNfceeRouteId,
