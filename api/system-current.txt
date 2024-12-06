@@ -202,9 +202,9 @@ package android.nfc {
     method @IntRange(from=15, to=32767) public int getCcFileLength();
     method @IntRange(from=0xffffffff, to=65535) public int getFileId();
     method @IntRange(from=5, to=32767) public int getMaxSize();
-    method public boolean getReadAccess();
     method public int getVersion();
-    method public boolean getWriteAccess();
+    method public boolean isReadAllowed();
+    method public boolean isWriteAllowed();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field @NonNull public static final android.os.Parcelable.Creator<android.nfc.T4tNdefNfceeCcFileInfo> CREATOR;
     field public static final int VERSION_2_0 = 32; // 0x20
