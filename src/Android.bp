@@ -56,6 +56,7 @@ cc_library {
         "gki/common",
         "nfa/include",
         "nfc/include",
+        "nfc_vendor_extn/include",
     ],
     srcs: [
         "nfa/ce/*.cc",
@@ -70,6 +71,7 @@ cc_library {
         "nfc/ndef/*.cc",
         "nfc/nfc/*.cc",
         "nfc/tags/*.cc",
+        "nfc_vendor_extn/*.cc",
         "adaptation/*.cc",
         "gki/common/*.cc",
         "gki/ulinux/*.cc",
