@@ -708,6 +708,7 @@ void NfcAdaptation::Finalize() {
     }
     AIBinder_unlinkToDeath(mAidlHal->asBinder().get(), mDeathRecipient.get(),
                            nullptr);
+    mAidlHal = nullptr;
   } else if (mHal != nullptr) {
     if (sVndExtnsPresent) {
       sNfcVendorExtn->finalize();
