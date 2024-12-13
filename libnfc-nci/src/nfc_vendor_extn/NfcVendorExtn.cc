@@ -121,7 +121,12 @@ bool NfcVendorExtn::Initialize(sp<INfc> hidlHal,
   LOG(VERBOSE) << StringPrintf("%s:", __func__);
   mVendorExtnCb.hidlHal = hidlHal;
   mVendorExtnCb.aidlHal = aidlHal;
-  return NfcExtn_LibSetup();
+  if (!NfcExtn_LibSetup()) {
+    mVendorExtnCb.hidlHal = nullptr;
+    mVendorExtnCb.aidlHal = nullptr;
+    return false;
+  }
+  return true;
 }
 
 void NfcVendorExtn::setNciCallback(tHAL_NFC_CBACK* pHalCback,
@@ -215,5 +220,7 @@ void phNfcExtn_LibClose() {
 bool NfcVendorExtn::finalize(void) {
   LOG(VERBOSE) << StringPrintf("%s:", __func__);
   phNfcExtn_LibClose();
+  mVendorExtnCb.hidlHal = nullptr;
+  mVendorExtnCb.aidlHal = nullptr;
   return true;
 }
