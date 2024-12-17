@@ -206,7 +206,7 @@ public interface DeviceHost {
      */
     boolean isNdefNfceeEmulationSupported();
 
-    public boolean commitRouting();
+    public int commitRouting();
 
     public void registerT3tIdentifier(byte[] t3tIdentifier);
 
