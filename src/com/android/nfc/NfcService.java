@@ -139,12 +139,14 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -198,6 +200,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
     static final String NATIVE_LOG_FILE_NAME = "native_crash_logs";
     static final String NATIVE_LOG_FILE_PATH = "/data/misc/nfc/logs";
+    static final String PATH_NCI_UPDATE_CONF = "/data/nfc/libnfc-nci-update.conf";
     static final int NATIVE_CRASH_FILE_SIZE = 1024 * 1024;
     private static final String WAIT_FOR_OEM_ALLOW_BOOT_TIMER_TAG = "NfcWaitForSimTag";
     static final String DEFAULT_T4T_NFCEE_AID = "D2760000850101";
@@ -329,6 +332,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     private static final int NCI_GID_PROP = 0x0F;
     private static final int NCI_MSG_PROP_ANDROID = 0x0C;
     private static final int NCI_MSG_PROP_ANDROID_POWER_SAVING = 0x01;
+    private static final int NCI_MSG_PROP_ANDROID_OVERRIDE_NCI_CONFIG = 0x07;
     private static final int NCI_PROP_ANDROID_QUERY_POWER_SAVING_STATUS_CMD = 0x05;
     private static final int POWER_STATE_SWITCH_ON = 0x01;
 
@@ -809,6 +813,40 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         }
         Log.d(TAG, "Enable PowerSavingMode failed");
         return false;
+    }
+
+    private boolean updateNciConfig(String configs) {
+        /*Create/Overwrite/Delete libnfc-nci-update.conf & content at runtime*/
+        FileWriter configWriter = null;
+        try {
+            File configFile = new File(PATH_NCI_UPDATE_CONF);
+            if (configs == "" || configs == null) {
+                if (configFile.delete()) {
+                    if (DBG) Log.d(TAG,
+                        "removed libnfc-nci-update config file, would use default " +
+                        "libnfc-nci.conf settings");
+                } else
+                    Log.e(TAG,"Delete libnfc-nci-update error");
+            } else {
+                configWriter = new FileWriter(configFile);
+                configWriter.write(configs);
+                if (DBG) Log.d(TAG,
+                    "ibnfc-nci-update.conf updated successfully" );
+            }
+        } catch (Exception e) {
+            Log.e(TAG,"Exception while updating NCI config file");
+            return false;
+        } finally {
+            if (configWriter != null) {
+                try {
+                    configWriter.close();
+                } catch (Exception e) {
+                    Log.e(TAG,"Exception while closing NCI config file");
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     public void onWlcData(Map<String, Integer> WlcDeviceInfo) {
@@ -3086,6 +3124,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     && payload[0] == NCI_MSG_PROP_ANDROID_POWER_SAVING;
         }
 
+        private static boolean isUpdateNciConfig(int gid, int oid, byte[] payload) {
+            return gid == NCI_GID_PROP && oid == NCI_MSG_PROP_ANDROID && payload.length > 0
+                    && payload[0] == NCI_MSG_PROP_ANDROID_OVERRIDE_NCI_CONFIG;
+        }
+
         @Override
         public synchronized int sendVendorNciMessage(int mt, int gid, int oid, byte[] payload)
                 throws RemoteException {
@@ -3100,6 +3143,13 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                    if(isPowerSavingModeCmd(gid, oid, payload)) {
                         boolean status = setPowerSavingMode(payload[1] == 0x01 ? true : false);
                         return status? NCI_STATUS_OK : NCI_STATUS_FAILED;
+                    } else if (isUpdateNciConfig(gid, oid, payload)) {
+                        String configs = "";
+                        if (payload.length > 2)
+                            configs = new String(Arrays.copyOfRange(payload, 1, payload.length),
+                                                    StandardCharsets.UTF_8);
+                        boolean status = updateNciConfig(configs);
+                        return status ? NCI_STATUS_OK : NCI_STATUS_FAILED;
                     } else {
                        NfcVendorNciResponse response =
                                mDeviceHost.sendRawVendorCmd(mt, gid, oid, payload);
