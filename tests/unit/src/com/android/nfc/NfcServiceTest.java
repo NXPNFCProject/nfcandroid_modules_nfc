@@ -126,6 +126,7 @@ import android.nfc.INfcVendorNciCallback;
 
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -1362,6 +1363,7 @@ public final class NfcServiceTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_COALESCE_RF_EVENTS)
     public void testOnRemoteFieldCoalessing() throws RemoteException {
+        Assume.assumeTrue(com.android.nfc.flags.Flags.coalesceRfEvents());
         createNfcServiceWithoutStatsdUtils();
         List<String> userlist = new ArrayList<>();
         userlist.add("com.android.nfc");
