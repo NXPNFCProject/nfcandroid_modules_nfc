@@ -31,6 +31,7 @@
 #include <cutils/properties.h>
 #include <hwbinder/ProcessState.h>
 
+#include "NfcVendorExtn.h"
 #include "debug_nfcsnoop.h"
 #include "nfa_api.h"
 #include "nfa_rw_api.h"
@@ -88,6 +89,8 @@ std::shared_ptr<INfcAidlClientCallback> mAidlCallback;
 ::ndk::ScopedAIBinder_DeathRecipient mDeathRecipient;
 std::shared_ptr<INfcAidl> mAidlHal;
 int32_t mAidlHalVer;
+static NfcVendorExtn* sNfcVendorExtn = nullptr;
+static bool sVndExtnsPresent = false;
 
 bool nfc_nci_reset_keep_cfg_enabled = false;
 uint8_t nfc_nci_reset_type = 0x00;
@@ -168,12 +171,25 @@ class NfcClientCallback : public INfcClientCallback {
   Return<void> sendEvent(
       ::android::hardware::nfc::V1_0::NfcEvent event,
       ::android::hardware::nfc::V1_0::NfcStatus event_status) override {
+    if (sVndExtnsPresent) {
+      sNfcVendorExtn->processEvent((uint8_t)event,
+                                   (tHAL_NFC_STATUS)event_status);
+    }
     mEventCallback((uint8_t)event, (tHAL_NFC_STATUS)event_status);
     return Void();
   };
   Return<void> sendData(
       const ::android::hardware::nfc::V1_0::NfcData& data) override {
     ::android::hardware::nfc::V1_0::NfcData copy = data;
+    if (sVndExtnsPresent) {
+      bool isVndExtSpecRsp =
+          sNfcVendorExtn->processRspNtf(copy.size(), &copy[0]);
+      // If true to be consumed by vendor extension, otherwise need to be
+      // handled in libnfc-nci
+      if (isVndExtSpecRsp) {
+        return Void();
+      }
+    }
     mDataCallback(copy.size(), &copy[0]);
     return Void();
   };
@@ -273,11 +289,23 @@ class NfcAidlClientCallback
       default:
         s_num = HAL_NFC_STATUS_FAILED;
     }
+    if (sVndExtnsPresent) {
+      sNfcVendorExtn->processEvent(e_num, (tHAL_NFC_STATUS)s_num);
+    }
     mEventCallback(e_num, (tHAL_NFC_STATUS)s_num);
     return ::ndk::ScopedAStatus::ok();
   };
   ::ndk::ScopedAStatus sendData(const std::vector<uint8_t>& data) override {
     std::vector<uint8_t> copy = data;
+    if (sVndExtnsPresent) {
+      bool isVndExtSpecRsp =
+          sNfcVendorExtn->processRspNtf(copy.size(), &copy[0]);
+      // If true to be consumed by vendor extension, otherwise need to be
+      // handled in libnfc-nci
+      if (isVndExtSpecRsp) {
+        return ::ndk::ScopedAStatus::ok();
+      }
+    }
     mDataCallback(copy.size(), &copy[0]);
     return ::ndk::ScopedAStatus::ok();
   };
@@ -300,6 +328,7 @@ NfcAdaptation::NfcAdaptation() {
   memset(&mHalEntryFuncs, 0, sizeof(mHalEntryFuncs));
   mDeathRecipient = ::ndk::ScopedAIBinder_DeathRecipient(
       AIBinder_DeathRecipient_new(HalAidlBinderDied));
+  sNfcVendorExtn = NfcVendorExtn::getInstance();
 }
 
 /*******************************************************************************
@@ -336,11 +365,20 @@ void NfcAdaptation::GetVendorConfigs(
     std::map<std::string, ConfigValue>& configMap) {
   NfcVendorConfigV1_2 configValue;
   NfcAidlConfig aidlConfigValue;
+  VendorExtnConfig vendorExtnConfig;
   if (mAidlHal) {
     mAidlHal->getConfig(&aidlConfigValue);
+    vendorExtnConfig.aidlVendorConfig = &aidlConfigValue;
+    if (sVndExtnsPresent) {
+      sNfcVendorExtn->getVendorConfigs(vendorExtnConfig);
+    }
   } else if (mHal_1_2) {
     mHal_1_2->getConfig_1_2(
         [&configValue](NfcVendorConfigV1_2 config) { configValue = config; });
+    vendorExtnConfig.hidlVendorConfig = &configValue;
+    if (sVndExtnsPresent) {
+      sNfcVendorExtn->getVendorConfigs(vendorExtnConfig);
+    }
   } else if (mHal_1_1) {
     mHal_1_1->getConfig([&configValue](NfcVendorConfigV1_1 config) {
       configValue.v1_1 = config;
@@ -599,9 +637,15 @@ void NfcAdaptation::Finalize() {
   NfcConfig::clear();
 
   if (mAidlHal != nullptr) {
+    if (sVndExtnsPresent) {
+      sNfcVendorExtn->finalize();
+    }
     AIBinder_unlinkToDeath(mAidlHal->asBinder().get(), mDeathRecipient.get(),
                            nullptr);
   } else if (mHal != nullptr) {
+    if (sVndExtnsPresent) {
+      sNfcVendorExtn->finalize();
+    }
     mNfcHalDeathRecipient->finalize();
   }
   LOG(VERBOSE) << StringPrintf("%s: exit", func);
@@ -815,6 +859,7 @@ void NfcAdaptation::HalTerminate() {
 void NfcAdaptation::HalOpen(tHAL_NFC_CBACK* p_hal_cback,
                             tHAL_NFC_DATA_CBACK* p_data_cback) {
   const char* func = "NfcAdaptation::HalOpen";
+  int32_t SUPPORTED_SYS_EXT_AIDL_VER = 1;
   LOG(VERBOSE) << StringPrintf("%s", func);
 
   if (mAidlHal != nullptr) {
@@ -832,6 +877,10 @@ void NfcAdaptation::HalOpen(tHAL_NFC_CBACK* p_hal_cback,
       mAidlHal->setEnableVerboseLogging(verbose_vendor_log);
       LOG(VERBOSE) << StringPrintf("%s: verbose_vendor_log=%u", __func__,
                                  verbose_vendor_log);
+      if (mAidlHalVer <= SUPPORTED_SYS_EXT_AIDL_VER) {
+        sVndExtnsPresent = sNfcVendorExtn->Initialize(
+            {nullptr, mAidlHal, p_hal_cback, p_data_cback});
+      }
     }
   } else if (mHal_1_1 != nullptr) {
     mCallback = new NfcClientCallback(p_hal_cback, p_data_cback);
@@ -839,6 +888,8 @@ void NfcAdaptation::HalOpen(tHAL_NFC_CBACK* p_hal_cback,
   } else if (mHal != nullptr) {
     mCallback = new NfcClientCallback(p_hal_cback, p_data_cback);
     mHal->open(mCallback);
+    sVndExtnsPresent =
+        sNfcVendorExtn->Initialize({mHal, nullptr, p_hal_cback, p_data_cback});
   }
 }
 
@@ -874,6 +925,13 @@ void NfcAdaptation::HalWrite(uint16_t data_len, uint8_t* p_data) {
   const char* func = "NfcAdaptation::HalWrite";
   LOG(VERBOSE) << StringPrintf("%s", func);
 
+  if (sVndExtnsPresent) {
+    bool isVndExtSpecCmd = sNfcVendorExtn->processCmd(data_len, p_data);
+    // If true to be handled in extension, otherwise processed to hal
+    if (isVndExtSpecCmd) {
+      return;
+    }
+  }
   if (mAidlHal != nullptr) {
     int ret;
     std::vector<uint8_t> aidl_data(p_data, p_data + data_len);
