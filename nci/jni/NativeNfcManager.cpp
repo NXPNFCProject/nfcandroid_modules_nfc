@@ -114,6 +114,7 @@ jmethodID gCachedNfcManagerNotifyEeAidSelected;
 jmethodID gCachedNfcManagerNotifyEeProtocolSelected;
 jmethodID gCachedNfcManagerNotifyEeTechSelected;
 jmethodID gCachedNfcManagerNotifyEeListenActivated;
+jmethodID gCachedNfcManagerOnRestartRfDiscovery;
 const char* gNativeNfcTagClassName = "com/android/nfc/dhimpl/NativeNfcTag";
 const char* gNativeNfcManagerClassName =
     "com/android/nfc/dhimpl/NativeNfcManager";
@@ -183,6 +184,7 @@ static jboolean nfcManager_doSetPowerSavingMode(JNIEnv* e, jobject o,
 static void sendRawVsCmdCallback(uint8_t event, uint16_t param_len,
                                  uint8_t* p_param);
 static jbyteArray nfcManager_getProprietaryCaps(JNIEnv* e, jobject o);
+static void nfcManager_restartRfDiscovery(JNIEnv* e, jobject o);
 tNFA_STATUS gVSCmdStatus = NFA_STATUS_OK;
 uint16_t gCurrentConfigLen;
 uint8_t gConfig[256];
@@ -753,6 +755,9 @@ static jboolean nfcManager_initNativeStruc(JNIEnv* e, jobject o) {
   gCachedNfcManagerNotifyEeTechSelected = e->GetMethodID(
       cls.get(), "notifyEeTechSelected", "(ILjava/lang/String;)V");
 
+  gCachedNfcManagerOnRestartRfDiscovery =
+      e->GetMethodID(cls.get(), "onRestartRfDiscovery", "()V");
+
   if (nfc_jni_cache_object(e, gNativeNfcTagClassName, &(nat->cached_NfcTag)) ==
       -1) {
     LOG(ERROR) << StringPrintf("%s: fail cache NativeNfcTag", __func__);
@@ -1152,6 +1157,21 @@ void static nfaVSCallback(uint8_t event, uint16_t param_len, uint8_t* p_param) {
                             android::gCachedNfcManagerNotifyPollingLoopFrame,
                             (jint)param_len, dataJavaArray.get());
 
+        } break;
+        case NCI_ANDROID_RESTART_RF_DISCOVERY_REQUEST_NTF: {
+                struct nfc_jni_native_data* nat = getNative(NULL, NULL);
+                if (!nat) {
+                  LOG(ERROR) << StringPrintf("cached nat is null");
+                  return;
+                }
+                JNIEnv* e = NULL;
+                ScopedAttach attach(nat->vm, &e);
+                if (e == NULL) {
+                  LOG(ERROR) << StringPrintf("jni env is null");
+                  return;
+                }
+                e->CallVoidMethod(nat->manager,
+                                  android::gCachedNfcManagerOnRestartRfDiscovery);
         } break;
         default:
           LOG(DEBUG) << StringPrintf("Unknown Android sub opcode %x",
@@ -2574,6 +2594,7 @@ static JNINativeMethod gMethods[] = {
     {"enableVendorNciNotifications", "(Z)V",
      (void*)ncfManager_nativeEnableVendorNciNotifications},
     {"injectNtf", "([B)V", (void*)nfcManager_injectNtf},
+    {"doRestartRfDiscovery", "()V", (void*)nfcManager_restartRfDiscovery},
 };
 
 /*******************************************************************************
@@ -2812,6 +2833,22 @@ static jbyteArray nfcManager_getProprietaryCaps(JNIEnv* e, jobject o) {
   CHECK(rtJavaArray);
   e->SetByteArrayRegion(rtJavaArray, 0, gCaps.size(), (jbyte*)gCaps.data());
   return rtJavaArray;
+}
+
+/*******************************************************************************
+**
+** Function:        nfcManager_restartRfDiscovery
+** Description:     Restarts RF discovery
+**
+**                  e: JVM environment.
+**                  o: Java object.
+**
+*******************************************************************************/
+static void nfcManager_restartRfDiscovery(JNIEnv*, jobject) {
+  if (sRfEnabled) {
+    android::startRfDiscovery(false);
+  }
+  android::startRfDiscovery(true);
 }
 
 } /* namespace android */

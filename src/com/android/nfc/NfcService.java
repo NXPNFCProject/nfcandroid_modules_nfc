@@ -235,6 +235,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     static final int MSG_WATCHDOG_PING = 24;
     static final int MSG_SE_SELECTED_EVENT = 25;
     static final int MSG_UPDATE_SYSTEM_CODE_ROUTE = 26;
+    static final int MSG_RESTART_DISCOVERY = 27;
 
     static final String MSG_ROUTE_AID_PARAM_TAG = "power";
 
@@ -793,6 +794,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     @Override
     public void onSeSelected() {
         sendMessage(NfcService.MSG_SE_SELECTED_EVENT, null);
+    }
+
+    @Override
+    public void onRestartRfDiscovery() {
+        sendMessage(NfcService.MSG_RESTART_DISCOVERY, null);
     }
 
     /**
@@ -4868,6 +4874,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 case MSG_UPDATE_SYSTEM_CODE_ROUTE:
                     if (DBG) Log.d(TAG, "Update system code");
                     mDeviceHost.setSystemCodeRoute((Integer) msg.obj);
+                    break;
+                case MSG_RESTART_DISCOVERY:
+                    mDeviceHost.restartRfDiscovery();
                     break;
                 default:
                     Log.e(TAG, "Unknown message received");

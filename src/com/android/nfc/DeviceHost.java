@@ -61,6 +61,10 @@ public interface DeviceHost {
         public void onEeListenActivated(boolean isActivated);
 
         public void onSeSelected();
+        /**
+         * On Restart Rf Discovery
+         */
+        void onRestartRfDiscovery();
     }
 
     public interface TagEndpoint {
@@ -308,4 +312,9 @@ public interface DeviceHost {
      * Get the active NFCEE list
      */
     public Map<String, Integer> dofetchActiveNfceeList();
+    public List<String> dofetchActiveNfceeList();
+    /**
+     * Restarts RF Discovery
+     */
+    void restartRfDiscovery();
 }
