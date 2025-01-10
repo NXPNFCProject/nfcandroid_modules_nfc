@@ -28,6 +28,9 @@ using INfcAidl = ::aidl::android::hardware::nfc::INfc;
 using NfcAidlConfig = ::aidl::android::hardware::nfc::NfcConfig;
 using NfcVendorConfigV1_2 = android::hardware::nfc::V1_2::NfcConfig;
 
+// This is only intended for a limited time to handle non-AOSP vendor interface
+// implementations on existing upgrading devices and not as a new extension point.
+// This will be removed once all devices are upgraded to the latest NFC HAL.
 /**
  * @brief Vendor extension control block holds below data's
  *        hidlHal - reference to HIDL Hal instance

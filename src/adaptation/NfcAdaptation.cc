@@ -112,6 +112,34 @@ extern bool nfa_poll_bail_out_mode;
 // ETSI TS 102 622, section 6.1.3.1
 static std::vector<uint8_t> host_allowlist;
 
+static int get_vsr_api_level() {
+  int vendor_api_level =
+      ::android::base::GetIntProperty("ro.vendor.api_level", -1);
+  if (vendor_api_level != -1) {
+    return vendor_api_level;
+  }
+
+  // Android S and older devices do not define ro.vendor.api_level
+  vendor_api_level = ::android::base::GetIntProperty("ro.board.api_level", -1);
+  if (vendor_api_level == -1) {
+    vendor_api_level =
+        ::android::base::GetIntProperty("ro.board.first_api_level", -1);
+  }
+
+  int product_api_level =
+      ::android::base::GetIntProperty("ro.product.first_api_level", -1);
+  if (product_api_level == -1) {
+    product_api_level =
+        ::android::base::GetIntProperty("ro.build.version.sdk", -1);
+  }
+
+  // VSR API level is the minimum of vendor_api_level and product_api_level.
+  if (vendor_api_level == -1 || vendor_api_level > product_api_level) {
+    return product_api_level;
+  }
+  return vendor_api_level;
+}
+
 namespace {
 void initializeGlobalDebugEnabledFlag() {
   bool nfc_debug_enabled =
@@ -877,7 +905,7 @@ void NfcAdaptation::HalOpen(tHAL_NFC_CBACK* p_hal_cback,
       mAidlHal->setEnableVerboseLogging(verbose_vendor_log);
       LOG(VERBOSE) << StringPrintf("%s: verbose_vendor_log=%u", __func__,
                                  verbose_vendor_log);
-      if (mAidlHalVer <= SUPPORTED_SYS_EXT_AIDL_VER) {
+      if (get_vsr_api_level() <= __ANDROID_API_V__) {
         sVndExtnsPresent = sNfcVendorExtn->Initialize(
             {nullptr, mAidlHal, p_hal_cback, p_data_cback});
       }
