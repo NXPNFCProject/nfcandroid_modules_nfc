@@ -393,20 +393,11 @@ void NfcAdaptation::GetVendorConfigs(
     std::map<std::string, ConfigValue>& configMap) {
   NfcVendorConfigV1_2 configValue;
   NfcAidlConfig aidlConfigValue;
-  VendorExtnConfig vendorExtnConfig;
   if (mAidlHal) {
     mAidlHal->getConfig(&aidlConfigValue);
-    vendorExtnConfig.aidlVendorConfig = &aidlConfigValue;
-    if (sVndExtnsPresent) {
-      sNfcVendorExtn->getVendorConfigs(vendorExtnConfig);
-    }
   } else if (mHal_1_2) {
     mHal_1_2->getConfig_1_2(
         [&configValue](NfcVendorConfigV1_2 config) { configValue = config; });
-    vendorExtnConfig.hidlVendorConfig = &configValue;
-    if (sVndExtnsPresent) {
-      sNfcVendorExtn->getVendorConfigs(vendorExtnConfig);
-    }
   } else if (mHal_1_1) {
     mHal_1_1->getConfig([&configValue](NfcVendorConfigV1_1 config) {
       configValue.v1_1 = config;
@@ -536,6 +527,9 @@ void NfcAdaptation::GetVendorConfigs(
           NAME_PRESENCE_CHECK_ALGORITHM,
           ConfigValue((uint32_t)configValue.v1_1.presenceCheckAlgorithm));
     }
+  }
+  if (sVndExtnsPresent) {
+    sNfcVendorExtn->getVendorConfigs(&configMap);
   }
 }
 /*******************************************************************************
@@ -833,6 +827,9 @@ void NfcAdaptation::InitializeHalDeviceContext() {
       mAidlHal->getInterfaceVersion(&mAidlHalVer);
       LOG(INFO) << StringPrintf("%s: INfcAidl::fromBinder returned ver(%d)",
                                 func, mAidlHalVer);
+      if (get_vsr_api_level() <= __ANDROID_API_V__) {
+        sVndExtnsPresent = sNfcVendorExtn->Initialize(nullptr, mAidlHal);
+      }
     }
     LOG_ALWAYS_FATAL_IF(mAidlHal == nullptr,
                         "Failed to retrieve the NFC AIDL!");
@@ -842,6 +839,7 @@ void NfcAdaptation::InitializeHalDeviceContext() {
                               (mHal->isRemote() ? "remote" : "local"));
     mNfcHalDeathRecipient = new NfcHalDeathRecipient(mHal);
     mHal->linkToDeath(mNfcHalDeathRecipient, 0);
+    sVndExtnsPresent = sNfcVendorExtn->Initialize(mHal, nullptr);
   }
 }
 
@@ -887,7 +885,6 @@ void NfcAdaptation::HalTerminate() {
 void NfcAdaptation::HalOpen(tHAL_NFC_CBACK* p_hal_cback,
                             tHAL_NFC_DATA_CBACK* p_data_cback) {
   const char* func = "NfcAdaptation::HalOpen";
-  int32_t SUPPORTED_SYS_EXT_AIDL_VER = 1;
   LOG(VERBOSE) << StringPrintf("%s", func);
 
   if (mAidlHal != nullptr) {
@@ -904,11 +901,7 @@ void NfcAdaptation::HalOpen(tHAL_NFC_CBACK* p_hal_cback,
           android::base::GetBoolProperty(VERBOSE_VENDOR_LOG_PROPERTY, false);
       mAidlHal->setEnableVerboseLogging(verbose_vendor_log);
       LOG(VERBOSE) << StringPrintf("%s: verbose_vendor_log=%u", __func__,
-                                 verbose_vendor_log);
-      if (get_vsr_api_level() <= __ANDROID_API_V__) {
-        sVndExtnsPresent = sNfcVendorExtn->Initialize(
-            {nullptr, mAidlHal, p_hal_cback, p_data_cback});
-      }
+                                   verbose_vendor_log);
     }
   } else if (mHal_1_1 != nullptr) {
     mCallback = new NfcClientCallback(p_hal_cback, p_data_cback);
@@ -916,8 +909,9 @@ void NfcAdaptation::HalOpen(tHAL_NFC_CBACK* p_hal_cback,
   } else if (mHal != nullptr) {
     mCallback = new NfcClientCallback(p_hal_cback, p_data_cback);
     mHal->open(mCallback);
-    sVndExtnsPresent =
-        sNfcVendorExtn->Initialize({mHal, nullptr, p_hal_cback, p_data_cback});
+  }
+  if (sVndExtnsPresent) {
+    sNfcVendorExtn->setNciCallback(p_hal_cback, p_data_cback);
   }
 }
 

@@ -19,14 +19,13 @@
 #include <android/hardware/nfc/1.1/INfc.h>
 #include <android/hardware/nfc/1.2/INfc.h>
 
+#include "config.h"
 #include "nfc_api.h"
 #include "nfc_hal_api.h"
 
 using android::sp;
 using android::hardware::nfc::V1_0::INfc;
 using INfcAidl = ::aidl::android::hardware::nfc::INfc;
-using NfcAidlConfig = ::aidl::android::hardware::nfc::NfcConfig;
-using NfcVendorConfigV1_2 = android::hardware::nfc::V1_2::NfcConfig;
 
 // This is only intended for a limited time to handle non-AOSP vendor interface
 // implementations on existing upgrading devices and not as a new extension point.
@@ -37,6 +36,7 @@ using NfcVendorConfigV1_2 = android::hardware::nfc::V1_2::NfcConfig;
  *        aidlHal - reference to AIDL Hal instance
  *        pHalCback - reference to HAL events callback
  *        pDataCallback - reference to NCI response and notification packets
+ *        configMap - holds the configs as keys and values
  *
  */
 struct VendorExtnCb {
@@ -44,15 +44,7 @@ struct VendorExtnCb {
   std::shared_ptr<INfcAidl> aidlHal;
   tHAL_NFC_CBACK* pHalCback;
   tHAL_NFC_DATA_CBACK* pDataCback;
-};
-
-/**
- * @brief Holds the vendor extension config
- *
- */
-struct VendorExtnConfig {
-  NfcAidlConfig* aidlVendorConfig;
-  NfcVendorConfigV1_2* hidlVendorConfig;
+  std::map<std::string, ConfigValue> configMap;
 };
 
 class NfcVendorExtn {
@@ -66,11 +58,24 @@ class NfcVendorExtn {
 
   /**
    * @brief This function sets up and initialize the extension feature
-   * @param vendorExtnCb
+   * @param hidlHal reference to HIDL Hal instance
+   * @param aidlHal reference to AIDL Hal instance
    * @return true if init is success else false
    *
    */
-  bool Initialize(VendorExtnCb vendorExtnCb);
+  bool Initialize(sp<INfc> hidlHal, std::shared_ptr<INfcAidl> aidlHal);
+
+  /**
+   * @brief This function sets ups the NCI event and data callback pointers.
+   * @param pHalCback reference to HAL events callback
+   * @param pDataCback reference to NCI response and notification packets
+   * @return None
+   * \Note: This function pointers will be used to notify the
+   * NCI event and data to upper layer.
+   *
+   */
+  void setNciCallback(tHAL_NFC_CBACK* pHalCback,
+                      tHAL_NFC_DATA_CBACK* pDataCback);
 
   /**
    * @brief sends the NCI packet to handle extension feature
@@ -107,10 +112,13 @@ class NfcVendorExtn {
 
   /**
    * @brief Loads the Nfc Vendor Config
-   * @return
+   * @param pConfigMap pointer to the config map
+   * @return None
+   * \Note @param pConfigMap is needed for future use
+   * to add the vendor specific properties.
    *
    */
-  void getVendorConfigs(VendorExtnConfig vndExtConfig);
+  void getVendorConfigs(std::map<std::string, ConfigValue>* pConfigMap);
 
   /**
    * @brief This function de-initializes the extension feature
@@ -121,7 +129,6 @@ class NfcVendorExtn {
 
  private:
   VendorExtnCb mVendorExtnCb;
-  VendorExtnConfig mVendorExtnConfig;
 
   NfcVendorExtn();
 
