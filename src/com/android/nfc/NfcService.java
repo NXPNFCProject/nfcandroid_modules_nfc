@@ -3153,6 +3153,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     && payload[0] == NCI_MSG_PROP_ANDROID_POWER_SAVING;
         }
 
+        private static boolean isQueryPowerSavingStatusCmd(int gid, int oid, byte[] payload) {
+          return gid == NCI_GID_PROP && oid == NCI_MSG_PROP_ANDROID && payload.length > 0
+                    && payload[0] == NCI_PROP_ANDROID_QUERY_POWER_SAVING_STATUS_CMD;
+        }
+
         private static boolean isUpdateNciConfig(int gid, int oid, byte[] payload) {
             return gid == NCI_GID_PROP && oid == NCI_MSG_PROP_ANDROID && payload.length > 0
                     && payload[0] == NCI_MSG_PROP_ANDROID_OVERRIDE_NCI_CONFIG;
@@ -3169,25 +3174,37 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
             FutureTask<Integer> sendVendorCmdTask = new FutureTask<>(
                 () -> {
-                   if(isPowerSavingModeCmd(gid, oid, payload)) {
-                        boolean status = setPowerSavingMode(payload[1] == 0x01 ? true : false);
-                        return status? NCI_STATUS_OK : NCI_STATUS_FAILED;
-                    } else if (isUpdateNciConfig(gid, oid, payload)) {
-                        String configs = "";
-                        if (payload.length > 2)
-                            configs = new String(Arrays.copyOfRange(payload, 1, payload.length),
-                                                    StandardCharsets.UTF_8);
-                        boolean status = updateNciConfig(configs);
-                        return status ? NCI_STATUS_OK : NCI_STATUS_FAILED;
-                    } else {
-                       NfcVendorNciResponse response =
-                               mDeviceHost.sendRawVendorCmd(mt, gid, oid, payload);
-                       if (response.status == NCI_STATUS_OK) {
-                           mHandler.post(() -> mNfcAdapter.sendVendorNciResponse(
-                                             response.gid, response.oid, response.payload));
-                       }
-                       return Integer.valueOf(response.status);
-                   }
+                        if (isPowerSavingModeCmd(gid, oid, payload)) {
+                            boolean status = setPowerSavingMode(payload[1] == 0x01);
+                            return status ? NCI_STATUS_OK : NCI_STATUS_FAILED;
+                        } else if (isQueryPowerSavingStatusCmd(gid, oid, payload)) {
+                            NfcVendorNciResponse response = new NfcVendorNciResponse(
+                                    (byte) NCI_STATUS_OK, NCI_GID_PROP, NCI_MSG_PROP_ANDROID,
+                                    new byte[] {
+                                            (byte) NCI_PROP_ANDROID_QUERY_POWER_SAVING_STATUS_CMD,
+                                            0x00,
+                                            mIsPowerSavingModeEnabled ? (byte) 0x01 : (byte) 0x00});
+                            if (response.status == NCI_STATUS_OK) {
+                                mHandler.post(() -> mNfcAdapter.sendVendorNciResponse(
+                                        response.gid, response.oid, response.payload));
+                            }
+                            return Integer.valueOf(response.status);
+                        } else if (isUpdateNciConfig(gid, oid, payload)) {
+                            String configs = "";
+                            if (payload.length > 2)
+                                configs = new String(Arrays.copyOfRange(payload, 1, payload.length),
+                                                        StandardCharsets.UTF_8);
+                            boolean status = updateNciConfig(configs);
+                            return status ? NCI_STATUS_OK : NCI_STATUS_FAILED;
+                        } else {
+                            NfcVendorNciResponse response =
+                                    mDeviceHost.sendRawVendorCmd(mt, gid, oid, payload);
+                            if (response.status == NCI_STATUS_OK) {
+                                mHandler.post(() -> mNfcAdapter.sendVendorNciResponse(
+                                        response.gid, response.oid, response.payload));
+                            }
+                            return Integer.valueOf(response.status);
+                        }
                 });
             int status = NCI_STATUS_FAILED;
             try {
