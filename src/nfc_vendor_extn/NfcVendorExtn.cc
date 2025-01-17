@@ -96,6 +96,8 @@ void NfcVendorExtn::getVendorConfigs(
   mVendorExtnCb.configMap = *pConfigMap;
 }
 
+VendorExtnCb* NfcVendorExtn::getVendorExtnCb() { return &mVendorExtnCb; }
+
 bool NfcVendorExtn::finalize(void) {
   LOG(VERBOSE) << StringPrintf("%s:", __func__);
   return true;

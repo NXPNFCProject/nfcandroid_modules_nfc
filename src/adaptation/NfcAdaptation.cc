@@ -140,6 +140,13 @@ static int get_vsr_api_level() {
   return vendor_api_level;
 }
 
+static void notifyHalBinderDied() {
+  if (sVndExtnsPresent) {
+    uint8_t event = -1, status = -1;
+    sNfcVendorExtn->processEvent(event, status);
+  }
+}
+
 namespace {
 void initializeGlobalDebugEnabledFlag() {
   bool nfc_debug_enabled =
@@ -177,6 +184,7 @@ void initializeNfcMuteTechRouteOptionFlag() {
 // Abort nfc service when AIDL process died.
 void HalAidlBinderDied(void* /* cookie */) {
   LOG(ERROR) << __func__ << "INfc aidl hal died, exiting procces to restart";
+  notifyHalBinderDied();
   exit(0);
 }
 
@@ -244,6 +252,7 @@ class NfcHalDeathRecipient : public hidl_death_recipient {
       mNfcDeathHal->unlinkToDeath(this);
     }
     mNfcDeathHal = NULL;
+    notifyHalBinderDied();
     exit(0);
   }
   void finalize() {
@@ -270,6 +279,15 @@ class NfcAidlClientCallback
 
   ::ndk::ScopedAStatus sendEvent(NfcAidlEvent event,
                                  NfcAidlStatus event_status) override {
+    if (sVndExtnsPresent) {
+      bool isVndExtSpecEvt =
+          sNfcVendorExtn->processEvent((uint8_t)event, (uint8_t)event_status);
+      if (isVndExtSpecEvt) {
+        // If true to be handled only in extension,
+        // otherwise processed in libNfc
+        return ::ndk::ScopedAStatus::ok();
+      }
+    }
     uint8_t e_num;
     uint8_t s_num;
     switch (event) {
@@ -316,9 +334,6 @@ class NfcAidlClientCallback
         break;
       default:
         s_num = HAL_NFC_STATUS_FAILED;
-    }
-    if (sVndExtnsPresent) {
-      sNfcVendorExtn->processEvent(e_num, (tHAL_NFC_STATUS)s_num);
     }
     mEventCallback(e_num, (tHAL_NFC_STATUS)s_num);
     return ::ndk::ScopedAStatus::ok();
