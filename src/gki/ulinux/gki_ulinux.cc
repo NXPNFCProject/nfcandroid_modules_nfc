@@ -70,6 +70,13 @@ typedef struct {
 } gki_pthread_info_t;
 gki_pthread_info_t gki_pthread_info[GKI_MAX_TASKS];
 
+static pthread_mutex_t gki_init_mutex;
+static std::once_flag s_gki_init_mutex_once;
+
+void gki_init_mutex_init() {
+  pthread_mutex_init(&gki_init_mutex, nullptr);
+}
+
 /*******************************************************************************
 **
 ** Function         gki_task_entry
@@ -116,6 +123,7 @@ void GKI_init(void) {
   pthread_mutexattr_t attr;
   tGKI_OS* p_os;
 
+  std::call_once(s_gki_init_mutex_once, gki_init_mutex_init);
   gki_buffer_init();
   gki_timers_init();
 
@@ -137,7 +145,9 @@ void GKI_init(void) {
   /* Initialiase GKI_timer_update suspend variables & mutexes to be in running
    * state.
    * this works too even if GKI_NO_TICK_STOP is defined in btld.txt */
+  pthread_mutex_lock(&gki_init_mutex);
   p_os->no_timer_suspend = GKI_TIMER_TICK_RUN_COND;
+  pthread_mutex_unlock(&gki_init_mutex);
   pthread_mutex_init(&p_os->gki_timer_mutex, nullptr);
   pthread_cond_init(&p_os->gki_timer_cond, nullptr);
   pthread_mutex_init(&p_os->gki_end_mutex, nullptr);
@@ -444,6 +454,7 @@ void GKI_run(__attribute__((unused)) void* p_task_id) {
   LOG(DEBUG) << StringPrintf("%s; enter", __func__);
   struct timespec delay;
   int err = 0;
+  pthread_mutex_lock(&gki_init_mutex);
   volatile int* p_run_cond = &gki_cb.os.no_timer_suspend;
 
 #ifndef GKI_NO_TICK_STOP
@@ -466,6 +477,7 @@ void GKI_run(__attribute__((unused)) void* p_task_id) {
   if (pthread_create(&timer_thread_id, &timer_attr, timer_thread, NULL) != 0) {
     LOG(VERBOSE) << StringPrintf(
         "GKI_run: pthread_create failed to create timer_thread!");
+    pthread_mutex_unlock(&gki_init_mutex);
     return GKI_FAILURE;
   }
 #else
@@ -510,6 +522,7 @@ void GKI_run(__attribute__((unused)) void* p_task_id) {
     LOG(VERBOSE) << StringPrintf(">>> RESTARTED run_cond: %d", *p_run_cond);
 #endif
   } /* for */
+    pthread_mutex_unlock(&gki_init_mutex);
 #endif
 
   pthread_mutex_lock(&gki_cb.os.gki_end_mutex);
