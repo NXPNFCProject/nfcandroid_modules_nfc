@@ -32,6 +32,7 @@ import android.app.AlarmManager;
 import android.app.Application;
 import android.app.BroadcastOptions;
 import android.app.KeyguardManager;
+import android.app.KeyguardManager.DeviceLockedStateListener;
 import android.app.KeyguardManager.KeyguardLockedStateListener;
 import android.app.PendingIntent;
 import android.app.VrManager;
@@ -1135,7 +1136,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         ownerFilter.addDataScheme("package");
         mContext.registerReceiverForAllUsers(mOwnerReceiver, ownerFilter, null, null);
 
-        addKeyguardLockedStateListener();
+        addDeviceLockedStateListener();
 
         updatePackageCache();
 
@@ -2349,8 +2350,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         @Override
         public boolean setNfcSecure(boolean enable) {
             NfcPermissions.enforceAdminPermissions(mContext);
-            if(mKeyguard.isKeyguardLocked() && !enable) {
-                Log.i(TAG, "KeyGuard need to be unlocked before setting Secure NFC OFF");
+            if (mNfcInjector.isDeviceLocked() && !enable) {
+                Log.i(TAG, "Device need to be unlocked before setting Secure NFC OFF");
                 return false;
             }
 
@@ -4087,12 +4088,21 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         return data;
     }
 
-    private void addKeyguardLockedStateListener() {
-        try {
-            mKeyguard.addKeyguardLockedStateListener(mContext.getMainExecutor(),
-                    mIKeyguardLockedStateListener);
-        } catch (Exception e) {
-            Log.e(TAG, "Exception in addKeyguardLockedStateListener " + e);
+    private void addDeviceLockedStateListener() {
+        if (android.app.Flags.deviceUnlockListener() && Flags.useDeviceLockListener()) {
+            try {
+                mKeyguard.addDeviceLockedStateListener(
+                        mContext.getMainExecutor(), mDeviceLockedStateListener);
+            } catch (Exception e) {
+                Log.e(TAG, "Exception in addDeviceLockedStateListener " + e);
+            }
+        } else {
+            try {
+                mKeyguard.addKeyguardLockedStateListener(mContext.getMainExecutor(),
+                        mIKeyguardLockedStateListener);
+            } catch (Exception e) {
+                Log.e(TAG, "Exception in addKeyguardLockedStateListener " + e);
+            }
         }
     }
 
@@ -4105,6 +4115,20 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         public void onKeyguardLockedStateChanged(boolean isKeyguardLocked) {
             if (!mIsWlcCapable || !mNfcCharging.NfcChargingOnGoing) {
                 applyScreenState(mScreenStateHelper.checkScreenState(mCheckDisplayStateForScreenState));
+            }
+        }
+    };
+
+    /**
+     * Receives Device lock state updates
+     */
+    private DeviceLockedStateListener mDeviceLockedStateListener =
+            new DeviceLockedStateListener() {
+        @Override
+        public void onDeviceLockedStateChanged(boolean isDeviceLocked) {
+            if (!mIsWlcCapable || !mNfcCharging.NfcChargingOnGoing) {
+                applyScreenState(mScreenStateHelper.checkScreenState(
+                                     mCheckDisplayStateForScreenState));
             }
         }
     };
@@ -4481,7 +4505,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
      * Send require device unlock for NFC intent to system UI.
      */
     public void sendRequireUnlockIntent() {
-        if (!mIsRequestUnlockShowed && mKeyguard.isKeyguardLocked()) {
+        if (!mIsRequestUnlockShowed && mNfcInjector.isDeviceLocked()) {
             if (DBG) Log.d(TAG, "Request unlock");
             mIsRequestUnlockShowed = true;
             mRequireUnlockWakeLock.acquire();
