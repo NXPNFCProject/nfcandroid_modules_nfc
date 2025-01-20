@@ -135,6 +135,7 @@ filegroup {
     ],
     visibility: [
         "//packages/apps/Nfc/tests/unit",
+        "//packages/modules/Nfc:__subpackages__",
     ],
 }
 

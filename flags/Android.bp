@@ -49,6 +49,7 @@ java_library {
     installable: false,
     visibility: [
         "//packages/apps/Nfc:__subpackages__",
+        "//packages/modules/Nfc:__subpackages__",
     ],
     apex_available: [
         "//apex_available:platform",
