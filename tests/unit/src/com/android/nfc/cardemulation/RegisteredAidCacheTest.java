@@ -286,7 +286,8 @@ public class RegisteredAidCacheTest {
         assertEquals(NON_PAYMENT_SERVICE, nonPaymentResolveInfo.defaultService.getComponent());
         assertEquals(1, nonPaymentResolveInfo.services.size());
         assertEquals(CardEmulation.CATEGORY_OTHER, nonPaymentResolveInfo.category);
-        verify(mAidRoutingManager).configureRouting(mRoutingEntryMapCaptor.capture(), eq(false));
+        verify(mAidRoutingManager).configureRouting(mRoutingEntryMapCaptor.capture(), eq(false),
+                eq(false));
         HashMap<String, AidRoutingManager.AidEntry> routingEntries =
                 mRoutingEntryMapCaptor.getValue();
         assertTrue(routingEntries.containsKey(PAYMENT_AID_1));
@@ -523,7 +524,8 @@ public class RegisteredAidCacheTest {
         assertEquals(
                 PAYMENT_SERVICE,
                 mRegisteredAidCache.mAidServices.get(PAYMENT_AID_1).get(1).service.getComponent());
-        verify(mAidRoutingManager).configureRouting(mRoutingEntryMapCaptor.capture(), eq(false));
+        verify(mAidRoutingManager).configureRouting(mRoutingEntryMapCaptor.capture(), eq(false),
+                eq(false));
         HashMap<String, AidRoutingManager.AidEntry> routingEntries =
                 mRoutingEntryMapCaptor.getValue();
         assertTrue(routingEntries.containsKey(NON_PAYMENT_AID_1));
@@ -577,7 +579,8 @@ public class RegisteredAidCacheTest {
 
         verify(mAidRoutingManager).supportsAidPrefixRouting();
         verify(mAidRoutingManager).supportsAidSubsetRouting();
-        verify(mAidRoutingManager).configureRouting(mRoutingEntryMapCaptor.capture(), eq(false));
+        verify(mAidRoutingManager).configureRouting(mRoutingEntryMapCaptor.capture(), eq(false),
+                eq(false));
         assertFalse(mRegisteredAidCache.isRequiresScreenOnServiceExist());
     }
 
