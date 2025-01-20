@@ -2094,8 +2094,6 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 mReaderModeParams.binder.unlinkToDeath(mReaderModeDeathRecipient, 0);
                 resetReaderModeParams();
             }
-        }
-        synchronized (NfcService.this) {
             if (mDiscoveryTechParams != null && mDiscoveryTechParams.uid == uid) {
                 mDiscoveryTechParams.binder.unlinkToDeath(mDiscoveryTechDeathRecipient, 0);
                 mDeviceHost.resetDiscoveryTech();
