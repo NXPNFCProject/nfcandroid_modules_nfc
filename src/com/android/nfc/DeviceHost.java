@@ -61,6 +61,9 @@ public interface DeviceHost {
         public void onEeListenActivated(boolean isActivated);
 
         public void onSeSelected();
+
+        public void onCommandTimeout();
+
         /**
          * On Restart Rf Discovery
          */
