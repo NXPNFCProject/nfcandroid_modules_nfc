@@ -315,7 +315,7 @@ public interface DeviceHost {
      * Get the active NFCEE list
      */
     public Map<String, Integer> dofetchActiveNfceeList();
-    public List<String> dofetchActiveNfceeList();
+
     /**
      * Restarts RF Discovery
      */
