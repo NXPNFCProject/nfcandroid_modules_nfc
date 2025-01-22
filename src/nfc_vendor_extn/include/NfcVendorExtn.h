@@ -121,6 +121,14 @@ class NfcVendorExtn {
   void getVendorConfigs(std::map<std::string, ConfigValue>* pConfigMap);
 
   /**
+   * @brief return the pointer of vendor extension control block.
+   * @return A pointer to the VendorExtnCb structure or nullptr,
+   * if the structure is not available or invalid.
+   *
+   */
+  VendorExtnCb* getVendorExtnCb();
+
+  /**
    * @brief This function de-initializes the extension feature
    * @return void
    *
