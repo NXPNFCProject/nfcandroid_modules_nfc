@@ -2347,7 +2347,13 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             synchronized (NfcService.this) {
                 mPollingPaused = true;
                 mDeviceHost.disableDiscovery();
-                if (timeoutInMs <= 0 || timeoutInMs > this.getMaxPausePollingTimeoutMs()) {
+                /* timeoutInMs 0 will stop discovery without any timeout
+                 * polling will not auto resume */
+                if (timeoutInMs == 0) {
+                    if (DBG) Log.d(TAG, "Pause Poll without timeout");
+                    return NfcOemExtension.POLLING_STATE_CHANGE_SUCCEEDED;
+                }
+                if (timeoutInMs < 0 || timeoutInMs > this.getMaxPausePollingTimeoutMs()) {
                     throw new IllegalArgumentException(
                         "Invalid timeout " + timeoutInMs + " ms!");
                 }
