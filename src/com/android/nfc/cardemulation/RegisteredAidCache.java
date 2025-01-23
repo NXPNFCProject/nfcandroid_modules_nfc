@@ -1331,7 +1331,7 @@ public class RegisteredAidCache {
                 continue;
             }
 
-            if (service.shareRolePriority() && pm.checkSignatures(mDefaultWalletHolderPackageName,
+            if (service.wantsRoleHolderPriority() && pm.checkSignatures(mDefaultWalletHolderPackageName,
                     service.getComponent().getPackageName()) == PackageManager.SIGNATURE_MATCH) {
                 mAssociatedRoleServices.add(service);
             }
