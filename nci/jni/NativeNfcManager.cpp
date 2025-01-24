@@ -1126,8 +1126,8 @@ void static nfaVSCallback(uint8_t event, uint16_t param_len, uint8_t* p_param) {
         case NCI_ANDROID_GET_CAPS: {
           gVSCmdStatus = p_param[4];
           SyncEventGuard guard(gNfaVsCommand);
-          if(param_len>8) {
-             gCaps.assign(p_param + 8, p_param + param_len);
+          if (param_len > 8) {
+            gCaps.assign(p_param + 8, p_param + param_len);
           }
           gNfaVsCommand.notifyOne();
         } break;
