@@ -113,6 +113,10 @@ public class NativeNfcManager implements DeviceHost {
         return ret;
     }
 
+    boolean usePerTechObserveModeCommand() {
+        return com.android.nfc.flags.Flags.useNewObserveModeCmd();
+    }
+
     boolean isObserveModeSupportedWithoutRfDeactivation() {
         if (!com.android.nfc.flags.Flags.observeModeWithoutRf()) {
             return false;

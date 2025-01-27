@@ -1280,6 +1280,13 @@ bool isObserveModeSupportedWithoutRfDeactivation(JNIEnv* e, jobject o) {
   return e->CallBooleanMethod(o, isSupported);
 }
 
+bool usePerTechObserveModeCommand(JNIEnv* e, jobject o) {
+  ScopedLocalRef<jclass> cls(e, e->GetObjectClass(o));
+  jmethodID isSupported = e->GetMethodID(
+      cls.get(), "usePerTechObserveModeCommand", "()Z");
+  return e->CallBooleanMethod(o, isSupported);
+}
+
 static jboolean nfcManager_setObserveMode(JNIEnv* e, jobject o,
                                           jboolean enable) {
   if (isObserveModeSupported(e, o) == JNI_FALSE) {
@@ -1302,11 +1309,20 @@ static jboolean nfcManager_setObserveMode(JNIEnv* e, jobject o,
     startRfDiscovery(false);
     reenbleDiscovery = true;
   }
+  bool useOldCommand  = needToTurnOffRadio || !usePerTechObserveModeCommand(e, o);
   uint8_t cmd[] = {
-      NCI_ANDROID_PASSIVE_OBSERVE,
-      static_cast<uint8_t>(enable != JNI_FALSE
-                               ? NCI_ANDROID_PASSIVE_OBSERVE_PARAM_ENABLE
-                               : NCI_ANDROID_PASSIVE_OBSERVE_PARAM_DISABLE)};
+      static_cast<uint8_t>(
+        useOldCommand
+                         ? NCI_ANDROID_PASSIVE_OBSERVE
+                         : NCI_ANDROID_SET_PASSIVE_OBSERVER_TECH),
+      static_cast<uint8_t>(
+          enable != JNI_FALSE
+              ? (useOldCommand
+                     ? NCI_ANDROID_PASSIVE_OBSERVE_PARAM_ENABLE
+                     : NCI_ANDROID_PASSIVE_OBSERVE_PARAM_ENABLE_A |
+                           NCI_ANDROID_PASSIVE_OBSERVE_PARAM_ENABLE_B |
+                           NCI_ANDROID_PASSIVE_OBSERVE_PARAM_ENABLE_V)
+              : NCI_ANDROID_PASSIVE_OBSERVE_PARAM_DISABLE)};
   {
     SyncEventGuard guard(gNfaVsCommand);
     tNFA_STATUS status = NFA_SendVsCommand(NCI_MSG_PROP_ANDROID, sizeof(cmd),
