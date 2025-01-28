@@ -36,10 +36,12 @@ typedef void (*fp_extn_init_t)(VendorExtnCb*);
 typedef void (*fp_extn_deinit_t)();
 typedef tNFC_STATUS (*fp_extn_handle_nfc_event_t)(NfcExtEvent_t,
                                                 NfcExtEventData_t);
+typedef void (*fp_extn_on_config_update_t)(std::map<std::string, ConfigValue>*);
 
 fp_extn_init_t fp_extn_init = NULL;
 fp_extn_deinit_t fp_extn_deinit = NULL;
 fp_extn_handle_nfc_event_t fp_extn_handle_nfc_event = NULL;
+fp_extn_on_config_update_t fp_extn_on_config_update = NULL;
 
 NfcExtEventData_t mNfcExtEventData;
 
@@ -89,6 +91,12 @@ bool phNfcExtn_LibSetup() {
   if ((fp_extn_handle_nfc_event = (fp_extn_handle_nfc_event_t)dlsym(
            p_oem_extn_handle, "phNxpExtn_HandleNfcEvent")) == NULL) {
     LOG(ERROR) << StringPrintf("%s Failed to find phNxpExtn_HandleNfcEvent !!",
+                               __func__);
+  }
+
+  if ((fp_extn_on_config_update = (fp_extn_on_config_update_t)dlsym(
+           p_oem_extn_handle, "phNxpExtn_OnConfigUpdate")) == NULL) {
+    LOG(ERROR) << StringPrintf("%s Failed to find phNxpExtn_OnConfigUpdate !!",
                                __func__);
   }
 
@@ -167,6 +175,11 @@ void NfcVendorExtn::getVendorConfigs(
     std::map<std::string, ConfigValue>* pConfigMap) {
   LOG(VERBOSE) << StringPrintf("%s:", __func__);
   mVendorExtnCb.configMap = *pConfigMap;
+  if (fp_extn_on_config_update != NULL) {
+    fp_extn_on_config_update(pConfigMap);
+  } else {
+    LOG(ERROR) << StringPrintf("%s: %s", __func__, "getVendorConfigs not found!");
+  }
 }
 
 VendorExtnCb* NfcVendorExtn::getVendorExtnCb() { return &mVendorExtnCb; }
