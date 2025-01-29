@@ -86,7 +86,7 @@ class NfcVendorExtn {
    * false and it have to be handled by libnfc.
    *
    */
-  bool processCmd(uint16_t dataLen, uint8_t* pData);
+  bool processCmd(uint16_t *dataLen, uint8_t* pData);
 
   /**
    * @brief sends the NCI packet to handle extension feature
