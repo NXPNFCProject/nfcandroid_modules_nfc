@@ -966,7 +966,7 @@ void NfcAdaptation::HalWrite(uint16_t data_len, uint8_t* p_data) {
   LOG(VERBOSE) << StringPrintf("%s", func);
 
   if (sVndExtnsPresent) {
-    bool isVndExtSpecCmd = sNfcVendorExtn->processCmd(data_len, p_data);
+    bool isVndExtSpecCmd = sNfcVendorExtn->processCmd(&data_len, p_data);
     // If true to be handled in extension, otherwise processed to hal
     if (isVndExtSpecCmd) {
       return;
