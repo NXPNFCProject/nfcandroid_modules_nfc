@@ -100,12 +100,12 @@ public final class T4tNdefNfcee {
     public static final int WRITE_DATA_ERROR_EMPTY_PAYLOAD = -7;
     /**
      * Returns flag for {@link #writeData(int, byte[])}.
-     * It idicates write data fail due to invalid ndef format.
+     * It indicates write data fail due to invalid ndef format.
      */
     public static final int WRITE_DATA_ERROR_NDEF_VALIDATION_FAILED = -8;
     /**
      * Returns flag for {@link #writeData(int, byte[])}.
-     * It idicates write data fail if NDEF NFCEE operation is ongoing.
+     * It indicates write data fail if a concurrent NDEF NFCEE operation is ongoing.
      */
     public static final int WRITE_DATA_ERROR_DEVICE_BUSY = -9;
 
@@ -166,8 +166,8 @@ public final class T4tNdefNfcee {
      *               for more information) from which to read.
      * @return - Returns complete Ndef message if success
      *           Refer to Nfc forum NDEF specification NDEF Message section
-     * @throws IllegalStateException if read fails because the fileId is invalid,
-     *         or device is busy.
+     * @throws IllegalStateException if read fails because the fileId is invalid
+     *         or if a concurrent operation is in progress.
      * @hide
      */
     @SystemApi
@@ -191,7 +191,7 @@ public final class T4tNdefNfcee {
     public static final int CLEAR_DATA_FAILED_INTERNAL = 0;
     /**
      * Return flag for {@link #clearNdefData()}.
-     * It indicates clear data failed if NDEF NFCEE operation is ongoing.
+     * It indicates clear data failed  if a concurrent NDEF NFCEE operation is ongoing.
      */
     public static final int CLEAR_DATA_FAILED_DEVICE_BUSY = -1;
 

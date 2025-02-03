@@ -156,7 +156,7 @@ public final class T4tNdefNfceeCcFileInfo implements Parcelable {
     /**
      * Indicates the read access condition.
      * Refer to the NFC forum specification "NFCForum-TS-T4T-1.1 section 4.2" for more details.
-     * @return boolean true if read access is allowed, ohterwise false.
+     * @return boolean true if read access is allowed, otherwise false.
      */
     public boolean isReadAllowed() {
         return mIsReadAllowed;
@@ -165,7 +165,7 @@ public final class T4tNdefNfceeCcFileInfo implements Parcelable {
     /**
      * Indicates the write access condition.
      * Refer to the NFC forum specification "NFCForum-TS-T4T-1.1 section 4.2" for more details.
-     * @return boolean if write access is allowed, ohterwise false.
+     * @return boolean if write access is allowed, otherwise false.
      */
     public boolean isWriteAllowed() {
         return mIsWriteAllowed;
