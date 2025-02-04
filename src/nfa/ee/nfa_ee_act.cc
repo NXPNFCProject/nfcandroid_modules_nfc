@@ -2203,19 +2203,34 @@ void nfa_ee_nci_disc_ntf(tNFA_EE_MSG* p_data) {
 ** Function         nfa_ee_nci_nfcee_status_ntf
 **
 ** Description      Process the callback for NFCEE status notification
+**                  Initialize ee rediscovery if NFC is initialized & RF is not
+**                  busy, else rediscovery will trigger after RF state update or
+**                  NFC state changed to idle.
 **
 ** Returns          void
 **
 *******************************************************************************/
 void nfa_ee_nci_nfcee_status_ntf(tNFA_EE_MSG* p_data) {
   if (p_data != nullptr) {
+    tNFA_DM_RF_DISC_STATE rf_state = nfa_dm_cb.disc_cb.disc_state;
     tNFC_NFCEE_STATUS_REVT* p_ee_data = p_data->nfcee_status_ntf.p_data;
+    nfc_cb.is_nfcee_discovery_required = false;
+    nfc_cb.nfcee_data = {};
     if ((NFA_GetNCIVersion() >= NCI_VERSION_2_0) &&
         (p_ee_data->nfcee_status == NFC_NFCEE_STATUS_UNRECOVERABLE_ERROR)) {
-      tNFA_EE_ECB* p_cb = nfa_ee_find_ecb(p_ee_data->nfcee_id);
-      if (p_cb && nfa_ee_cb.p_enable_cback) {
-        (*nfa_ee_cb.p_enable_cback)(NFA_EE_RECOVERY_INIT);
-        NFC_NfceeDiscover(true);
+      // ongoing CE transaction shall not be impacted due to NFCEE events
+      if (((rf_state == NFA_DM_RFST_IDLE) ||
+           (rf_state == NFA_DM_RFST_DISCOVERY)) &&
+          (nfa_hci_cb.hci_state == NFA_HCI_STATE_IDLE)) {
+        tNFA_EE_ECB* p_cb = nfa_ee_find_ecb(p_ee_data->nfcee_id);
+        if (p_cb && nfa_ee_cb.p_enable_cback) {
+          (*nfa_ee_cb.p_enable_cback)(NFA_EE_RECOVERY_INIT);
+          NFC_NfceeDiscover(true);
+        }
+      } else {
+        LOG(VERBOSE) << StringPrintf("rf is busy or NFC is not initialized");
+        nfc_cb.is_nfcee_discovery_required = true;
+        nfc_cb.nfcee_data.nfcee_status = *p_ee_data;
       }
     }
   }

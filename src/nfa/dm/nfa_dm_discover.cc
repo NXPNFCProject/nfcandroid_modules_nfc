@@ -1706,6 +1706,15 @@ void nfa_dm_disc_new_state(tNFA_DM_RF_DISC_STATE new_state) {
       nfa_sys_check_disabled();
     }
   }
+
+  if (((nfa_dm_cb.disc_cb.disc_state == NFA_DM_RFST_IDLE) ||
+       (nfa_dm_cb.disc_cb.disc_state == NFA_DM_RFST_DISCOVERY)) &&
+      (!(nfa_dm_cb.disc_cb.disc_flags & NFA_DM_DISC_FLAGS_W4_RSP)) &&
+      (nfc_cb.is_nfcee_discovery_required)) {
+    LOG(VERBOSE) << StringPrintf("Triggering Pending EE discovery...");
+    nfa_dm_nfc_response_cback_wrapper(NFC_NFCEE_STATUS_REVT,
+                                      &nfc_cb.nfcee_data);
+  }
 }
 
 /*******************************************************************************

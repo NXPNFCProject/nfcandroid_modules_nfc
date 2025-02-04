@@ -568,6 +568,7 @@ bool nfa_dm_get_config(tNFA_DM_MSG* p_data) {
 
   return true;
 }
+
 /*******************************************************************************
 **
 ** Function         nfa_dm_set_power_sub_state
@@ -1584,6 +1585,11 @@ static void nfa_dm_poll_disc_cback(tNFA_DM_RF_DISC_EVT event,
 void nfa_dm_poll_disc_cback_dta_wrapper(tNFA_DM_RF_DISC_EVT event,
                                         tNFC_DISCOVER* p_data) {
   nfa_dm_poll_disc_cback(event, p_data);
+}
+
+void nfa_dm_nfc_response_cback_wrapper(tNFC_RESPONSE_EVT event,
+                                       tNFC_RESPONSE* p_data) {
+  nfa_dm_nfc_response_cback(event, p_data);
 }
 
 /*******************************************************************************
