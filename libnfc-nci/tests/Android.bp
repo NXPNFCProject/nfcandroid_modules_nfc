@@ -2,23 +2,23 @@ package {
     default_team: "trendy_team_fwk_nfc",
     // See: http://go/android-license-faq
     // A large-scale-change added 'default_applicable_licenses' to import
-    // all of the 'license_kinds' from "system_nfc_license"
+    // all of the 'license_kinds' from "Android-Apache-2.0"
     // to get the below license kinds:
     //   SPDX-license-identifier-Apache-2.0
-    default_applicable_licenses: ["system_nfc_license"],
+    default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
 cc_test {
     name: "libnfc-nci-tests",
     include_dirs: [
-        "system/nfc/src/include",
-        "system/nfc/utils/include",
-        "system/nfc/src/nfc/include",
-        "system/nfc/src/gki/common",
-        "system/nfc/src/gki/ulinux",
-        "system/nfc/src/nfa/include",
-        "system/nfc/src/nfa/ce",
-        "system/nfc/src/nfa/dm",
+        "packages/modules/Nfc/libnfc-nci/src/include",
+        "packages/modules/Nfc/libnfc-nci/utils/include",
+        "packages/modules/Nfc/libnfc-nci/src/nfc/include",
+        "packages/modules/Nfc/libnfc-nci/src/gki/common",
+        "packages/modules/Nfc/libnfc-nci/src/gki/ulinux",
+        "packages/modules/Nfc/libnfc-nci/src/nfa/include",
+        "packages/modules/Nfc/libnfc-nci/src/nfa/ce",
+        "packages/modules/Nfc/libnfc-nci/src/nfa/dm",
     ],
     cflags: [
         "-Wall",

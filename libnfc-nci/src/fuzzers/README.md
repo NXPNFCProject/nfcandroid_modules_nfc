@@ -60,7 +60,7 @@ tools installed:
 
     Run the following commands to build the fuzzer:
 
-        cd $ANDROID_BUILD_TOP/system/nfc/src/fuzzers/nci
+        cd $ANDROID_BUILD_TOP/packages/modules/Nfc/libnfc-nci/src/fuzzers/nci
         ../fuzz.sh build
 
     The above commands will build the nci fuzzer and push it to the device.
@@ -68,7 +68,7 @@ tools installed:
 6. Running the fuzzer:
 
     To run the fuzzer for a single iteration, assuming you are at the fuzzer
-    directory ($ANDROID_BUILD_TOP/system/nfc/src/fuzzers/nci), all you need is
+    directory ($ANDROID_BUILD_TOP/packages/modules/Nfc/libnfc-nci/src/fuzzers/nci), all you need is
     this command:
 
           ../fuzz.sh run --once

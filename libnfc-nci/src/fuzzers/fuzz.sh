@@ -73,7 +73,7 @@ function run_fuzz() {
 
     echo "Verifying crash ..."
     run_once $CRASH >./logs/verify.log 2>&1
-    SIG=$(grep -m 1 -aoP "#?? \S+ in \K\S+ system/nfc/src\S+:\S+" ./logs/verify.log)
+    SIG=$(grep -m 1 -aoP "#?? \S+ in \K\S+ packages/modules/Nfc/libnfc-nci/src\S+:\S+" ./logs/verify.log)
     if [ -z "$SIG" ];
     then
       SIG='UNKNOWN'
@@ -102,7 +102,7 @@ function build() {
   SANITIZE_HOST="address" \
     SANITIZE_TARGET="hwaddress fuzzer" \
     NATIVE_COVERAGE="true" \
-    NATIVE_COVERAGE_PATHS="system/nfc/src" \
+    NATIVE_COVERAGE_PATHS="packages/modules/Nfc/libnfc-nci/src" \
     make -j $FUZZER_NAME
   popd
   adb shell mkdir -p /$FUZZ_DIR
