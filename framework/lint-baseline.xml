@@ -7,7 +7,7 @@
         errorLine1="                        pollingFrames.add(new PollingFrame(frame));"
         errorLine2="                                          ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="frameworks/base/nfc/java/android/nfc/cardemulation/HostApduService.java"
+            file="packages/modules/Nfc/framework/java/android/nfc/cardemulation/HostApduService.java"
             line="335"
             column="43"/>
     </issue>
@@ -18,7 +18,7 @@
         errorLine1="                    processPollingFrames(pollingFrames);"
         errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="frameworks/base/nfc/java/android/nfc/cardemulation/HostApduService.java"
+            file="packages/modules/Nfc/framework/java/android/nfc/cardemulation/HostApduService.java"
             line="337"
             column="21"/>
     </issue>
@@ -29,7 +29,7 @@
         errorLine1="        mNfcOemExtension = new NfcOemExtension(mContext, this);"
         errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="frameworks/base/nfc/java/android/nfc/NfcAdapter.java"
+            file="packages/modules/Nfc/framework/java/android/nfc/NfcAdapter.java"
             line="895"
             column="28"/>
     </issue>
@@ -40,7 +40,7 @@
         errorLine1="                    executor.execute(() -> callback.onVendorNciResponse(gid, oid, payload));"
         errorLine2="                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="frameworks/base/nfc/java/android/nfc/NfcVendorNciCallbackListener.java"
+            file="packages/modules/Nfc/framework/java/android/nfc/NfcVendorNciCallbackListener.java"
             line="88"
             column="44"/>
     </issue>
@@ -51,7 +51,7 @@
         errorLine1="                    executor.execute(() -> callback.onVendorNciNotification(gid, oid, payload));"
         errorLine2="                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="frameworks/base/nfc/java/android/nfc/NfcVendorNciCallbackListener.java"
+            file="packages/modules/Nfc/framework/java/android/nfc/NfcVendorNciCallbackListener.java"
             line="106"
             column="44"/>
     </issue>
