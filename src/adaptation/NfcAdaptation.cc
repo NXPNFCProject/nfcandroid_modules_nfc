@@ -434,8 +434,10 @@ void NfcAdaptation::GetVendorConfigs(
         aidlConfigValue.nfaProprietaryCfg.protocolMifare,
         aidlConfigValue.nfaProprietaryCfg.discoveryPollKovio,
         aidlConfigValue.nfaProprietaryCfg.discoveryPollBPrime,
-        aidlConfigValue.nfaProprietaryCfg.discoveryListenBPrime,
-        aidlConfigValue.nfaProprietaryCfg.protocolChineseId};
+        aidlConfigValue.nfaProprietaryCfg.discoveryListenBPrime};
+    if (mAidlHalVer > 1) {
+      nfaPropCfg.push_back(aidlConfigValue.nfaProprietaryCfg.protocolChineseId);
+    }
     configMap.emplace(NAME_NFA_PROPRIETARY_CFG, ConfigValue(nfaPropCfg));
     configMap.emplace(NAME_NFA_POLL_BAIL_OUT_MODE,
                       ConfigValue(aidlConfigValue.nfaPollBailOutMode ? 1 : 0));
