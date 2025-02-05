@@ -82,7 +82,7 @@ def generate_test(
   print()
   print(
       "Test generated at {}. To run the test, copy the test file to"
-      " packages/apps/Nfc/tests/testcases/multidevices/.".format(file_path)
+      " packages/modules/Nfc/NfcNci/tests/testcases/multidevices/.".format(file_path)
   )
   update_android_bp(python_local_file, name)
 

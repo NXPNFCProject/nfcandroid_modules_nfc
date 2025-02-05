@@ -135,7 +135,7 @@ filegroup {
         ":statslog-Nfc-java-gen",
     ],
     visibility: [
-        "//packages/apps/Nfc/tests/unit",
+        "//packages/modules/Nfc/NfcNci/tests/unit",
         "//packages/modules/Nfc:__subpackages__",
     ],
 }
