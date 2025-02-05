@@ -201,6 +201,10 @@ class NfcClientCallback : public INfcClientCallback {
   Return<void> sendEvent_1_1(
       ::android::hardware::nfc::V1_1::NfcEvent event,
       ::android::hardware::nfc::V1_0::NfcStatus event_status) override {
+    if (sVndExtnsPresent) {
+      sNfcVendorExtn->processEvent((uint8_t)event,
+                                   (tHAL_NFC_STATUS)event_status);
+    }
     mEventCallback((uint8_t)event, (tHAL_NFC_STATUS)event_status);
     return Void();
   };
