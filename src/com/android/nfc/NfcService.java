@@ -4256,9 +4256,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             }
             refreshTagDispatcherInProvisionMode();
             if (mPollingPaused) {
-                //Log.d(TAG, "Not updating discovery parameters, polling paused.");
-                //return;
-                Log.d(TAG, "polling paused - updating discovery parameters.");
+                Log.d(TAG, "Not updating discovery parameters, polling paused.");
+                return;
             }
             // Special case: if we're transitioning to unlocked state while
             // still talking to a tag, postpone re-configuration.
