@@ -657,7 +657,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         mNfcInjector.ensureWatchdogMonitoring();
         try {
             if (mNfcOemExtensionCallback != null) {
-                mNfcOemExtensionCallback.onRfFieldActivated(mRfFieldActivated);
+                mNfcOemExtensionCallback.onRfFieldDetected(mRfFieldActivated);
             }
         } catch (RemoteException e) {
             Log.e(TAG, "Failed to send onRemoteFieldActivated", e);
@@ -689,7 +689,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         mRfFieldActivated = false;
         try {
             if (mNfcOemExtensionCallback != null) {
-                mNfcOemExtensionCallback.onRfFieldActivated(mRfFieldActivated);
+                mNfcOemExtensionCallback.onRfFieldDetected(mRfFieldActivated);
             }
         } catch (RemoteException e) {
             Log.e(TAG, "Failed to send onRemoteFieldDeactivated", e);
@@ -3452,7 +3452,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 try {
                     if (DBG) Log.i(TAG, "updateNfCState");
                     mNfcOemExtensionCallback.onCardEmulationActivated(mCardEmulationActivated);
-                    mNfcOemExtensionCallback.onRfFieldActivated(mRfFieldActivated);
+                    mNfcOemExtensionCallback.onRfFieldDetected(mRfFieldActivated);
                     mNfcOemExtensionCallback.onRfDiscoveryStarted(mRfDiscoveryStarted);
                     mNfcOemExtensionCallback.onEeListenActivated(mEeListenActivated);
                 } catch (RemoteException e) {
