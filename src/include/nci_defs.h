@@ -266,6 +266,10 @@
 #define NCI_ANDROID_PASSIVE_OBSERVE_PARAM_ENABLE_B 0x2
 #define NCI_ANDROID_PASSIVE_OBSERVE_PARAM_ENABLE_F 0x4
 #define NCI_ANDROID_PASSIVE_OBSERVE_PARAM_ENABLE_V 0x8
+
+/* Android Blank NCI Settings */
+#define NCI_ANDROID_BLANK_COMMON 0x0
+#define NCI_ANDROID_BLANK_VENDOR 0x1
 /**********************************************
  * NCI Core Group Params
  **********************************************/
