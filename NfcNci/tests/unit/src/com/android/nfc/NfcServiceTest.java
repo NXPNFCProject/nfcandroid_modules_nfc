@@ -557,20 +557,6 @@ public final class NfcServiceTest {
     }
 
     @Test
-    public void testInitSoundPool_Start() {
-        mNfcService.playSound(SOUND_END);
-
-        verify(mSoundPool, never()).play(mSoundCaptor.capture(),
-                anyFloat(), anyFloat(), anyInt(), anyInt(), anyFloat());
-        mNfcService.mSoundPool = mSoundPool;
-        mNfcService.playSound(SOUND_END);
-        verify(mSoundPool, atLeastOnce()).play(mSoundCaptor.capture(),
-                anyFloat(), anyFloat(), anyInt(), anyInt(), anyFloat());
-        Integer value = mSoundCaptor.getValue();
-        Assert.assertEquals(mNfcService.mEndSound, (int) value);
-    }
-
-    @Test
     public void testInitSoundPool_End() {
         mNfcService.playSound(SOUND_END);
 
