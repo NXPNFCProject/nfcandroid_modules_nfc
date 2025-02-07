@@ -3427,7 +3427,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             if (DBG) Log.i(TAG, "getRoutingTableEntry");
             NfcPermissions.enforceAdminPermissions(mContext);
             return mRoutingTableParser.getRoutingTableEntryList(mDeviceHost);
-	}
+        }
 
         @Override
         public void indicateDataMigration(boolean inProgress, String pkg) throws RemoteException {
