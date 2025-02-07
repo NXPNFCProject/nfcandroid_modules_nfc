@@ -302,9 +302,46 @@ class PN532(Reader):
                 "Could not find device on serial port"
                 + ", make sure reader is plugged in."
             )
-        if len(path) == 0:
-            path = comports()[0].device
+        if len(path) == 0: # Iterate through available ports to locate PN532
+            found_port = False
+            for port in comports():
+                if self.verify_firmware_for_port(port.device):
+                    found_port = True
+                    break
+            if not found_port:
+                raise RuntimeError(
+                    "Could not verify PN532 firmware on any available serial ports"
+                )
+        else:
+            if not self.verify_firmware_for_port(path):
+                raise RuntimeError(
+                    "Could not verify PN532 firmware on serial path " + path
+                )
 
+        self.sam_configuration(mode=0x01, timeout_value=0x00)
+
+        self.write_long_preamble = False
+
+        # Disable retries
+        self.device.flushInput()
+        self.rf_configuration(
+            RFConfigItem.MAX_RETRIES,
+            [
+                0x00,  # MxRtyATR
+                0x00,  # MxRtyPSL
+                0x00,  # MxRtyPassiveActivation
+            ],
+        )
+
+    # Custom functions
+
+    def verify_firmware_for_port(self, path):
+        """
+        Verifies that a PN532 reader is attached to the given serial port path.
+
+        :param path: Serial path
+        :return: True if a PN532 reader is located at the path; false otherwise.
+        """
         self.register_cache = {}
         self.rf_configuration_cache = {}
         self.write_long_preamble = True
@@ -323,26 +360,10 @@ class PN532(Reader):
         self.device.flush()
         self._send_ack_frame()
         self.device.flushInput()
-        if not self.verify_firmware_version():
-            raise RuntimeError(
-                "Could not verify PN532 firmware on serial path " + path
-            )
-        self.sam_configuration(mode=0x01, timeout_value=0x00)
-
-        self.write_long_preamble = False
-
-        # Disable retries
-        self.device.flushInput()
-        self.rf_configuration(
-            RFConfigItem.MAX_RETRIES,
-            [
-                0x00,  # MxRtyATR
-                0x00,  # MxRtyPSL
-                0x00,  # MxRtyPassiveActivation
-            ],
-        )
-
-    # Custom functions
+        try:
+            return self.verify_firmware_version()
+        except Exception as e:
+            return False
 
     def poll_a(self):
         """Attempts to detect target for NFC type A."""
