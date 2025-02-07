@@ -440,7 +440,7 @@ bool nfc_ncif_process_event(NFC_HDR* p_msg) {
        * command window */
       if ((old_gid != gid) || (old_oid != oid)) {
         LOG(ERROR) << StringPrintf(
-            "nfc_ncif_process_event unexpected rsp: gid:0x%x, oid:0x%x", gid,
+            "%s; unexpected rsp: gid:0x%x, oid:0x%x", __func__, gid,
             oid);
         return true;
       }
