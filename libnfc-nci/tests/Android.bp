@@ -84,5 +84,5 @@ cc_test {
         },
     },
     auto_gen_config: true,
-    min_sdk_version: "current",
+    min_sdk_version: "35", // Make it 36 once available.
 }
