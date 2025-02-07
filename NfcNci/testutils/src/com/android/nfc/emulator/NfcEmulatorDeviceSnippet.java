@@ -19,6 +19,7 @@ import android.app.Instrumentation;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.nfc.NfcAdapter;
+import android.nfc.cardemulation.CardEmulation;
 import android.nfc.cardemulation.PollingFrame;
 import android.util.Log;
 
@@ -279,6 +280,20 @@ public class NfcEmulatorDeviceSnippet extends NfcSnippet {
                 instrumentation.getTargetContext(), ProtocolParamsEmulatorActivity.class.getName());
 
         mActivity = (ProtocolParamsEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
+    /** Checks if AID prefix registration is supported */
+    @Rpc(description = "Checks if AID prefix registration is supported")
+    public boolean isAidPrefixRegistrationSupported() {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        if (adapter == null) {
+            return false;
+        }
+        CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        if (cardEmulation == null) {
+            return false;
+        }
+        return cardEmulation.supportsAidPrefixRegistration();
     }
 
     @Rpc(description = "Returns if observe mode is supported.")
