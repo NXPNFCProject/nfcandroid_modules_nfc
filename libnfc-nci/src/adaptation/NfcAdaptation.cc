@@ -70,6 +70,7 @@ using ::aidl::android::hardware::nfc::NfcCloseType;
 using Status = ::ndk::ScopedAStatus;
 
 #define VERBOSE_VENDOR_LOG_PROPERTY "persist.nfc.vendor_debug_enabled"
+#define DEFAULT_CRASH_LOGS_PATH "/data/misc/nfc/logs/hal_crash_logs"
 
 std::string NFC_AIDL_HAL_SERVICE_NAME = "android.hardware.nfc.INfc/default";
 
@@ -184,6 +185,7 @@ void initializeNfcMuteTechRouteOptionFlag() {
 // Abort nfc service when AIDL process died.
 void HalAidlBinderDied(void* /* cookie */) {
   LOG(ERROR) << __func__ << "INfc aidl hal died, exiting procces to restart";
+  storeNfcSnoopLogs(DEFAULT_CRASH_LOGS_PATH, DEFAULT_NFCSNOOP_FILE_SIZE);
   notifyHalBinderDied();
   exit(0);
 }

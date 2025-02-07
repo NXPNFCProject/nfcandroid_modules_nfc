@@ -26,6 +26,7 @@
 #include "nfc_types.h"
 
 #define NFCSNOOZ_CURRENT_VERSION 0x01
+#define DEFAULT_NFCSNOOP_FILE_SIZE 32 * 1024 * 1024
 
 // The preamble is stored un-encrypted as the first part
 // of the file.
