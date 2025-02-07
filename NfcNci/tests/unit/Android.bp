@@ -56,6 +56,7 @@ android_test {
         "device-tests",
         "mts-nfc",
     ],
+    compile_multilib: "both",
 
     instrumentation_for: "NfcNci",
 }
