@@ -43,6 +43,8 @@
 #define NFCSNOOP_MODE_FILTERED "filtered"
 #define NFCSNOOP_MODE_FULL "full"
 
+#define MICRO_SECOND_THREE_DAYS 3 * 24 * 60 * 60 * 1000 * 1000
+
 // Total nfcsnoop memory log buffer size
 #ifndef NFCSNOOP_MEM_BUFFER_SIZE
 static const size_t NFCSNOOP_MEM_BUFFER_SIZE = (256 * 1024);
@@ -69,6 +71,13 @@ static const uint8_t EMPTY_NCI[BUFFER_SIZE][5] = {
     {0x6F, NCI_MSG_PROP_ANDROID, 0x02, NCI_ANDROID_BLANK_NCI,
      NCI_ANDROID_BLANK_VENDOR}};
 
+// When the time diff is too large, fill in one blank NCI with error in between
+static const uint8_t EMPTY_ERR_NCI[BUFFER_SIZE][5] = {
+    {0x6F, NCI_MSG_PROP_ANDROID, 0x02, NCI_ANDROID_BLANK_NCI,
+     NCI_ANDROID_BLANK_COMMON_ERROR},
+    {0x6F, NCI_MSG_PROP_ANDROID, 0x02, NCI_ANDROID_BLANK_NCI,
+     NCI_ANDROID_BLANK_VENDOR_ERROR}};
+
 static std::mutex buffer_mutex;
 static ringbuffer_t* buffers[BUFFER_SIZE] = {nullptr, nullptr};
 static uint64_t last_timestamp_ms[BUFFER_SIZE] = {0, 0};
@@ -81,17 +90,33 @@ static void nfcsnoop_cb(const uint8_t* data, const size_t length,
                         bool is_received, const uint64_t timestamp_us,
                         size_t buffer_index) {
   nfcsnooz_header_t header;
-
+  bool err = false;
   uint64_t delta_time_ms = 0;
-  if (last_timestamp_ms[buffer_index]) {
+
+  if (last_timestamp_ms[buffer_index] > timestamp_us) {
+    LOG(ERROR) << StringPrintf("Timestamp error!");
+    err = true;
+  } else if (last_timestamp_ms[buffer_index]) {
     __builtin_sub_overflow(timestamp_us, last_timestamp_ms[buffer_index],
                            &delta_time_ms);
   }
 
+  if (delta_time_ms > (uint64_t)MICRO_SECOND_THREE_DAYS || err) {
+    LOG(ERROR) << StringPrintf(
+        "Reset last timestamp and add empty nci to "
+        "snoop buffer %zu with error",
+        buffer_index);
+    last_timestamp_ms[buffer_index] = timestamp_us;
+    nfcsnoop_cb(EMPTY_ERR_NCI[buffer_index],
+                EMPTY_ERR_NCI[buffer_index][2] + NCI_MSG_HDR_SIZE, true,
+                timestamp_us, buffer_index);
+    delta_time_ms = 0;
+  }
+
   while (delta_time_ms > UINT32_MAX) {
+    uint64_t middle_time = last_timestamp_ms[buffer_index] + UINT32_MAX;
     LOG(WARNING) << StringPrintf("Add empty nci to snoop buffer %zu",
                                  buffer_index);
-    uint64_t middle_time = last_timestamp_ms[buffer_index] + UINT32_MAX;
     nfcsnoop_cb(EMPTY_NCI[buffer_index],
                 EMPTY_NCI[buffer_index][2] + NCI_MSG_HDR_SIZE, true,
                 middle_time, buffer_index);
