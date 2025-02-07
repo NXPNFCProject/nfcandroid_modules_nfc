@@ -123,10 +123,10 @@ void NfcVendorExtn::setNciCallback(tHAL_NFC_CBACK* pHalCback,
   mVendorExtnCb.pDataCback = pDataCback;
 }
 
-bool NfcVendorExtn::processCmd(uint16_t *dataLen, uint8_t* pData) {
-  LOG(VERBOSE) << StringPrintf("%s: Enter dataLen:%d", __func__, *dataLen);
+bool NfcVendorExtn::processCmd(uint16_t dataLen, uint8_t* pData) {
+  LOG(VERBOSE) << StringPrintf("%s: Enter dataLen:%d", __func__, dataLen);
   NciData_t nci_data;
-  nci_data.data_len = dataLen;
+  nci_data.data_len = &dataLen;
   nci_data.p_data = (uint8_t*)pData;
   mNfcExtEventData.nci_msg = nci_data;
 
