@@ -27,6 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import android.app.role.RoleManager;
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -280,5 +281,65 @@ public class CardemulationTest {
         assertThat(result).isNotNull();
         assertThat(result.size()).isGreaterThan(0);
         verify(mINfcCardEmulation).getAidGroupForService(1, componentName, "payment");
+    }
+
+    @Test
+    public void testRemoveAidsForService() throws RemoteException {
+        UserHandle userHandle = mock(UserHandle.class);
+        when(userHandle.getIdentifier()).thenReturn(1);
+        when(mContext.getUser()).thenReturn(userHandle);
+        ComponentName componentName = mock(ComponentName.class);
+        when(mINfcCardEmulation.removeAidGroupForService(1, componentName, "payment"))
+                .thenReturn(true);
+        boolean result = mCardEmulation.removeAidsForService(componentName, "payment");
+        assertThat(result).isTrue();
+        verify(mINfcCardEmulation).removeAidGroupForService(1, componentName, "payment");
+    }
+
+    @Test
+    public void testSetPreferredService() throws RemoteException {
+        Activity activity = mock(Activity.class);
+        ComponentName componentName = mock(ComponentName.class);
+        when(mINfcCardEmulation.setPreferredService(componentName))
+                .thenReturn(true);
+        boolean result = mCardEmulation.setPreferredService(activity, componentName);
+        assertThat(result).isTrue();
+        verify(mINfcCardEmulation).setPreferredService(componentName);
+    }
+
+    @Test
+    public void testUnsetPreferredService() throws RemoteException {
+        Activity activity = mock(Activity.class);
+        when(mINfcCardEmulation.unsetPreferredService())
+                .thenReturn(true);
+        boolean result = mCardEmulation.unsetPreferredService(activity);
+        assertThat(result).isTrue();
+        verify(mINfcCardEmulation).unsetPreferredService();
+    }
+
+    @Test
+    public void testSupportsAidPrefixRegistration() throws RemoteException {
+        when(mINfcCardEmulation.supportsAidPrefixRegistration())
+                .thenReturn(true);
+        boolean result = mCardEmulation.supportsAidPrefixRegistration();
+        assertThat(result).isTrue();
+        verify(mINfcCardEmulation).supportsAidPrefixRegistration();
+    }
+
+    @Test
+    public void testGetAidsForPreferredPaymentService() throws RemoteException {
+        UserHandle userHandle = mock(UserHandle.class);
+        when(userHandle.getIdentifier()).thenReturn(1);
+        when(mContext.getUser()).thenReturn(userHandle);
+        ApduServiceInfo apduServiceInfo = mock(ApduServiceInfo.class);
+        List<String> aids = new ArrayList<>();
+        aids.add("test");
+        when(apduServiceInfo.getAids()).thenReturn(aids);
+        when(mINfcCardEmulation.getPreferredPaymentService(1))
+                .thenReturn(apduServiceInfo);
+        List<String> result = mCardEmulation.getAidsForPreferredPaymentService();
+        assertThat(result).isNotNull();
+        assertThat(result.size()).isGreaterThan(0);
+        verify(mINfcCardEmulation).getPreferredPaymentService(1);
     }
 }
