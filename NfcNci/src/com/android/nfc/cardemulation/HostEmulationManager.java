@@ -860,7 +860,7 @@ public class HostEmulationManager {
                         Messenger existingService =
                                 bindServiceIfNeededLocked(user.getIdentifier(), resolvedService);
                         if (existingService != null) {
-                            Log.d(TAG, "Binding to existing service");
+                            Log.d(TAG, "Send data to existing service");
                             NfcInjector.getInstance().getNfcEventLog().logEvent(
                                     NfcEventProto.EventType.newBuilder()
                                             .setCeRoutedAid(
@@ -1094,6 +1094,10 @@ public class HostEmulationManager {
             mActiveService.send(msg);
         } catch (RemoteException e) {
             Log.e(TAG, "Remote service " + mActiveServiceName + " has died, dropping APDU", e);
+            if (Objects.equals(mActiveService, mPaymentService)) {
+                Log.wtf(TAG, "Rebinding payment service");
+                bindPaymentServiceLocked(mPaymentServiceUserId, mLastBoundPaymentServiceName);
+            }
         }
     }
 
