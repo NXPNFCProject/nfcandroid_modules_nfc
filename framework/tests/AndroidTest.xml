@@ -23,7 +23,15 @@
 
     <option name="test-suite-tag" value="apct"/>
     <option name="test-tag" value="NfcManagerTests"/>
-
+    <option name="config-descriptor:metadata" key="mainline-param" value="com.google.android.nfcservices.apex" />
+    <object type="module_controller"
+            class="com.android.tradefed.testtype.suite.module.DeviceFeatureModuleController">
+        <option name="required-feature" value="android.hardware.nfc.any" />
+    </object>
+    <object type="module_controller"
+            class="com.android.tradefed.testtype.suite.module.MainlineTestModuleController">
+        <option name="mainline-module-package-name" value="com.google.android.nfcservices" />
+    </object>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.nfc" />
         <option name="hidden-api-checks" value="false"/>
