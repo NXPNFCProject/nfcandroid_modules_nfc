@@ -26,7 +26,7 @@
         <package android:name="com.android.test.foregroundnfc" />
         <package android:name="com.android.test.walletroleholder" />
     </queries>
-    <application android:testOnly="true">
+    <application android:testOnly="true" android:debuggable="true">
         <uses-library android:name="android.test.runner"/>
         <service android:name=".CustomHostApduService" android:exported="true"
                  android:permission="android.permission.BIND_NFC_SERVICE">

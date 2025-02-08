@@ -14,11 +14,14 @@ android_test {
         "android.test.mock.stubs.system",
         "framework-nfc.impl",
         "unsupportedappusage",
+        "NfcNciApex"
     ],
 
     static_libs: [
         "androidx.test.core",
         "androidx.test.rules",
+        "androidx.test.espresso.core",
+        "androidx.test.espresso.intents-nodeps",
         "androidx.test.ext.junit",
         "com.android.nfc.flags-aconfig-java",
         "mockito-target-extended-minus-junit4",

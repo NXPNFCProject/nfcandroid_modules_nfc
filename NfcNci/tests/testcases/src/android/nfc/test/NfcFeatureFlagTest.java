@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.nfc;
+package android.nfc.test;
 
 import static android.content.pm.PackageManager.MATCH_ALL;
 
@@ -78,22 +78,37 @@ public final class NfcFeatureFlagTest {
                 .orElse("com.android.nfc");
     }
 
-    private Resources getResources() throws Exception {
-        return mContext.createPackageContext(getNfcApkPkgName(), 0).getResources();
+    private boolean getNfcResourceBooleanByName(String name) throws Exception {
+        Resources resources = mContext.getPackageManager().getResourcesForApplication(
+            getNfcApkPkgName());
+        int arrayId = resources.getIdentifier(name, "bool", getNfcApkPkgName());
+        if (arrayId == 0) {
+            throw new Resources.NotFoundException("Resource array '" + name
+                    + "' not found in package " + getNfcApkPkgName());
+        }
+        return resources.getBoolean(arrayId);
     }
 
+    private String[] getNfcResourceStringArrayByName(String name) throws Exception {
+        Resources resources = mContext.getPackageManager().getResourcesForApplication(
+            getNfcApkPkgName());
+        int arrayId = resources.getIdentifier(name, "array", getNfcApkPkgName());
+        if (arrayId == 0) {
+            throw new Resources.NotFoundException("Resource array '" + name
+                    + "' not found in package " + getNfcApkPkgName());
+        }
+        return resources.getStringArray(arrayId);
+    }
 
     @Test
     public void testIsSecureNfcSupported() throws Exception {
         if (!mNfcSupported) return;
-        boolean allSupport = getResources().getBoolean(
-                R.bool.enable_secure_nfc_support);
+        boolean allSupport = getNfcResourceBooleanByName("enable_secure_nfc_support");
         if (allSupport) {
             assertTrue(mNfcAdapter.isSecureNfcSupported());
             return;
         }
-        String[] skuList = getResources().getStringArray(
-                R.array.config_skuSupportsSecureNfc);
+        String[] skuList = getNfcResourceStringArrayByName("config_skuSupportsSecureNfc");
         String sku = SystemProperties.get("ro.boot.hardware.sku");
         if (TextUtils.isEmpty(sku) || !ArrayUtils.contains(skuList, sku)) {
             assertFalse(mNfcAdapter.isSecureNfcSupported());
@@ -105,16 +120,18 @@ public final class NfcFeatureFlagTest {
     @Test
     public void testIsControllerAlwaysOnSupported() throws Exception {
         if (!mNfcSupported) return;
-        assertThat(getResources()
-                .getBoolean(R.bool.nfcc_always_on_allowed))
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity();
+        assertThat(getNfcResourceBooleanByName("nfcc_always_on_allowed"))
                 .isEqualTo(mNfcAdapter.isControllerAlwaysOnSupported());
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .dropShellPermissionIdentity();
     }
 
     @Test
     public void testIsTagIntentAppPreferenceSupported() throws Exception {
         if (!mNfcSupported) return;
-        assertThat(getResources()
-                .getBoolean(R.bool.tag_intent_app_pref_supported))
+        assertThat(getNfcResourceBooleanByName("tag_intent_app_pref_supported"))
                 .isEqualTo(mNfcAdapter.isTagIntentAppPreferenceSupported());
     }
 }

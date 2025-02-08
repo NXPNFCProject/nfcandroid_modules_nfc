@@ -32,6 +32,11 @@
             android:exported="false"
             />
         <activity
+            android:name="com.android.nfc.cardemulation.TapAgainDialog"
+            android:theme="@style/Theme.AppCompat"
+            android:exported="false"
+            />
+        <activity
             android:name="com.android.nfc.handover.ConfirmConnectActivity"
             android:theme="@style/Theme.AppCompat"
             android:exported="false"

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.nfc;
+package android.nfc.test;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -60,6 +60,8 @@ public final class NfcStateTest {
     @Before
     public void setUp() {
         mContext = InstrumentationRegistry.getTargetContext();
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity();
         IntentFilter filter = new IntentFilter(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED);
         mAdapterStateChangedReceiver = new AdapterStateChangedReceiver();
         mContext.registerReceiver(mAdapterStateChangedReceiver, filter);
@@ -90,6 +92,8 @@ public final class NfcStateTest {
         if (mNfcSupported && mNfcAdapter.isControllerAlwaysOnSupported()) {
             mNfcAdapter.unregisterControllerAlwaysOnListener(mListener);
         }
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .dropShellPermissionIdentity();
     }
 
     @Test

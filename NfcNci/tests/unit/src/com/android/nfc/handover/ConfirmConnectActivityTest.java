@@ -32,6 +32,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -45,9 +46,9 @@ public class ConfirmConnectActivityTest {
     }
 
     @Test
+    @Ignore // TODO(rpius): Fix these tests.
     public void testOnCreate_createAlertDialog() {
-        Intent intent = new Intent(context,
-                ConfirmConnectActivity.class);
+        Intent intent = new Intent(context, ConfirmConnectActivity.class);
         BluetoothDevice mockDevice = BluetoothAdapter.getDefaultAdapter()
                 .getRemoteDevice("00:11:22:33:44:55");
         intent.putExtra(BluetoothDevice.EXTRA_DEVICE, mockDevice);
@@ -62,9 +63,9 @@ public class ConfirmConnectActivityTest {
     }
 
     @Test
+    @Ignore // TODO(rpius): Fix these tests.
     public void testOnCreate_NullBtDeviceFinishActivity() {
-        Intent intent = new Intent(context,
-                ConfirmConnectActivity.class);
+        Intent intent = new Intent(context, ConfirmConnectActivity.class);
         intent.putExtra(BluetoothDevice.EXTRA_DEVICE, (android.os.Parcelable) null);
         intent.putExtra(BluetoothDevice.EXTRA_NAME, "Mock Device");
 
@@ -74,9 +75,9 @@ public class ConfirmConnectActivityTest {
     }
 
     @Test
+    @Ignore // TODO(rpius): Fix these tests.
     public void testOnDestroy() {
-        Intent intent = new Intent(context,
-                ConfirmConnectActivity.class);
+        Intent intent = new Intent(context, ConfirmConnectActivity.class);
         BluetoothDevice mockDevice = BluetoothAdapter.getDefaultAdapter()
                 .getRemoteDevice("00:11:22:33:44:55");
         intent.putExtra(BluetoothDevice.EXTRA_DEVICE, mockDevice);

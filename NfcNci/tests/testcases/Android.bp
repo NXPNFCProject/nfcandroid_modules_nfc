@@ -51,5 +51,5 @@ android_test {
         "general-tests",
         "mts-nfc",
     ],
-
+    instrumentation_for: "NfcNciApex",
 }
