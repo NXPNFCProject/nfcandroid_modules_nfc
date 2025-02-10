@@ -2330,6 +2330,7 @@ static jbyteArray nfcManager_doGetRoutingTable(JNIEnv* e, jobject o) {
 static void nfcManager_clearRoutingEntry(JNIEnv* e, jobject o,
                                          jint clearFlags) {
   LOG(DEBUG) << StringPrintf("%s: clearFlags=0x%X", __func__, clearFlags);
+  RoutingManager::getInstance().disableRoutingToHost();
   RoutingManager::getInstance().clearRoutingEntry(clearFlags);
 }
 
