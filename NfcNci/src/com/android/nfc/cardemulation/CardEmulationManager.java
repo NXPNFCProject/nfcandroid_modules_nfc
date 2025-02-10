@@ -54,10 +54,7 @@ import android.os.UserHandle;
 import android.os.UserManager;
 import android.provider.Settings;
 import android.sysprop.NfcProperties;
-import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
-import android.telephony.TelephonyManager;
-import android.text.TextUtils;
 import android.util.Log;
 import android.util.proto.ProtoOutputStream;
 
@@ -68,7 +65,6 @@ import com.android.nfc.ForegroundUtils;
 import com.android.nfc.NfcInjector;
 import com.android.nfc.NfcPermissions;
 import com.android.nfc.NfcService;
-import com.android.nfc.cardemulation.util.TelephonyUtils;
 import com.android.nfc.proto.NfcEventProto;
 import com.android.nfc.R;
 
@@ -78,9 +74,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -102,7 +95,6 @@ import java.util.stream.IntStream;
 public class CardEmulationManager implements RegisteredServicesCache.Callback,
         RegisteredNfcFServicesCache.Callback, PreferredServices.Callback,
         EnabledNfcFServices.Callback, WalletRoleObserver.Callback,
-        PreferredSubscriptionService.Callback,
         HostEmulationManager.NfcAidRoutingListener {
     static final String TAG = "CardEmulationManager";
     static final boolean DBG = NfcProperties.debug_enabled().orElse(true);
@@ -149,7 +141,6 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
     private INfcOemExtensionCallback mNfcOemExtensionCallback;
     private final NfcEventLog mNfcEventLog;
     private final int mVendorApiLevel;
-    private PreferredSubscriptionService mPreferredSubscriptionService = null;
 
     // TODO: Move this object instantiation and dependencies to NfcInjector.
     public CardEmulationManager(Context context, NfcInjector nfcInjector,
@@ -182,7 +173,6 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         mNfcEventLog = nfcInjector.getNfcEventLog();
         mVendorApiLevel = SystemProperties.getInt(
                 "ro.vendor.api_level", Build.VERSION.DEVICE_INITIAL_SDK_INT);
-        mPreferredSubscriptionService = new PreferredSubscriptionService(mContext, this);
         initialize();
     }
 
@@ -200,8 +190,7 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
             EnabledNfcFServices enabledNfcFServices,
             RoutingOptionManager routingOptionManager,
             PowerManager powerManager,
-            NfcEventLog nfcEventLog,
-            PreferredSubscriptionService preferredSubscriptionService) {
+            NfcEventLog nfcEventLog) {
         mContext = context;
         mCardEmulationInterface = new CardEmulationInterface();
         mNfcFCardEmulationInterface = new NfcFCardEmulationInterface();
@@ -222,7 +211,6 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         mNfcEventLog = nfcEventLog;
         mVendorApiLevel = SystemProperties.getInt(
                 "ro.vendor.api_level", Build.VERSION.DEVICE_INITIAL_SDK_INT);
-        mPreferredSubscriptionService = preferredSubscriptionService;
         initialize();
     }
 
@@ -233,8 +221,6 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
     }
 
     private void initialize() {
-        if (mPreferredSubscriptionService != null)
-            mPreferredSubscriptionService.initialize();
         mServiceCache.initialize();
         mNfcFServicesCache.initialize();
         mForegroundUid = Process.INVALID_UID;
@@ -667,49 +653,6 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
      */
     public boolean packageHasPreferredService(String packageName) {
         return mPreferredServices.packageHasPreferredService(packageName);
-    }
-
-    @Override
-    public void onPreferredSubscriptionChanged(int subscriptionId, boolean isActive) {
-        int simType = isActive ?  getSimTypeById(subscriptionId) : TelephonyUtils.SIM_TYPE_UNKNOWN;
-        Log.i(TAG, "subscription_" + subscriptionId +  "is active(" + isActive + ")"
-                + ", type(" + simType + ")");
-        mRoutingOptionManager.onPreferredSimChanged(simType);
-        if (simType != TelephonyUtils.SIM_TYPE_UNKNOWN) {
-            updateRouteBasedOnPreferredSim();
-        }
-        else {
-            Log.i(TAG, "SIM is Invalid type");
-        }
-        mAidCache.onPreferredSimChanged(simType);
-        // try to nfc turned off and on to swp initialize
-        NfcService.getInstance().onPreferredSimChanged();
-    }
-
-    private void updateRouteBasedOnPreferredSim() {
-        boolean changed = false;
-        changed |= updateRouteToPreferredSim(()->mRoutingOptionManager.getDefaultRoute(),
-                route->mRoutingOptionManager.overrideDefaultRoute(route));
-        changed |= updateRouteToPreferredSim(()->mRoutingOptionManager.getDefaultIsoDepRoute(),
-                route->mRoutingOptionManager.overrideDefaultIsoDepRoute(route));
-        changed |= updateRouteToPreferredSim(()->mRoutingOptionManager.getDefaultOffHostRoute(),
-                route->mRoutingOptionManager.overrideDefaultOffHostRoute(route));
-        if (changed) {
-            mRoutingOptionManager.overwriteRoutingTable();
-        }
-    }
-    private boolean updateRouteToPreferredSim(Supplier<Integer> getter, Consumer<Integer> setter) {
-        String se = mRoutingOptionManager.getSecureElementForRoute(getter.get());
-        if (se.startsWith(RoutingOptionManager.SE_PREFIX_SIM)) {
-            int route = mRoutingOptionManager.getRouteForSecureElement(
-                    mRoutingOptionManager.getPreferredSim());
-            setter.accept(route);
-            return true;
-        }
-        else {
-            Log.d(TAG, "ignore update route to preferred sim");
-        }
-        return false;
     }
 
     /**
@@ -1181,10 +1124,10 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
 
             NfcPermissions.enforceAdminPermissions(mContext);
 
-            int aidRoute = getRouteForSecureElement(aids);
-            int protocolRoute = getRouteForSecureElement(protocol);
-            int technologyRoute = getRouteForSecureElement(technology);
-            int scRoute = getRouteForSecureElement(sc);
+            int aidRoute = mRoutingOptionManager.getRouteForSecureElement(aids);
+            int protocolRoute = mRoutingOptionManager.getRouteForSecureElement(protocol);
+            int technologyRoute = mRoutingOptionManager.getRouteForSecureElement(technology);
+            int scRoute = mRoutingOptionManager.getRouteForSecureElement(sc);
 
             if (DBG) {
                 Log.d(TAG, "overwriteRoutingTable() - aidRoute: " + Integer.toHexString(aidRoute)
@@ -1276,14 +1219,9 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         @Override
         public int setDefaultNfcSubscriptionId(int subscriptionId, String pkgName) {
             NfcPermissions.enforceAdminPermissions(mContext);
-            if (!android.nfc.Flags.enableCardEmulationEuicc()) {
-                Log.d(TAG, "Euicc CardEmulation isn't enabled");
-                return CardEmulation.SET_SUBSCRIPTION_ID_STATUS_FAILED_NOT_SUPPORTED;
-            }
             enforceTelephonySubscriptionFeatureWithException(pkgName, "setDefaultNfcSubscriptionId");
-            mPreferredSubscriptionService.setPreferredSubscriptionId(subscriptionId, true);
             // TODO(b/321314635): Write to NFC persistent setting.
-            return CardEmulation.SET_SUBSCRIPTION_ID_STATUS_SUCCESS;
+            return CardEmulation.SET_SUBSCRIPTION_ID_STATUS_FAILED_INVALID_SUBSCRIPTION_ID;
         }
 
         @Override
@@ -1291,7 +1229,7 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
             NfcPermissions.enforceUserPermissions(mContext);
             enforceTelephonySubscriptionFeatureWithException(pkgName, "getDefaultNfcSubscriptionId");
             // TODO(b/321314635): Read NFC persistent setting.
-            return mPreferredSubscriptionService.getPreferredSubscriptionId();
+            return SubscriptionManager.INVALID_SUBSCRIPTION_ID;
         }
 
         @Override
@@ -1403,7 +1341,24 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         if (route.length() == 3) {
             route = route + '1';
         }
-        return mRoutingOptionManager.getRouteForSecureElement(route);
+
+        try {
+            if (route.startsWith("eSE") && mOffHostRouteEse != null) {
+                int index = Integer.parseInt(route.substring(3));
+                if (mOffHostRouteEse.length >= index && index > 0) {
+                    return mOffHostRouteEse[index - 1] & 0xFF;
+                }
+            } else if (route.startsWith("SIM") && mOffHostRouteUicc != null) {
+                int index = Integer.parseInt(route.substring(3));
+                if (mOffHostRouteUicc.length >= index && index > 0) {
+                    return mOffHostRouteUicc[index - 1] & 0xFF;
+                }
+            }
+            if (mOffHostRouteEse == null && mOffHostRouteUicc == null)
+                return -1;
+        } catch (NumberFormatException ignored) { }
+
+        return 0;
     }
 
     /**
@@ -1536,51 +1491,6 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
             updateForShouldDefaultToObserveMode(newPreferredService.getUserId());
             notifyPreferredServiceListeners(newPreferredService);
         }
-    }
-
-    public void updateForDefaultSwpToEuicc() {
-        if (!android.nfc.Flags.enableCardEmulationEuicc()) {
-            Log.d(TAG, "Euicc CardEmulation isn't  enabled");
-            return;
-        }
-
-        if (mContext.getResources().getBoolean(R.bool.enable_euicc_support)
-                && NfcInjector.NfcProperties.isEuiccSupported()) {
-            Log.d(TAG, "Euicc CardEmulation is not support");
-            return;
-        }
-
-        if (DBG) Log.d(TAG, "Assign SWP for eSIM before NFC turned on");
-
-        int preferredSubscriptionId = mPreferredSubscriptionService.getPreferredSubscriptionId();
-        String response = TelephonyUtils.getInstance(mContext)
-                .updateSwpStatusForEuicc(getSimTypeById(preferredSubscriptionId));
-        Log.d(TAG, "response: " + response);
-        if(response.length() >= 4) {
-            String statusWord = response.substring(response.length() - 4);
-            if (!TextUtils.equals(statusWord, "9000")) {
-                Log.e(TAG, "ASSIGN_SWP(LSE) Command is fail: " + statusWord);
-            }
-        } else {
-            Log.e(TAG, "response.length() is wrong length : " + response.length());
-        }
-    }
-
-    private int getSimTypeById(int subscriptionId) {
-        Optional<SubscriptionInfo> optionalInfo  =
-                TelephonyUtils.getInstance(mContext).getActiveSubscriptionInfoById(subscriptionId);
-        if (optionalInfo.isPresent()) {
-            SubscriptionInfo info = optionalInfo.get();
-            if (info.isEmbedded()) {
-                return info.getPortIndex() == 0
-                        ? TelephonyUtils.SIM_TYPE_EUICC_1 : TelephonyUtils.SIM_TYPE_EUICC_2;
-            }
-            else {
-                return TelephonyUtils.SIM_TYPE_UICC;
-            }
-        }
-
-        return TelephonyUtils.SIM_TYPE_UNKNOWN;
     }
 
     public void updateForShouldDefaultToObserveMode(int userId) {

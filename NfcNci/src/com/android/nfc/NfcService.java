@@ -239,9 +239,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     static final int MSG_WATCHDOG_PING = 24;
     static final int MSG_SE_SELECTED_EVENT = 25;
     static final int MSG_UPDATE_SYSTEM_CODE_ROUTE = 26;
-    static final int MSG_PREFERRED_SIM_CHANGED = 27;
+    static final int MSG_RESTART_DISCOVERY = 27;
+
     static final String MSG_ROUTE_AID_PARAM_TAG = "power";
-    static final int MSG_RESTART_DISCOVERY = 28;
 
     // Negative value for NO polling delay
     static final int NO_POLL_DELAY = -1;
@@ -1754,8 +1754,6 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
             WatchDogThread watchDog = new WatchDogThread("enableInternal", INIT_WATCHDOG_MS);
             watchDog.start();
-
-            mCardEmulationManager.updateForDefaultSwpToEuicc();
             try {
                 mRoutingWakeLock.acquire();
                 try {
@@ -4611,10 +4609,6 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         sendMessage(MSG_PREFERRED_PAYMENT_CHANGED, reason);
     }
 
-    public void onPreferredSimChanged() {
-        mHandler.sendEmptyMessage(MSG_PREFERRED_SIM_CHANGED);
-    }
-
     public void clearRoutingTable(int clearFlags) {
         //Remove any previously sent messages not yet processed
         mHandler.removeMessages(MSG_COMMIT_ROUTING);
@@ -5027,23 +5021,17 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     if (!isNfcEnabled()) break;
                     if (DBG) Log.d(TAG, "Clear routing table");
                     int clearFlags = (Integer)msg.obj;
-                    if (isNfcEnabled()) {
-                        mDeviceHost.clearRoutingEntry(clearFlags);
-                    }
+                    mDeviceHost.clearRoutingEntry(clearFlags);
                     break;
                 case MSG_UPDATE_ISODEP_PROTOCOL_ROUTE:
                     if (DBG) Log.d(TAG, "Update IsoDep Protocol Route");
-                    if (isNfcEnabled()) {
-                        mDeviceHost.setIsoDepProtocolRoute((Integer) msg.obj);
-                    }
+                    mDeviceHost.setIsoDepProtocolRoute((Integer)msg.obj);
                     break;
                 case MSG_UPDATE_TECHNOLOGY_ABF_ROUTE:
                     if (DBG) Log.d(TAG, "Update technology A,B&F route");
                     int msgRoute = msg.arg1;
                     int felicaRoute = msg.arg2;
-                    if (isNfcEnabled()) {
-                        mDeviceHost.setTechnologyABFRoute(msgRoute, felicaRoute);
-                    }
+                    mDeviceHost.setTechnologyABFRoute(msgRoute, felicaRoute);
                     break;
                 case MSG_WATCHDOG_PING:
                     NfcWatchdog watchdog = (NfcWatchdog) msg.obj;
@@ -5059,13 +5047,6 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     break;
                 case MSG_RESTART_DISCOVERY:
                     mDeviceHost.restartRfDiscovery();
-                    break;
-
-                case MSG_PREFERRED_SIM_CHANGED:
-                    if (!isNfcEnabled()) break;
-                    if (DBG) Log.d(TAG, "Preferred sim changed");
-                    new EnableDisableTask().execute(TASK_DISABLE);
-                    new EnableDisableTask().execute(TASK_ENABLE);
                     break;
                 default:
                     Log.e(TAG, "Unknown message received");
