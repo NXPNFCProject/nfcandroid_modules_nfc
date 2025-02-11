@@ -124,6 +124,8 @@ class NfcAdaptation {
 
   static void HalInitialize();
   static void HalTerminate();
+  static void HalOpenInternal(tHAL_NFC_CBACK* p_hal_cback,
+                      tHAL_NFC_DATA_CBACK* p_data_cback);
   static void HalOpen(tHAL_NFC_CBACK* p_hal_cback,
                       tHAL_NFC_DATA_CBACK* p_data_cback);
   static void HalClose();

@@ -30,6 +30,7 @@
 #include <android/hardware/nfc/1.2/INfc.h>
 #include <cutils/properties.h>
 #include <hwbinder/ProcessState.h>
+#include <thread>
 
 #include "NfcVendorExtn.h"
 #include "debug_nfcsnoop.h"
@@ -916,16 +917,16 @@ void NfcAdaptation::HalTerminate() {
 
 /*******************************************************************************
 **
-** Function:    NfcAdaptation::HalOpen
+** Function:    NfcAdaptation::HalOpenInternal
 **
 ** Description: Turn on controller, download firmware.
 **
 ** Returns:     None.
 **
 *******************************************************************************/
-void NfcAdaptation::HalOpen(tHAL_NFC_CBACK* p_hal_cback,
-                            tHAL_NFC_DATA_CBACK* p_data_cback) {
-  const char* func = "NfcAdaptation::HalOpen";
+void NfcAdaptation::HalOpenInternal(tHAL_NFC_CBACK* p_hal_cback,
+                                    tHAL_NFC_DATA_CBACK* p_data_cback) {
+  const char* func = "NfcAdaptation::HalOpenInternal";
   LOG(VERBOSE) << StringPrintf("%s", func);
 
   if (mAidlHal != nullptr) {
@@ -951,9 +952,27 @@ void NfcAdaptation::HalOpen(tHAL_NFC_CBACK* p_hal_cback,
     mCallback = new NfcClientCallback(p_hal_cback, p_data_cback);
     mHal->open(mCallback);
   }
+}
+
+/*******************************************************************************
+**
+** Function:    NfcAdaptation::HalOpen
+**
+** Description: Invoke HalOpenInternal in seprate thread to not to block caller.
+**
+** Returns:     None.
+**
+*******************************************************************************/
+void NfcAdaptation::HalOpen(tHAL_NFC_CBACK* p_hal_cback,
+                            tHAL_NFC_DATA_CBACK* p_data_cback) {
+  const char* func = "NfcAdaptation::HalOpen";
+  LOG(VERBOSE) << StringPrintf("%s", func);
   if (sVndExtnsPresent) {
     sNfcVendorExtn->setNciCallback(p_hal_cback, p_data_cback);
   }
+  std::thread([p_hal_cback, p_data_cback](){
+    HalOpenInternal(p_hal_cback, p_data_cback);
+  }).detach();
 }
 
 /*******************************************************************************
