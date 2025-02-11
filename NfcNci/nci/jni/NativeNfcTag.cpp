@@ -592,23 +592,23 @@ static jint nativeNfcTag_doConnect(JNIEnv*, jobject, jint targetIdx) {
   if (retCode == STATUS_CODE_TARGET_LOST) sIsISODepActivatedByApp = false;
 
   // Check we are connected to requested protocol/tech
-  if ((retCode == NFCSTATUS_SUCCESS) &&
-      ((sCurrentConnectedTargetProtocol != sCurrentActivatedProtocl) ||
-       (intfType != sCurrentRfInterface))) {
-    LOG(ERROR) << StringPrintf("%s: not connected to requested idx 0x%X",
-                               __func__, targetIdx);
-    retCode = NFCSTATUS_FAILED;
+  // if ((retCode == NFCSTATUS_SUCCESS) &&
+  //     ((sCurrentConnectedTargetProtocol != sCurrentActivatedProtocl) ||
+  //      (intfType != sCurrentRfInterface))) {
+  //   LOG(ERROR) << StringPrintf("%s: not connected to requested idx 0x%X",
+  //                              __func__, targetIdx);
+  //   retCode = NFCSTATUS_FAILED;
 
-    // We are still connected to something, update variables
-    for (int i = 0; i < natTag.mNumTechList; i++) {
-      if (sCurrentActivatedProtocl == natTag.mTechLibNfcTypes[i]) {
-        sCurrentConnectedTargetIdx = i;
-        sCurrentConnectedTargetType = natTag.mTechList[i];
-        sCurrentConnectedTargetProtocol = natTag.mTechLibNfcTypes[i];
-        break;
-      }
-    }
-  }
+  //   // We are still connected to something, update variables
+  //   for (int i = 0; i < natTag.mNumTechList; i++) {
+  //     if (sCurrentActivatedProtocl == natTag.mTechLibNfcTypes[i]) {
+  //       sCurrentConnectedTargetIdx = i;
+  //       sCurrentConnectedTargetType = natTag.mTechList[i];
+  //       sCurrentConnectedTargetProtocol = natTag.mTechLibNfcTypes[i];
+  //       break;
+  //     }
+  //   }
+  // }
 
 TheEnd:
   LOG(DEBUG) << StringPrintf("%s: exit 0x%X", __func__, retCode);
