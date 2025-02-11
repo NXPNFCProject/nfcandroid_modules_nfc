@@ -325,6 +325,9 @@ public class RoutingOptionManager {
 
         addOrUpdateTableItems(SE_PREFIX_SIM, mOffHostRouteUicc);
         addOrUpdateTableItems(SE_PREFIX_ESE, mOffHostRouteEse);
+
+        mRouteForSecureElement.putIfAbsent("Ndef-Nfcee", 0x10); // 0x10 should be dynamically set
+        mSecureElementForRoute.putIfAbsent(0x10, "Ndef-Nfcee"); // 0x10 should be dynamically set
     }
 
     boolean isRoutingTableOverwrittenOrOverlaid(
