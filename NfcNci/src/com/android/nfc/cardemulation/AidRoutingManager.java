@@ -325,7 +325,6 @@ public class AidRoutingManager {
             }
 
             // Otherwise, update internal structures and commit new routing
-            clearNfcRoutingTableLocked();
             prevRouteForAid = mRouteForAid;
             mRouteForAid = routeForAid;
             prevPowerForAid = mPowerForAid;
