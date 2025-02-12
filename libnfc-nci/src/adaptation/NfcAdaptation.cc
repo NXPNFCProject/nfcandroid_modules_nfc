@@ -102,7 +102,6 @@ bool isDownloadFirmwareCompleted = false;
 bool use_aidl = false;
 uint8_t mute_tech_route_option = 0x00;
 unsigned int t5t_mute_legacy = 0;
-bool nfa_ee_route_debounce_timer = true;
 
 extern tNFA_DM_CFG nfa_dm_cfg;
 extern tNFA_PROPRIETARY_CFG nfa_proprietary_cfg;
@@ -643,12 +642,6 @@ void NfcAdaptation::Initialize() {
   if (NfcConfig::hasKey(NAME_ISO15693_SKIP_GET_SYS_INFO_CMD)) {
     t5t_mute_legacy =
         NfcConfig::getUnsigned(NAME_ISO15693_SKIP_GET_SYS_INFO_CMD);
-  }
-
-  if (NfcConfig::hasKey(NAME_NFA_EE_ROUTE_DEBOUNCE_TIMER)) {
-    if (NfcConfig::getUnsigned(NAME_NFA_EE_ROUTE_DEBOUNCE_TIMER) == 0x00) {
-      nfa_ee_route_debounce_timer = false;
-    }
   }
 
   if (NfcConfig::hasKey(NAME_NFA_DM_LISTEN_ACTIVE_DEACT_NTF_TIMEOUT)) {

@@ -56,7 +56,6 @@ const uint8_t nfa_ee_tech_mask_list[NFA_EE_NUM_TECH] = {
 
 const uint8_t nfa_ee_tech_list[NFA_EE_NUM_TECH] = {
     NFC_RF_TECHNOLOGY_A, NFC_RF_TECHNOLOGY_B, NFC_RF_TECHNOLOGY_F};
-extern bool nfa_ee_route_debounce_timer;
 
 /* the following 2 tables convert the protocol mask in API and control block to
  * the command for NFCC */
@@ -835,7 +834,7 @@ void nfa_ee_report_event(tNFA_EE_CBACK* p_cback, tNFA_EE_EVT event,
 **
 *******************************************************************************/
 void nfa_ee_start_timer(void) {
-  if (nfa_ee_route_debounce_timer && nfa_dm_is_active())
+  if (nfa_dm_is_active())
     nfa_sys_start_timer(&nfa_ee_cb.timer, NFA_EE_ROUT_TIMEOUT_EVT,
                         NFA_EE_ROUT_TIMEOUT_VAL);
 }
