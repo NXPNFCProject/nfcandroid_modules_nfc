@@ -327,6 +327,12 @@ typedef enum {
 #define NFA_LISTEN_DISABLED_EVT 37
 /* T2T command completed */
 #define NFA_T2T_CMD_CPLT_EVT 40
+/* EP removal detection response */
+#define NFA_DETECT_REMOVAL_STARTED_EVT 51
+/* EP removal detection notification */
+#define NFA_DETECT_REMOVAL_RESULT_EVT 52
+/* RF Interface Extension result event */
+#define NFA_RF_INTF_EXT_RESULT_EVT 43
 
 /* NFC deactivation type */
 #define NFA_DEACTIVATE_TYPE_IDLE NFC_DEACTIVATE_TYPE_IDLE
@@ -483,6 +489,11 @@ typedef struct {
   uint16_t len;       /* Length of data                       */
 } tNFA_CE_DATA;
 
+/* Structure for NFA_EP_REMOVAL_DETECTION_EVT data */
+typedef struct {
+  uint8_t reason; /* Reason from RF_DEACTIVATE_NTF       */
+} tNFA_EP_REMOVED;
+
 /* Union of all connection callback structures */
 typedef union {
   tNFA_STATUS status;           /* NFA_POLL_ENABLED_EVT                 */
@@ -499,6 +510,7 @@ typedef union {
   tNFA_CE_ACTIVATED ce_activated;     /* NFA_CE_ACTIVATED_EVT                 */
   tNFA_CE_DEACTIVATED ce_deactivated; /* NFA_CE_DEACTIVATED_EVT               */
   tNFA_CE_DATA ce_data;               /* NFA_CE_DATA_EVT                      */
+  tNFA_EP_REMOVED removal_detect;     /* NFA_EP_REMOVAL_DETECTION_EVT   */
 
 } tNFA_CONN_EVT_DATA;
 
@@ -631,6 +643,7 @@ typedef tNFC_RF_COMM_PARAMS tNFA_RF_COMM_PARAMS;
 #define NFA_INTERFACE_ISO_DEP NFC_INTERFACE_ISO_DEP
 #define NFA_INTERFACE_MIFARE NFC_INTERFACE_MIFARE
 typedef tNFC_INTF_TYPE tNFA_INTF_TYPE;
+typedef tNFC_INTF_EXT_TYPE tNFA_INTF_EXT_TYPE;
 
 /*******************************************************************************
 ** NDEF Definitions
@@ -1086,6 +1099,23 @@ extern tNFA_STATUS NFA_UpdateRFCommParams(tNFA_RF_COMM_PARAMS* p_params);
 
 /*******************************************************************************
 **
+** Function         NFA_StartRemovalDetection
+**
+** Description      Start the detection of RF endpoint removal when data
+*exchange
+**                  ore charging with listener completed.
+**
+**                  An NFA_DETECT_REMOVAL_RESULT_EVT indicates whether start
+**                  was successful or not.
+**
+** Returns          NFA_STATUS_OK if successfully initiated
+**                  NFA_STATUS_FAILED otherwise
+**
+*******************************************************************************/
+tNFA_STATUS NFA_StartRemovalDetection(uint8_t waiting_time_int);
+
+/*******************************************************************************
+**
 ** Function         NFA_Deactivate
 **
 ** Description
@@ -1381,5 +1411,16 @@ tNFA_STATUS NFA_ChangeDiscoveryTech(tNFA_TECHNOLOGY_MASK pollTech,
                                     tNFA_TECHNOLOGY_MASK listenTech,
                                     bool is_revert_poll, bool is_revert_listen,
                                     bool change_default_tech = false);
+
+/*******************************************************************************
+**
+** Function         NFA_IsRfRemovalDetectionSupported
+**
+** Description      Indicates if RF Removal Detection mode is supported by NFCC
+**
+** Returns          true if supported else false.
+**
+*******************************************************************************/
+bool NFA_IsRfRemovalDetectionSupported();
 
 #endif /* NFA_API_H */

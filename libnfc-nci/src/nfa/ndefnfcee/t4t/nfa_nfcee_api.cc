@@ -130,7 +130,7 @@ tNFA_STATUS NFA_T4tNfcEeWrite(uint8_t* p_fileId, uint8_t* p_data,
 tNFA_STATUS NFA_T4tNfcEeRead(uint8_t* p_fileId) {
   tNFA_T4TNFCEE_OPERATION* p_msg;
   uint16_t m_fileId = (uint16_t)(((uint16_t)(*(p_fileId)) << 8) +
-                                (uint16_t)(*((p_fileId) + 1)));
+                                 (uint16_t)(*((p_fileId) + 1)));
 
   if ((p_msg = (tNFA_T4TNFCEE_OPERATION*)GKI_getbuf(
            (uint16_t)(sizeof(tNFA_T4TNFCEE_OPERATION)))) != NULL) {

@@ -167,6 +167,13 @@ uint8_t nfc_ncif_send_data(tNFC_CONN_CB* p_cb, NFC_HDR* p_data) {
       return NCI_STATUS_FAILED;
     }
   }
+  if (nfc_cb.flags & NFC_FL_WAIT_RF_INTF_EXT_RSP) {
+    LOG(VERBOSE) << StringPrintf(
+        "%s; fail to send NCI data while waiting response for RF interface"
+        " extension command",
+        __func__);
+    return NCI_STATUS_FAILED;
+  }
 
   if (p_data) {
     /* always enqueue the data to the tx queue */
@@ -895,6 +902,27 @@ void nfc_ncif_proc_discover_ntf(uint8_t* p, uint16_t plen) {
 void nfc_ncif_proc_isodep_nak_presence_check_status(uint8_t status,
                                                     bool is_ntf) {
   rw_t4t_handle_isodep_nak_rsp(status, is_ntf);
+}
+
+/*******************************************************************************
+**
+** Function         nfc_ncif_proc_removal_status
+**
+** Description      This function is called to process removal detection
+**                  notification
+**
+** Returns          void
+**
+*******************************************************************************/
+void nfc_ncif_proc_removal_status(uint8_t* p) {
+  tNFC_DISCOVER evt_data;
+
+  evt_data.status = *p;
+  LOG(VERBOSE) << StringPrintf("%s; status=%d", __func__, evt_data.status);
+
+  if (nfc_cb.p_discv_cback) {
+    (*nfc_cb.p_discv_cback)(NFC_DETECTION_RESULT_DEVT, &evt_data);
+  }
 }
 
 /*******************************************************************************

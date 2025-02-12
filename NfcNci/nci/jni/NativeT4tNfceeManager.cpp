@@ -45,7 +45,7 @@ jint t4tNfceeManager_doClearNdefData(JNIEnv* e, jobject o) {
 }
 /*******************************************************************************
 **
-** Function:        t4tNfceeManager_isNdefOperationOnGoing
+** Function:        t4tNfceeManager_isNdefOperationOngoing
 **
 ** Description:     This API will get NDEF NFCEE status.
 **

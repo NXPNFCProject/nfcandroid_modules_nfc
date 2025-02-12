@@ -92,6 +92,9 @@ typedef uint8_t tNFC_STATE;
 #define NFC_FL_HAL_REQUESTED 0x0080
 /* Waiting for NFCEE Mode Set NTF                 */
 #define NFC_FL_WAIT_MODE_SET_NTF 0x0100
+/* Waiting for RF Interface Extension Start or
+ * Stop response before allowing NCI data again */
+#define NFC_FL_WAIT_RF_INTF_EXT_RSP 0x0200
 
 #define NFC_PEND_CONN_ID 0xFE
 #define NFC_CONN_ID_ID_MASK NCI_CID_MASK
@@ -283,6 +286,7 @@ extern void nfc_ncif_proc_data(NFC_HDR* p_msg);
 extern bool nfc_ncif_proc_proprietary_rsp(uint8_t mt, uint8_t gid, uint8_t oid);
 extern void nfc_ncif_proc_isodep_nak_presence_check_status(uint8_t status,
                                                            bool is_ntf);
+extern void nfc_ncif_proc_removal_status(uint8_t* p);
 extern void nfc_ncif_proc_charging_status(uint8_t* p, uint8_t len);
 
 extern void nfc_ncif_update_window(void);

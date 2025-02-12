@@ -64,6 +64,8 @@ public interface DeviceHost {
 
         public void onCommandTimeout();
 
+        public void onEndpointRemoved(int reason);
+
         /**
          * On Restart Rf Discovery
          */
@@ -80,6 +82,8 @@ public interface DeviceHost {
         void startPresenceChecking(int presenceCheckDelay,
                                    @Nullable TagDisconnectedCallback callback);
         void stopPresenceChecking();
+        boolean isPresenceCheckStopped();
+        void prepareForRemovalDetectionMode();
 
         int[] getTechList();
         void removeTechnology(int tech); // TODO remove this one
@@ -170,6 +174,8 @@ public interface DeviceHost {
 
     public boolean unrouteAid(byte[] aid);
 
+    public int commitRouting();
+
     /**
      * Get the T4T Nfcee power state supported.
      * @return T4T Nfcee power state
@@ -215,8 +221,6 @@ public interface DeviceHost {
      * @return "True" when feature supported. else "False"
      */
     boolean isNdefNfceeEmulationSupported();
-
-    public int commitRouting();
 
     public void registerT3tIdentifier(byte[] t3tIdentifier);
 
@@ -311,12 +315,16 @@ public interface DeviceHost {
      */
     NfcVendorNciResponse sendRawVendorCmd(int mt, int gid, int oid, byte[] payload);
 
+    public boolean detectEpRemoval(int waiting_time_int);
+
     void enableVendorNciNotifications(boolean enabled);
 
     /**
      * Get the active NFCEE list
      */
     public Map<String, Integer> dofetchActiveNfceeList();
+
+    public boolean isRemovalDetectionInPollModeSupported();
 
     /**
      * Restarts RF Discovery
