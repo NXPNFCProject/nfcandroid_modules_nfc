@@ -443,7 +443,7 @@ public class RegisteredAidCache {
 
          // [nfc_w_temp] Implement eSIM
          List<ServiceAidInfo> filteredServices;
-         if (mPreferredSimType == TelephonyUtils.SIM_TYPE_UNKNOWN) {
+        /* if (mPreferredSimType == TelephonyUtils.SIM_TYPE_UNKNOWN) {
              if (DBG) Log.i(TAG, "Sim based service is removed due to unknown sim type.");
              filteredServices = conflictingServices.stream().filter(
                      serviceAidInfo-> {
@@ -458,7 +458,9 @@ public class RegisteredAidCache {
          }
          else {
              filteredServices = conflictingServices.stream().collect(Collectors.toList());
-         }
+         }*/
+         if (DBG) Log.i(TAG, "Allow Sim based service in unkonwn sim type case also");
+         filteredServices = conflictingServices.stream().collect(Collectors.toList());
 
         for (ServiceAidInfo serviceAidInfo : filteredServices) {
             boolean serviceClaimsPaymentAid =
