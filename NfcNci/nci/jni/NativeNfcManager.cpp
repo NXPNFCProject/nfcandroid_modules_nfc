@@ -2010,7 +2010,7 @@ static jboolean nfcManager_doDownload(JNIEnv*, jobject) {
   theInstance.Initialize();  // start GKI, NCI task, NFC task
   if (android_nfc_nfc_read_polling_loop() || android_nfc_nfc_vendor_cmd()) {
     tHAL_NFC_ENTRY* halFuncEntries = theInstance.GetHalEntryFuncs();
-    NFA_Partial_Init(halFuncEntries, gPartialInitMode);
+    NFA_Partial_Init(halFuncEntries, ENABLE_MODE_TRANSPARENT);
     NFA_RegVSCback(true, &nfaVSCallback);
   }
   result = theInstance.DownloadFirmware();

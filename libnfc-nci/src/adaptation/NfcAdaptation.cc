@@ -1173,7 +1173,6 @@ bool NfcAdaptation::DownloadFirmware() {
 **
 *******************************************************************************/
 void NfcAdaptation::HalDownloadFirmwareCallback(nfc_event_t event,
-                                                __attribute__((unused))
                                                 nfc_status_t event_status) {
   const char* func = "NfcAdaptation::HalDownloadFirmwareCallback";
   LOG(VERBOSE) << StringPrintf("%s: event=0x%X", func, event);
@@ -1189,6 +1188,19 @@ void NfcAdaptation::HalDownloadFirmwareCallback(nfc_event_t event,
       break;
     }
   }
+  tNFC_HAL_EVT_MSG* p_msg = (tNFC_HAL_EVT_MSG*)GKI_getbuf(sizeof(tNFC_HAL_EVT_MSG));
+  if (p_msg != nullptr) {
+    /* Initialize NFC_HDR */
+    p_msg->hdr.len = 0;
+    p_msg->hdr.event = BT_EVT_TO_NFC_MSGS;
+    p_msg->hdr.offset = 0;
+    p_msg->hdr.layer_specific = 0;
+    p_msg->hal_evt = event;
+    p_msg->status = event_status;
+    GKI_send_msg(NFC_TASK, NFC_MBOX_ID, p_msg);
+  } else {
+    LOG(ERROR) << StringPrintf("No buffer");
+  };
 }
 
 /*******************************************************************************
@@ -1200,10 +1212,31 @@ void NfcAdaptation::HalDownloadFirmwareCallback(nfc_event_t event,
 ** Returns:     None.
 **
 *******************************************************************************/
-void NfcAdaptation::HalDownloadFirmwareDataCallback(__attribute__((unused))
-                                                    uint16_t data_len,
-                                                    __attribute__((unused))
-                                                    uint8_t* p_data) {}
+void NfcAdaptation::HalDownloadFirmwareDataCallback(uint16_t data_len,
+                                                    uint8_t* p_data) {
+  const char* func = "NfcAdaptation::HalDownloadFirmwareDataCallback";
+  LOG(VERBOSE) << StringPrintf("%s: data_len= %d", func, data_len);
+  if (p_data == nullptr) {
+    LOG(ERROR) << StringPrintf("%s: Invalid data!", func);
+    return;
+  }
+  NFC_HDR* p_msg = (NFC_HDR*)GKI_getbuf(sizeof(NFC_HDR) +
+                                        NFC_RECEIVE_MSGS_OFFSET + data_len);
+  if (p_msg != nullptr) {
+    /* Initialize NFC_HDR */
+    p_msg->len = data_len;
+    p_msg->event = BT_EVT_TO_NFC_NCI;
+    p_msg->offset = NFC_RECEIVE_MSGS_OFFSET;
+
+    /* no need to check length, it always less than pool size */
+    memcpy((uint8_t*)(p_msg + 1) + p_msg->offset, p_data, p_msg->len);
+
+    GKI_send_msg(NFC_TASK, NFC_MBOX_ID, p_msg);
+    LOG(VERBOSE) << StringPrintf("GKI msg sent!");
+  } else {
+    LOG(ERROR) << StringPrintf("No buffer");
+  }
+}
 
 /*******************************************************************************
 **
