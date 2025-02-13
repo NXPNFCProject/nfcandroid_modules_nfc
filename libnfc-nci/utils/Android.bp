@@ -56,6 +56,7 @@ cc_library_static {
         "//packages/apps/Nfc:__subpackages__",
         "//packages/modules/Nfc:__subpackages__",
         "//packages/modules/Nfc/libnfc-nci:__subpackages__",
+        "//vendor:__subpackages__",
     ],
 }
 
