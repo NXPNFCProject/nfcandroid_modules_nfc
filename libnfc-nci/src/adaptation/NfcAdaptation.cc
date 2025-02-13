@@ -958,7 +958,8 @@ void NfcAdaptation::HalOpenInternal(tHAL_NFC_CBACK* p_hal_cback,
 **
 ** Function:    NfcAdaptation::HalOpen
 **
-** Description: Invoke HalOpenInternal in seprate thread to not to block caller.
+** Description: Invoke HalOpenInternal in separate thread to not to block
+**              caller.
 **
 ** Returns:     None.
 **
@@ -1155,11 +1156,17 @@ bool NfcAdaptation::DownloadFirmware() {
   isDownloadFirmwareCompleted = false;
   LOG(VERBOSE) << StringPrintf("%s: enter", func);
   HalInitialize();
-
+  if (sVndExtnsPresent) {
+    sNfcVendorExtn->processEvent(HANDLE_DOWNLOAD_FIRMWARE_REQUEST, 0x00);
+  }
   mHalOpenCompletedEvent.lock();
   LOG(VERBOSE) << StringPrintf("%s: try open HAL", func);
   HalOpen(HalDownloadFirmwareCallback, HalDownloadFirmwareDataCallback);
   mHalOpenCompletedEvent.wait();
+
+  LOG(VERBOSE) << StringPrintf("%s: try core init HAL", func);
+  uint8_t coreInitRspParams = 0;
+  HalCoreInitialized(sizeof(uint8_t), &coreInitRspParams);
 
   LOG(VERBOSE) << StringPrintf("%s: try close HAL", func);
   HalClose();

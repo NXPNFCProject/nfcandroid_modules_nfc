@@ -83,6 +83,7 @@ typedef enum {
   HANDLE_RF_HAL_STATE_UPDATE,
   HANDLE_HAL_EVENT,
   HANDLE_FW_DNLD_STATUS_UPDATE,
+  HANDLE_DOWNLOAD_FIRMWARE_REQUEST,
 } NfcExtEvent_t;
 
 typedef enum {
@@ -132,7 +133,7 @@ class NfcVendorExtn {
   bool processCmd(uint16_t dataLen, uint8_t* pData);
 
   /**
-   * @brief sends the NCI packet to handle extension feature
+   * @brief Forwards NCI response to extension library for further handling
    * @param  dataLen length of the NCI packet
    * @param  pData data buffer pointer
    * @return returns true if it is vendor specific feature,
@@ -143,7 +144,7 @@ class NfcVendorExtn {
   bool processRspNtf(uint16_t dataLen, uint8_t* pData);
 
   /**
-   * @brief sends the NCI packet to handle extension feature
+   * @brief Forwards HAL/API events to extension library for further handling
    * @param  event
    * @param  status
    * @return returns true if it is vendor specific feature,
