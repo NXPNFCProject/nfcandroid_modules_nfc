@@ -27,6 +27,8 @@ using android::sp;
 using android::hardware::nfc::V1_0::INfc;
 using INfcAidl = ::aidl::android::hardware::nfc::INfc;
 
+#define NFCSTATUS_EXTN_FEATURE_SUCCESS (0x0050)
+
 // This is only intended for a limited time to handle non-AOSP vendor interface
 // implementations on existing upgrading devices and not as a new extension point.
 // This will be removed once all devices are upgraded to the latest NFC HAL.
@@ -52,7 +54,7 @@ struct VendorExtnCb {
  *
  */
 typedef struct {
-  uint16_t* data_len;
+  uint16_t data_len;
   uint8_t* p_data;
 } NciData_t;
 

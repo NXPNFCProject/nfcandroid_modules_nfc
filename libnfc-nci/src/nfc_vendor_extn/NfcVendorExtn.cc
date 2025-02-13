@@ -25,21 +25,21 @@
 
 using android::base::StringPrintf;
 #define UNUSED_PROP(X) (void)(X);
-#define NFCSTATUS_EXTN_FEATURE_SUCCESS (0x0050)
 
 std::string mLibName = "libnfc_vendor_extn.so";
 std::string mLibPathName = "/system/lib64/" + mLibName;
 const std::string vendor_nfc_init_name = "vendor_nfc_init";
 const std::string vendor_nfc_de_init_name = "vendor_nfc_de_init";
 const std::string vendor_nfc_handle_event_name = "vendor_nfc_handle_event";
-const std::string vendor_nfc_on_config_update_name = "vendor_nfc_on_config_update";
+const std::string vendor_nfc_on_config_update_name =
+    "vendor_nfc_on_config_update";
 
 static NfcVendorExtn* sNfcVendorExtn;
 
-typedef void (*fp_extn_init_t)(VendorExtnCb*);
-typedef void (*fp_extn_deinit_t)();
+typedef bool (*fp_extn_init_t)(VendorExtnCb*);
+typedef bool (*fp_extn_deinit_t)();
 typedef tNFC_STATUS (*fp_extn_handle_nfc_event_t)(NfcExtEvent_t,
-                                                NfcExtEventData_t);
+                                                  NfcExtEventData_t);
 typedef void (*fp_extn_on_config_update_t)(std::map<std::string, ConfigValue>*);
 
 fp_extn_init_t fp_extn_init = NULL;
@@ -65,8 +65,10 @@ NfcVendorExtn* NfcVendorExtn::getInstance() {
 void NfcExtn_LibInit() {
   LOG(VERBOSE) << StringPrintf("%s Enter", __func__);
   if (fp_extn_init != NULL) {
-    fp_extn_init(NfcVendorExtn::getInstance()->getVendorExtnCb());
-    LOG(VERBOSE) << StringPrintf("%s Initialized!", __func__);
+    if (!fp_extn_init(NfcVendorExtn::getInstance()->getVendorExtnCb())) {
+      LOG(ERROR) << StringPrintf("%s : %s failed!", __func__,
+                                 vendor_nfc_init_name.c_str());
+    }
   }
 }
 
@@ -80,28 +82,29 @@ bool NfcExtn_LibSetup() {
         __func__, mLibPathName.c_str(), dlerror());
     return false;
   }
-  if ((fp_extn_init = (fp_extn_init_t)dlsym(p_oem_extn_handle,
-                                            vendor_nfc_init_name.c_str())) == NULL) {
-    LOG(ERROR) << StringPrintf("%s Failed to find %s !!",
-                               __func__, vendor_nfc_init_name.c_str());
+  if ((fp_extn_init = (fp_extn_init_t)dlsym(
+           p_oem_extn_handle, vendor_nfc_init_name.c_str())) == NULL) {
+    LOG(ERROR) << StringPrintf("%s Failed to find %s !!", __func__,
+                               vendor_nfc_init_name.c_str());
   }
 
   if ((fp_extn_deinit = (fp_extn_deinit_t)dlsym(
            p_oem_extn_handle, vendor_nfc_de_init_name.c_str())) == NULL) {
-    LOG(ERROR) << StringPrintf("%s Failed to find %s !!",
-                               __func__, vendor_nfc_de_init_name.c_str());
+    LOG(ERROR) << StringPrintf("%s Failed to find %s !!", __func__,
+                               vendor_nfc_de_init_name.c_str());
   }
 
   if ((fp_extn_handle_nfc_event = (fp_extn_handle_nfc_event_t)dlsym(
            p_oem_extn_handle, vendor_nfc_handle_event_name.c_str())) == NULL) {
-    LOG(ERROR) << StringPrintf("%s Failed to find %s !!",
-                               __func__, vendor_nfc_handle_event_name.c_str());
+    LOG(ERROR) << StringPrintf("%s Failed to find %s !!", __func__,
+                               vendor_nfc_handle_event_name.c_str());
   }
 
   if ((fp_extn_on_config_update = (fp_extn_on_config_update_t)dlsym(
-           p_oem_extn_handle, vendor_nfc_on_config_update_name.c_str())) == NULL) {
-    LOG(ERROR) << StringPrintf("%s Failed to find %s !!",
-                               __func__, vendor_nfc_on_config_update_name.c_str());
+           p_oem_extn_handle, vendor_nfc_on_config_update_name.c_str())) ==
+      NULL) {
+    LOG(ERROR) << StringPrintf("%s Failed to find %s !!", __func__,
+                               vendor_nfc_on_config_update_name.c_str());
   }
 
   NfcExtn_LibInit();
@@ -126,7 +129,7 @@ void NfcVendorExtn::setNciCallback(tHAL_NFC_CBACK* pHalCback,
 bool NfcVendorExtn::processCmd(uint16_t dataLen, uint8_t* pData) {
   LOG(VERBOSE) << StringPrintf("%s: Enter dataLen:%d", __func__, dataLen);
   NciData_t nci_data;
-  nci_data.data_len = &dataLen;
+  nci_data.data_len = dataLen;
   nci_data.p_data = (uint8_t*)pData;
   mNfcExtEventData.nci_msg = nci_data;
 
@@ -144,7 +147,7 @@ bool NfcVendorExtn::processCmd(uint16_t dataLen, uint8_t* pData) {
 bool NfcVendorExtn::processRspNtf(uint16_t dataLen, uint8_t* pData) {
   LOG(VERBOSE) << StringPrintf("%s: Enter dataLen:%d", __func__, dataLen);
   NciData_t nciData;
-  nciData.data_len = &dataLen;
+  nciData.data_len = dataLen;
   nciData.p_data = (uint8_t*)pData;
   mNfcExtEventData.nci_rsp_ntf = nciData;
 
@@ -182,7 +185,8 @@ void NfcVendorExtn::getVendorConfigs(
   if (fp_extn_on_config_update != NULL) {
     fp_extn_on_config_update(pConfigMap);
   } else {
-    LOG(ERROR) << StringPrintf("%s: %s", __func__, "getVendorConfigs not found!");
+    LOG(ERROR) << StringPrintf("%s: %s", __func__,
+                               "getVendorConfigs not found!");
   }
 }
 
@@ -191,7 +195,10 @@ VendorExtnCb* NfcVendorExtn::getVendorExtnCb() { return &mVendorExtnCb; }
 void phNfcExtn_LibClose() {
   LOG(VERBOSE) << StringPrintf("%s Enter", __func__);
   if (fp_extn_deinit != NULL) {
-    fp_extn_deinit();
+    if (!fp_extn_deinit()) {
+      LOG(ERROR) << StringPrintf("%s: %s failed", __func__,
+                                 vendor_nfc_de_init_name.c_str());
+    }
   }
   if (p_oem_extn_handle != NULL) {
     LOG(DEBUG) << StringPrintf("%s Closing %s!!", __func__, mLibName.c_str());
