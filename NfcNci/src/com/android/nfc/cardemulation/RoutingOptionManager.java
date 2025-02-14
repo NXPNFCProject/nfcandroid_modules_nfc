@@ -441,11 +441,10 @@ public class RoutingOptionManager {
     private int getAlternativeRouteIfSimIsInvalid(int route) {
         // TODO - Implement
         if (getSecureElementForRoute(route).startsWith(SE_PREFIX_SIM)) {
-            //Commenting below block to bypass callback from TelephonyUtils
-            /*if (mPreferredSimSettings.type == TelephonyUtils.SIM_TYPE_UNKNOWN) {
+            if (mPreferredSimSettings.type == TelephonyUtils.SIM_TYPE_UNKNOWN) {
                 Log.e(TAG, "sim is invalid");
                 return getRouteForSecureElement(mIsEseCapable ? (SE_PREFIX_ESE + 1) : DEVICE_HOST);
-            }*/
+            }
         }
         return route;
     }
