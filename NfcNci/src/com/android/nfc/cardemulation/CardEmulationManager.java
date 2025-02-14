@@ -675,14 +675,12 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         Log.i(TAG, "subscription_" + subscriptionId +  "is active(" + isActive + ")"
                 + ", type(" + simType + ")");
         mRoutingOptionManager.onPreferredSimChanged(simType);
-
-        //Commenting below block to bypass callback from TelephonyUtils
-        /*if (simType != TelephonyUtils.SIM_TYPE_UNKNOWN) {
+        if (simType != TelephonyUtils.SIM_TYPE_UNKNOWN) {
             updateRouteBasedOnPreferredSim();
         }
         else {
             Log.i(TAG, "SIM is Invalid type");
-        }*/
+        }
         mAidCache.onPreferredSimChanged(simType);
         // try to nfc turned off and on to swp initialize
         NfcService.getInstance().onPreferredSimChanged();
