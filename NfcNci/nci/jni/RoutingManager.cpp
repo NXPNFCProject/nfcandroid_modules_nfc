@@ -136,18 +136,18 @@ RoutingManager::RoutingManager()
       NFA_TECHNOLOGY_MASK_A | NFA_TECHNOLOGY_MASK_B | NFA_TECHNOLOGY_MASK_F);
 
   if (NfcConfig::hasKey(NAME_NFCEE_EVENT_RF_DISCOVERY_OPTION)) {
-    isRFDiscoveryOptimized =
+    mIsRFDiscoveryOptimized =
         (NfcConfig::getUnsigned(NAME_NFCEE_EVENT_RF_DISCOVERY_OPTION) == 0x01
              ? true
              : false);
     LOG(VERBOSE) << StringPrintf(
         "%s: NAME_NFCEE_EVENT_RF_DISCOVERY_OPTION found : %d", fn,
-        isRFDiscoveryOptimized);
+        mIsRFDiscoveryOptimized);
   } else {
-    isRFDiscoveryOptimized = false;
+    mIsRFDiscoveryOptimized = false;
     LOG(VERBOSE) << StringPrintf(
         "%s: NAME_NFCEE_EVENT_RF_DISCOVERY_OPTION not found : %d", fn,
-        isRFDiscoveryOptimized);
+        mIsRFDiscoveryOptimized);
   }
 
   memset(&mEeInfo, 0, sizeof(mEeInfo));
@@ -1353,7 +1353,7 @@ void RoutingManager::nfaEeCallback(tNFA_EE_EVT event,
       SyncEventGuard guard(routingManager.mEeInfoEvent);
       memcpy(&routingManager.mEeInfo, &eventData->discover_req,
              sizeof(routingManager.mEeInfo));
-      if (!routingManager.isRFDiscoveryOptimized) {
+      if (!routingManager.mIsRFDiscoveryOptimized) {
         if (routingManager.mReceivedEeInfo && !routingManager.mDeinitializing) {
           routingManager.mEeInfoChanged = true;
           routingManager.notifyEeUpdated();
@@ -1367,7 +1367,7 @@ void RoutingManager::nfaEeCallback(tNFA_EE_EVT event,
       LOG(DEBUG) << StringPrintf(
           "%s: NFA_NOTIFY_EE_ENABLED; status=0x%X; num ee=%u", __func__,
           eventData->discover_req.status, eventData->discover_req.num_ee);
-      if (routingManager.isRFDiscoveryOptimized) {
+      if (routingManager.mIsRFDiscoveryOptimized) {
         if (routingManager.mReceivedEeInfo && !routingManager.mDeinitializing) {
           routingManager.mEeInfoChanged = true;
           routingManager.notifyEeUpdated();
