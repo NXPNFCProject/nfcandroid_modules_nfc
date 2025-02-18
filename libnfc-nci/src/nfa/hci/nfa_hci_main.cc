@@ -558,7 +558,7 @@ void nfa_hci_enable_one_nfcee(void) {
         nfa_ee_cb.isDiscoveryStopped = false;
         tNFA_EE_ECB* p_cb = nfa_ee_find_ecb(nfceeid);
         tNFA_EE_CBACK_DATA nfa_ee_cback_data;
-        p_cb->p_ee_cback(NFA_NOTIFY_EE_ENABLED, &nfa_ee_cback_data);
+        p_cb->p_ee_cback(NFA_EE_ENABLED_EVT, &nfa_ee_cback_data);
       }
     }
   }

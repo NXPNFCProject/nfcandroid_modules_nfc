@@ -1363,9 +1363,9 @@ void RoutingManager::nfaEeCallback(tNFA_EE_EVT event,
       routingManager.mEeInfoEvent.notifyOne();
     } break;
 
-    case NFA_NOTIFY_EE_ENABLED: {
+    case NFA_EE_ENABLED_EVT: {
       LOG(DEBUG) << StringPrintf(
-          "%s: NFA_NOTIFY_EE_ENABLED; status=0x%X; num ee=%u", __func__,
+          "%s: NFA_EE_ENABLED_EVT; status=0x%X; num ee=%u", __func__,
           eventData->discover_req.status, eventData->discover_req.num_ee);
       if (routingManager.mIsRFDiscoveryOptimized) {
         if (routingManager.mReceivedEeInfo && !routingManager.mDeinitializing) {
