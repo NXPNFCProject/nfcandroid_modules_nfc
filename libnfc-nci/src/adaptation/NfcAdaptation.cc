@@ -930,7 +930,9 @@ void NfcAdaptation::HalOpenInternal(tHAL_NFC_CBACK* p_hal_cback,
                                     tHAL_NFC_DATA_CBACK* p_data_cback) {
   const char* func = "NfcAdaptation::HalOpenInternal";
   LOG(VERBOSE) << StringPrintf("%s", func);
-
+  if (sVndExtnsPresent) {
+    sNfcVendorExtn->setNciCallback(p_hal_cback, p_data_cback);
+  }
   if (mAidlHal != nullptr) {
     mAidlCallback = ::ndk::SharedRefBase::make<NfcAidlClientCallback>(
         p_hal_cback, p_data_cback);
@@ -970,9 +972,6 @@ void NfcAdaptation::HalOpen(tHAL_NFC_CBACK* p_hal_cback,
                             tHAL_NFC_DATA_CBACK* p_data_cback) {
   const char* func = "NfcAdaptation::HalOpen";
   LOG(VERBOSE) << StringPrintf("%s", func);
-  if (sVndExtnsPresent) {
-    sNfcVendorExtn->setNciCallback(p_hal_cback, p_data_cback);
-  }
   std::thread([p_hal_cback, p_data_cback](){
     HalOpenInternal(p_hal_cback, p_data_cback);
   }).detach();
