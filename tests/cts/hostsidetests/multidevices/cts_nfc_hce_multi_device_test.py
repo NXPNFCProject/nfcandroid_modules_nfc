@@ -892,6 +892,11 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
+
+    @ApiTest(
+            apis = {
+                "android.nfc.cardemulation.CardEmulation.NfcEventCallback#onAidConflictOccurred"
+            })
     def test_conflicting_non_payment_prefix(self):
         """ This test registers two non-payment services with conflicting
         prefix AIDs, selects a service to use, and ensures the selected
