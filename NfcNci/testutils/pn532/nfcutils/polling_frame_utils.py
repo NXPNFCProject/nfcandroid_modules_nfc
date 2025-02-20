@@ -35,8 +35,6 @@ class PollingFrameTestCase:
     success_data: Collection = ()
     warning_data: Collection = ()
 
-    description: Optional[str]
-
     def __init__(
         self,
         configuration,
@@ -44,7 +42,6 @@ class PollingFrameTestCase:
         success_types=(),
         success_data=(),
         warning_data=(),
-        description=""
     ):
 
         self.configuration = configuration
@@ -58,7 +55,6 @@ class PollingFrameTestCase:
         self.success_types = success_types
         self.success_data = success_data
         self.warning_data = warning_data
-        self.description = description
 
     def format_for_error(self, **kwargs):
         """Formats testcase value for pretty reporting in errors"""
