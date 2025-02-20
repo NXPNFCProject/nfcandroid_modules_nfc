@@ -40,6 +40,7 @@ import sys
 import time
 
 from android.platform.test.annotations import CddTest
+from android.platform.test.annotations import ApiTest
 from mobly import asserts
 from mobly import base_test
 from mobly import test_runner
@@ -943,6 +944,10 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
 
     #@CddTest(requirements = {"TODO"})
+    @ApiTest(
+            apis = {
+                "android.nfc.cardemulation.CardEmulation.NfcEventCallback#onRemoteFieldChanged"
+            })
     def test_event_listener(self):
         """ This test registers an event listener with the emulator and ensures
         that the event listener receives callbacks when the field status changes and
