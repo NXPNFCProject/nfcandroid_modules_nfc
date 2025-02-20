@@ -1156,6 +1156,7 @@ void static nfaVSCallback(uint8_t event, uint16_t param_len, uint8_t* p_param) {
                                     gObserveModeEnabled ? "TRUE" : "FALSE");
         }
           FALLTHROUGH_INTENDED;
+        case NCI_ANDROID_SET_PASSIVE_OBSERVER_TECH:
         case NCI_ANDROID_PASSIVE_OBSERVE: {
           gVSCmdStatus = p_param[4];
           LOG(INFO) << StringPrintf("Observe mode RSP: status: %x",
