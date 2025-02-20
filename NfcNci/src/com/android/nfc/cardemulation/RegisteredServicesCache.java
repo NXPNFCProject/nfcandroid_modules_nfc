@@ -30,6 +30,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.PackageManager.ResolveInfoFlags;
@@ -516,6 +517,7 @@ public class RegisteredServicesCache {
         ndefNfceeAppInfo.serviceInfo = new ServiceInfo();
         ndefNfceeAppInfo.serviceInfo.packageName = "com.android.nfc.ndef_nfcee";
         ndefNfceeAppInfo.serviceInfo.name = "com.android.nfc.ndef_nfcee.NdefNfceeService";
+        ndefNfceeAppInfo.serviceInfo.applicationInfo = new ApplicationInfo();
         List<String> ndefNfceeAid = new ArrayList<String>();
         ndefNfceeAid.add(DEFAULT_T4T_NFCEE_AID);
         AidGroup ndefNfceeAidGroup = new AidGroup(ndefNfceeAid, CATEGORY_OTHER);
