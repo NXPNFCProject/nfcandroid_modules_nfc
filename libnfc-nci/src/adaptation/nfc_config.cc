@@ -27,7 +27,7 @@
 using namespace ::std;
 using namespace ::android::base;
 
-#define PATH_NCI_UPDATE_CONF "/data/nfc/libnfc-nci-update.conf"
+#define PATH_NCI_UPDATE_CONF "/data/vendor/nfc/libnfc-nci-update.conf"
 
 namespace {
 std::string searchConfigPath(std::string file_name) {
