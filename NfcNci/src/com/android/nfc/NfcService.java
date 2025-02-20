@@ -5116,7 +5116,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                         mCardEmulationManager.onOffHostAidSelected();
                     }
                     byte[][] data = (byte[][]) msg.obj;
-                    sendOffHostTransactionEvent(data[0], data[1], data[2]);
+                    synchronized (NfcService.this) {
+                        sendOffHostTransactionEvent(data[0], data[1], data[2]);
+                    }
                     break;
 
                 case MSG_SE_SELECTED_EVENT:
@@ -5330,57 +5332,60 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         /* Returns the list of packages request for nfc preferred payment service changed and
          * have access to NFC Events on any SE */
         private ArrayList<String> getNfcPreferredPaymentChangedSEAccessAllowedPackages(int userId) {
-            if (!isSEServiceAvailable()
-                    || mNfcPreferredPaymentChangedInstalledPackages.get(userId).isEmpty()) {
-                return null;
-            }
-            String[] readers = null;
-            try {
-                readers = mSEService.getReaders();
-            } catch (RemoteException e) {
-                Log.e(TAG, "Error in getReaders() " + e);
-                return null;
-            }
-
-            if (readers == null || readers.length == 0) {
-                return null;
-            }
-            boolean[] nfcAccessFinal = null;
-            List<String> packagesOfUser = mNfcPreferredPaymentChangedInstalledPackages.get(userId);
-            String[] installedPackages = new String[packagesOfUser.size()];
-
-            for (String reader : readers) {
+            synchronized (NfcService.this) {
+                if (!isSEServiceAvailable()
+                        || mNfcPreferredPaymentChangedInstalledPackages.get(userId).isEmpty()) {
+                    return null;
+                }
+                String[] readers = null;
                 try {
-                    boolean[] accessList = mSEService.isNfcEventAllowed(reader, null,
-                            packagesOfUser.toArray(installedPackages), userId
-                            );
-                    if (accessList == null) {
-                        continue;
-                    }
-                    if (nfcAccessFinal == null) {
-                        nfcAccessFinal = accessList;
-                    }
-                    for (int i = 0; i < accessList.length; i++) {
-                        if (accessList[i]) {
-                            nfcAccessFinal[i] = true;
-                        }
-                    }
+                    readers = mSEService.getReaders();
                 } catch (RemoteException e) {
-                    Log.e(TAG, "Error in isNfcEventAllowed() " + e);
-                } catch (IllegalArgumentException e) {
-                    Log.e(TAG, "Error " + e);
+                    Log.e(TAG, "Error in getReaders() " + e);
+                    return null;
                 }
-            }
-            if (nfcAccessFinal == null) {
-                return null;
-            }
-            ArrayList<String> packages = new ArrayList<String>();
-            for (int i = 0; i < nfcAccessFinal.length; i++) {
-                if (nfcAccessFinal[i]) {
-                    packages.add(packagesOfUser.get(i));
+
+                if (readers == null || readers.length == 0) {
+                    return null;
                 }
+                boolean[] nfcAccessFinal = null;
+                List<String> packagesOfUser =
+                      mNfcPreferredPaymentChangedInstalledPackages.get(userId);
+                String[] installedPackages = new String[packagesOfUser.size()];
+
+                for (String reader : readers) {
+                    try {
+                        boolean[] accessList = mSEService.isNfcEventAllowed(reader, null,
+                                packagesOfUser.toArray(installedPackages), userId
+                                );
+                        if (accessList == null) {
+                            continue;
+                        }
+                        if (nfcAccessFinal == null) {
+                            nfcAccessFinal = accessList;
+                        }
+                        for (int i = 0; i < accessList.length; i++) {
+                            if (accessList[i]) {
+                                nfcAccessFinal[i] = true;
+                            }
+                        }
+                    } catch (RemoteException e) {
+                        Log.e(TAG, "Error in isNfcEventAllowed() " + e);
+                    } catch (IllegalArgumentException e) {
+                        Log.e(TAG, "Error " + e);
+                    }
+                }
+                if (nfcAccessFinal == null) {
+                    return null;
+                }
+                ArrayList<String> packages = new ArrayList<String>();
+                for (int i = 0; i < nfcAccessFinal.length; i++) {
+                    if (nfcAccessFinal[i]) {
+                        packages.add(packagesOfUser.get(i));
+                    }
+                }
+                return packages;
             }
-            return packages;
         }
 
         private boolean isSystemApp(ApplicationInfo applicationInfo) {
