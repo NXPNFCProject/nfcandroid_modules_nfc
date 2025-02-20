@@ -1023,9 +1023,17 @@ void NfcTag::fillNativeNfcTagMembers5(JNIEnv* e, jclass tag_cls, jobject tag,
              NFC_DISCOVERY_TYPE_LISTEN_B == mTechParams[0].mode ||
              NFC_DISCOVERY_TYPE_LISTEN_B_PRIME == mTechParams[0].mode) {
     LOG(DEBUG) << StringPrintf("%s: tech B", fn);
-    uid.reset(e->NewByteArray(NFC_NFCID0_MAX_LEN));
-    e->SetByteArrayRegion(uid.get(), 0, NFC_NFCID0_MAX_LEN,
-                          (jbyte*)&mTechParams[0].param.pb.nfcid0);
+    if ((NCI_PROTOCOL_UNKNOWN == mTechLibNfcTypes[0]) &&
+        (mTechParams[0].mode == NFC_DISCOVERY_TYPE_POLL_B)) {
+      LOG(DEBUG) << StringPrintf("%s: Chinese Id Card", fn);
+      uid.reset(e->NewByteArray(8));
+      e->SetByteArrayRegion(uid.get(), 0, 8,
+                            (jbyte*)&activationData.params.ci.uid);
+    } else {
+      uid.reset(e->NewByteArray(NFC_NFCID0_MAX_LEN));
+      e->SetByteArrayRegion(uid.get(), 0, NFC_NFCID0_MAX_LEN,
+                            (jbyte*)&mTechParams[0].param.pb.nfcid0);
+    }
   } else if (NFC_DISCOVERY_TYPE_POLL_F == mTechParams[0].mode ||
              NFC_DISCOVERY_TYPE_LISTEN_F == mTechParams[0].mode) {
     uid.reset(e->NewByteArray(NFC_NFCID2_LEN));
