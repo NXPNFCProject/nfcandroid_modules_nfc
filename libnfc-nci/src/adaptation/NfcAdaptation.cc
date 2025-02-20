@@ -186,7 +186,7 @@ void initializeNfcMuteTechRouteOptionFlag() {
 
 // Abort nfc service when AIDL process died.
 void HalAidlBinderDied(void* /* cookie */) {
-  LOG(ERROR) << __func__ << "INfc aidl hal died, exiting procces to restart";
+  LOG(ERROR) << StringPrintf("%s: INfc aidl hal died, exiting procces to restart", __func__);
   storeNfcSnoopLogs(DEFAULT_CRASH_LOGS_PATH, DEFAULT_NFCSNOOP_FILE_SIZE);
   notifyHalBinderDied();
   exit(0);
