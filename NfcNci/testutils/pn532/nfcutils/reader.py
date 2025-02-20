@@ -54,7 +54,7 @@ class Reader(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def poll_b(self) -> Optional[ReaderTag]:
+    def poll_b(self, *, afi=0x00) -> Optional[ReaderTag]:
         """Attempts to perform target discovery by issuing Type B WUP/REQ
         and performing anticollision in case one is detected.
         Returns a tag object if one was found, None otherwise

@@ -373,10 +373,9 @@ class PN532(Reader):
             self.log.debug(f"Got Type A tag, SEL_RES={tag.sel_res}")
         return tag
 
-    def poll_b(self):
+    def poll_b(self, *, afi=0x00):
         """Attempts to detect target for NFC type B."""
         self.log.debug("Polling B")
-        afi = 0x00
         tag = self.in_list_passive_target(
             br_ty=BrTy.TYPE_B_106, initiator_data=(afi,)
         )

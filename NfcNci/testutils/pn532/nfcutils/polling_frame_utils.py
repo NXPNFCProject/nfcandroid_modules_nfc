@@ -17,7 +17,7 @@
 """
 
 import time
-from typing import Collection
+from typing import Collection, Optional
 from dataclasses import dataclass
 from .reader import TransceiveConfiguration
 
@@ -35,14 +35,18 @@ class PollingFrameTestCase:
     success_data: Collection = ()
     warning_data: Collection = ()
 
+    description: Optional[str]
+
     def __init__(
         self,
         configuration,
         data,
         success_types=(),
         success_data=(),
-        warning_data=()
+        warning_data=(),
+        description=""
     ):
+
         self.configuration = configuration
         self.data = data
         if len(success_types) == 0:
@@ -54,6 +58,7 @@ class PollingFrameTestCase:
         self.success_types = success_types
         self.success_data = success_data
         self.warning_data = warning_data
+        self.description = description
 
     def format_for_error(self, **kwargs):
         """Formats testcase value for pretty reporting in errors"""
@@ -173,7 +178,7 @@ _F_424 = TransceiveConfiguration(
 #    - 7-bit short frames (Type A only);
 #    - 424 kbps (Type F only)
 # 3) Full frames without CRC (Types A,B only)
-# 4) Full frames with CRC (Types A,B only, F does not use PLF, no need to test)
+# 4) Full frames with CRC (Types A,B only, F cannot serve as annotation)
 
 # Placeholder test cases for ON/OFF
 POLLING_FRAME_ON = PollingFrameTestCase(_O, "01", ["O"], ["01"])
@@ -182,15 +187,19 @@ POLLING_FRAME_OFF = PollingFrameTestCase(_X, "00", ["X"], ["00"])
 # Type A
 # 1)
 POLLING_FRAMES_TYPE_A_SPECIAL = [
-    # WUPA
-    PollingFrameTestCase(_A_SHORT, "26", ["A"], ["26"], ["52"]),
+    # * Device MUST recognize all common Type A frames properly
     # REQA
+    PollingFrameTestCase(_A_SHORT, "26", ["A"], ["26"], ["52"]),
+    # WUPA
     PollingFrameTestCase(_A_SHORT, "52", ["A"], ["52"], ["26"]),
     # Some readers send SLP_REQ in the polling loop
     PollingFrameTestCase(_A, "5000", ["A", "U"], ["5000"]),
 ]
 # 2) 7-bit short frames
 POLLING_FRAMES_TYPE_A_SHORT = [
+    # * Device SHOULD detect custom short polling frames properly
+    #   Verify that WUPA/REQA are detected via full byte value
+    #   And that other short frames do not confuse the detection
     PollingFrameTestCase(_A_SHORT, "20", ["U"]),
     PollingFrameTestCase(_A_SHORT, "06", ["U"]),
     PollingFrameTestCase(_A_SHORT, "50", ["U"]),
@@ -200,6 +209,7 @@ POLLING_FRAMES_TYPE_A_SHORT = [
 ]
 # 3)
 POLLING_FRAMES_TYPE_A_NOCRC = [
+    # * Device SHOULD keep all bytes for frames less than or 2 bytes long
     PollingFrameTestCase(_A_NOCRC, "aa", ["U"], ["aa"], [""]),
     PollingFrameTestCase(_A_NOCRC, "55aa", ["U"], ["55aa"], [""]),
     PollingFrameTestCase(_A_NOCRC, "aa55aa", ["U"], ["aa55aa"], ["aa"]),
@@ -207,6 +217,7 @@ POLLING_FRAMES_TYPE_A_NOCRC = [
 ]
 # 4)
 POLLING_FRAMES_TYPE_A_LONG = [
+    # * Device MUST detect custom <= 20 byte long Type A frames with CRC as U
     PollingFrameTestCase(_A, "02f1", ["U"]),
     PollingFrameTestCase(_A, "ff00", ["U"]),
     PollingFrameTestCase(_A, "ff001122", ["U"]),
@@ -222,51 +233,68 @@ POLLING_FRAMES_TYPE_A_LONG = [
 ]
 
 # Type B
-# 1)
+# 1) Verifies that device properly detects all WUPB/REQB variations
 POLLING_FRAMES_TYPE_B_SPECIAL = [
+    # * Device MUST recognize all common Type B frames properly
     # 1.1) Common cases
     #   REQB, AFI 0x00, TS 0x00
     PollingFrameTestCase(_B, "050000", ["B"]),
     #   WUPB, AFI 0x00, TS 0x00
     PollingFrameTestCase(_B, "050008", ["B"]),
     # 1.2) Different AFI values
-    #   REQB, AFI 0x01, TS 0x00
+    #   REQB, AFI 0x01, TS 0x00; Transit
     PollingFrameTestCase(_B, "050100", ["B"]),
-    #   WUPB, AFI 0x02, TS 0x00
+    #   WUPB, AFI 0x02, TS 0x00; Financial
     PollingFrameTestCase(_B, "050208", ["B"]),
+    #   REQB, AFI 0x03, TS 0x00; Identification
+    PollingFrameTestCase(_B, "050300", ["B"]),
     # 1.3) Different Timeslot counts
     #   REQB, AFI 0x00, TS 0x01 (2)
     PollingFrameTestCase(_B, "050001", ["B"]),
     #   WUPB, AFI 0x00, TS 0x02 (4)
     PollingFrameTestCase(_B, "05000a", ["B"]),
+    # 1.4) Non-default AFI and Timeslot values
+    #   REQB, AFI 0x01, TS 0x01 (2)
+    PollingFrameTestCase(_B, "050101", ["B"]),
+    #   WUPB, AFI 0x02, TS 0x02 (4)
+    PollingFrameTestCase(_B, "05020a", ["B"]),
 ]
 # 3)
 POLLING_FRAMES_TYPE_B_NOCRC = [
-    PollingFrameTestCase(_B_NOCRC, "aa", ["U"]),
-    PollingFrameTestCase(_B_NOCRC, "55aa", ["U"]),
-    PollingFrameTestCase(_B_NOCRC, "aa55aa", ["U"]),
-    PollingFrameTestCase(_B_NOCRC, "55aa55aa", ["U"]),
+    # * Device SHOULD keep all bytes for frames less than or 2 bytes long
+    #   This allows the use of legacy Type-B proprietary polling commands
+    #   as polling loop annotations
+    PollingFrameTestCase(_B_NOCRC, "aa", ["U"], ["aa"], [""]),
+    PollingFrameTestCase(_B_NOCRC, "55aa", ["U"], ["55aa"], [""]),
+    # * Device SHOULD NOT cut off 2 last bytes for frames shorter than 3 bytes
+    PollingFrameTestCase(_B_NOCRC, "aa55aa", ["U"], ["aa55aa"], ["aa"]),
+    PollingFrameTestCase(_B_NOCRC, "55aa55aa", ["U"], ["55aa55aa"], ["55aa"]),
+    # * Device SHOULD NOT confuse B_NOCRC frames starting with PBF as WUPB/REQB
+    #   Check that lack of CRC, or invalid length is detected as U
+    PollingFrameTestCase(_B_NOCRC, "05000001", ["U"], ["05000001"], ["0500"]),
+    PollingFrameTestCase(_B_NOCRC, "05000801", ["U"], ["05000801"], ["0500"]),
+    PollingFrameTestCase(_B_NOCRC, "050000", ["U"], ["050000"], ["05"]),
+    PollingFrameTestCase(_B_NOCRC, "050008", ["U"], ["050008"], ["05"]),
 ]
 # 4)
 POLLING_FRAMES_TYPE_B_LONG = [
+    # * Device MUST detect Type B frames with valid PBf and invalid length as U
+    PollingFrameTestCase(_B, "05000001", ["U"]),
+    PollingFrameTestCase(_B, "05000801", ["U"]),
+    # * Device MUST detect custom <= 20 byte long Type B frames with CRC as U
     PollingFrameTestCase(_B, "02f1", ["U"]),
-    # 2 bytes
     PollingFrameTestCase(_B, "ff00", ["U"]),
-    # 4 bytes
     PollingFrameTestCase(_B, "ff001122", ["U"]),
-    # 8 bytes
     PollingFrameTestCase(_B, "ff00112233445566", ["U"]),
-    # 12 bytes
     PollingFrameTestCase(_B, "ff00112233445566778899aa", ["U"]),
-    # 16 bytes
     PollingFrameTestCase(_B, "ff00112233445566778899aabbccddee", ["U"]),
-    # 20 bytes
     PollingFrameTestCase(_B, "ff00112233445566778899aabbccddeeff001122", ["U"]),
 ]
 
 # Type F
 # 1)
 POLLING_FRAMES_TYPE_F_SPECIAL = [
+    # * Device MUST recognize all common Type F frames properly
     # 1.0) Common
     #   SENSF_REQ, SC, 0xffff, RC 0x00, TS 0x00
     PollingFrameTestCase(_F, "00ffff0000", ["F"]),

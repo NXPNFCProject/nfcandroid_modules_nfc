@@ -97,7 +97,7 @@ class Casimir(Reader):
         self.log.debug("got sender_id: " + str(sender_id))
         return CasimirTag(self, sender_id)
 
-    def poll_b(self):
+    def poll_b(self, *, afi=0x00):
         """Attempts to detect target for NFC type B."""
         raise RuntimeError("not implemented")
 
