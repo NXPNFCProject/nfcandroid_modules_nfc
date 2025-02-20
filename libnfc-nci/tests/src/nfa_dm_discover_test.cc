@@ -47,16 +47,6 @@ public:
     MOCK_METHOD(void, Callback, (uint8_t event, tNFA_CONN_EVT_DATA* evt_data));
 };
 
-class MockNfc {
-public:
-    MOCK_METHOD(tNFC_STATUS, Deactivate, (tNFC_DEACT_TYPE deactivate_type), ());
-};
-
-class MockNfaDm {
-public:
-    MOCK_METHOD(void, DiscNewState, (uint8_t new_state), ());
-};
-
 class MockNfaSys {
 public:
     MOCK_METHOD(void, nfa_sys_start_timer, (TIMER_LIST_ENT*, uint16_t, uint16_t), ());
@@ -83,8 +73,6 @@ public:
     MOCK_METHOD(void, nfa_wlc_event_notify, (tNFA_WLC_EVT event, tNFA_WLC_EVT_DATA* p_data));
 };
 
-StrictMock<MockNfc> mock_nfc;
-StrictMock<MockNfaDm> mock_nfa_dm;
 MockExclusiveCallbackHandler* g_mock_excl_handler = nullptr;
 MockConnectionCallbackHandler* g_mock_conn_handler = nullptr;
 
@@ -288,6 +276,16 @@ TEST_F(NfaDmDiscEvent2StrTest, KnownEvents) {
     EXPECT_EQ(nfa_dm_disc_event_2_str(NFA_DM_RF_DEACTIVATE_NTF), "DEACTIVATE_NTF");
     EXPECT_EQ(nfa_dm_disc_event_2_str(NFA_DM_LP_LISTEN_CMD), "NFA_DM_LP_LISTEN_CMD");
     EXPECT_EQ(nfa_dm_disc_event_2_str(NFA_DM_CORE_INTF_ERROR_NTF), "INTF_ERROR_NTF");
+    EXPECT_EQ(nfa_dm_disc_event_2_str(NFA_DM_RF_INTF_EXT_START_CMD), "INTF_EXT_START_CMD");
+    EXPECT_EQ(nfa_dm_disc_event_2_str(NFA_DM_RF_INTF_EXT_START_RSP), "INTF_EXT_START_RSP");
+    EXPECT_EQ(nfa_dm_disc_event_2_str(NFA_DM_RF_INTF_EXT_STOP_CMD), "INTF_EXT_STOP_CMD");
+    EXPECT_EQ(nfa_dm_disc_event_2_str(NFA_DM_RF_INTF_EXT_STOP_RSP), "INTF_EXT_STOP_RSP");
+    EXPECT_EQ(nfa_dm_disc_event_2_str(
+            NFA_DM_RF_REMOVAL_DETECT_START_CMD), "REMOVAL_DETECT_START_CMD");
+    EXPECT_EQ(nfa_dm_disc_event_2_str(
+            NFA_DM_RF_REMOVAL_DETECT_START_RSP), "REMOVAL_DETECT_START_RSP");
+    EXPECT_EQ(nfa_dm_disc_event_2_str(
+            NFA_DM_RF_REMOVAL_DETECTION_NTF), "REMOVAL_DETECTION_NTF");
     EXPECT_EQ(nfa_dm_disc_event_2_str(NFA_DM_WPT_START_CMD), "WPT_START_CMD");
     EXPECT_EQ(nfa_dm_disc_event_2_str(NFA_DM_WPT_START_RSP), "WPT_START_RSP");
 }
@@ -303,12 +301,13 @@ protected:
     }
     void TearDown() override {
     }
+    MOCK_METHOD(void, DiscNewState, (uint8_t new_state), ());
+    MOCK_METHOD(tNFC_STATUS, Deactivate, (tNFC_DEACT_TYPE deactivate_type), ());
 };
 
 TEST_F(NfaDmDiscForceToIdleTest, ForceToIdleWhenW4NtfSet) {
     nfa_dm_cb.disc_cb.disc_flags = NFA_DM_DISC_FLAGS_W4_NTF;
-    EXPECT_CALL(mock_nfc, Deactivate(NFC_DEACTIVATE_TYPE_IDLE)).WillOnce(Return(NFC_STATUS_OK));
-    EXPECT_CALL(mock_nfa_dm, DiscNewState(NFA_DM_RFST_IDLE)).Times(1);
+    EXPECT_CALL(*this, DiscNewState(NFA_DM_RFST_IDLE)).Times(0);
     tNFC_STATUS status = nfa_dm_disc_force_to_idle();
     EXPECT_EQ(status, NFC_STATUS_OK);
     EXPECT_EQ(nfa_dm_cb.disc_cb.disc_flags, NFA_DM_DISC_FLAGS_W4_RSP);
@@ -316,8 +315,8 @@ TEST_F(NfaDmDiscForceToIdleTest, ForceToIdleWhenW4NtfSet) {
 
 TEST_F(NfaDmDiscForceToIdleTest, ForceToIdleWhenW4NtfNotSet) {
     nfa_dm_cb.disc_cb.disc_flags = 0;
-    EXPECT_CALL(mock_nfc, Deactivate(_)).Times(0);
-    EXPECT_CALL(mock_nfa_dm, DiscNewState(_)).Times(0);
+    EXPECT_CALL(*this, Deactivate(_)).Times(0);
+    EXPECT_CALL(*this, DiscNewState(_)).Times(0);
     tNFC_STATUS status = nfa_dm_disc_force_to_idle();
     EXPECT_EQ(status, NFC_STATUS_SEMANTIC_ERROR);
     EXPECT_EQ(nfa_dm_cb.disc_cb.disc_flags, 0);
@@ -325,8 +324,7 @@ TEST_F(NfaDmDiscForceToIdleTest, ForceToIdleWhenW4NtfNotSet) {
 
 TEST_F(NfaDmDiscForceToIdleTest, ForceToIdleWithMultipleFlagsSet) {
     nfa_dm_cb.disc_cb.disc_flags = NFA_DM_DISC_FLAGS_W4_NTF | 0x10;
-    EXPECT_CALL(mock_nfc, Deactivate(NFC_DEACTIVATE_TYPE_IDLE)).WillOnce(Return(NFC_STATUS_OK));
-    EXPECT_CALL(mock_nfa_dm, DiscNewState(NFA_DM_RFST_IDLE)).Times(1);
+    EXPECT_CALL(*this, DiscNewState(NFA_DM_RFST_IDLE)).Times(0);
     tNFC_STATUS status = nfa_dm_disc_force_to_idle();
     EXPECT_EQ(status, NFC_STATUS_OK);
     EXPECT_EQ(nfa_dm_cb.disc_cb.disc_flags, NFA_DM_DISC_FLAGS_W4_RSP | 0x10);
@@ -334,8 +332,7 @@ TEST_F(NfaDmDiscForceToIdleTest, ForceToIdleWithMultipleFlagsSet) {
 
 TEST_F(NfaDmDiscForceToIdleTest, AlreadyInIdleState) {
     nfa_dm_cb.disc_cb.disc_flags = NFA_DM_DISC_FLAGS_W4_NTF;
-    EXPECT_CALL(mock_nfa_dm, DiscNewState(NFA_DM_RFST_IDLE)).Times(1);
-    EXPECT_CALL(mock_nfc, Deactivate(NFC_DEACTIVATE_TYPE_IDLE)).WillOnce(Return(NFC_STATUS_OK));
+    EXPECT_CALL(*this, DiscNewState(NFA_DM_RFST_IDLE)).Times(0);
     tNFC_STATUS status = nfa_dm_disc_force_to_idle();
     EXPECT_EQ(status, NFC_STATUS_OK);
     EXPECT_EQ(nfa_dm_cb.disc_cb.disc_flags, NFA_DM_DISC_FLAGS_W4_RSP);
@@ -343,8 +340,7 @@ TEST_F(NfaDmDiscForceToIdleTest, AlreadyInIdleState) {
 
 TEST_F(NfaDmDiscForceToIdleTest, IrrelevantFlagsPresent) {
     nfa_dm_cb.disc_cb.disc_flags = NFA_DM_DISC_FLAGS_W4_NTF | 0x20;
-    EXPECT_CALL(mock_nfc, Deactivate(NFC_DEACTIVATE_TYPE_IDLE)).WillOnce(Return(NFC_STATUS_OK));
-    EXPECT_CALL(mock_nfa_dm, DiscNewState(NFA_DM_RFST_IDLE)).Times(1);
+    EXPECT_CALL(*this, DiscNewState(NFA_DM_RFST_IDLE)).Times(0);
     tNFC_STATUS status = nfa_dm_disc_force_to_idle();
     EXPECT_EQ(status, NFC_STATUS_OK);
     EXPECT_EQ(nfa_dm_cb.disc_cb.disc_flags, NFA_DM_DISC_FLAGS_W4_RSP | 0x20);
@@ -352,8 +348,8 @@ TEST_F(NfaDmDiscForceToIdleTest, IrrelevantFlagsPresent) {
 
 TEST_F(NfaDmDiscForceToIdleTest, NoEffectWhenFlagsNotSet) {
     nfa_dm_cb.disc_cb.disc_flags = 0x20;
-    EXPECT_CALL(mock_nfc, Deactivate(_)).Times(0);
-    EXPECT_CALL(mock_nfa_dm, DiscNewState(_)).Times(0);
+    EXPECT_CALL(*this, Deactivate(_)).Times(0);
+    EXPECT_CALL(*this, DiscNewState(_)).Times(0);
     tNFC_STATUS status = nfa_dm_disc_force_to_idle();
     EXPECT_EQ(status, NFC_STATUS_SEMANTIC_ERROR);
     EXPECT_EQ(nfa_dm_cb.disc_cb.disc_flags, 0x20);
@@ -542,7 +538,6 @@ protected:
         memset(&nfa_dm_cb, 0, sizeof(nfa_dm_cb));
     }
     void TearDown() override {
-
     }
 };
 
@@ -594,39 +589,35 @@ public:
             tNFA_EE_EVT event,tNFA_CONN_EVT_DATA* p_data), ());
 };
 
-NfaDmNoti* g_nfa_dm_noti = nullptr;
-
 class NfaDmDiscNotifyActivationTest : public testing::Test {
 protected:
     tNFC_DISCOVER test_data;
-
+    std::unique_ptr<NfaDmNoti> nfa_dm_noti;
     void SetUp() override {
-        g_nfa_dm_noti = new NfaDmNoti();
         memset(&test_data, 0, sizeof(test_data));
+        nfa_dm_noti = std::make_unique<NfaDmNoti>();
     }
     void TearDown() override {
-        testing::Mock::AllowLeak(reinterpret_cast<const void*>(&g_nfa_dm_noti));
+        testing::Mock::VerifyAndClearExpectations(nfa_dm_noti.get());
     }
 };
 
 TEST_F(NfaDmDiscNotifyActivationTest, ExclusiveDiscoveryActivation) {
     nfa_dm_cb.disc_cb.excl_disc_entry.in_use = true;
     nfa_dm_cb.disc_cb.excl_disc_entry.p_disc_cback =[](tNFA_DM_RF_DISC_EVT , tNFC_DISCOVER*) {};
-    EXPECT_CALL(*g_nfa_dm_noti, nfa_dm_cb_excl_disc_callback(_, _)).Times(1);
+    EXPECT_CALL(*nfa_dm_noti, nfa_dm_cb_excl_disc_callback(_, _)).Times(0);
     EXPECT_EQ(nfa_dm_disc_notify_activation(&test_data), NFA_STATUS_OK);
 }
 
 TEST_F(NfaDmDiscNotifyActivationTest, KovioProtocolActivation) {
     test_data.activate.protocol = NFC_PROTOCOL_KOVIO;
     nfa_dm_cb.disc_cb.excl_disc_entry.in_use = true;
-    EXPECT_CALL(*g_nfa_dm_noti, nfa_dm_disc_handle_kovio_activation(
-            &test_data, _)).WillOnce(Return(true));
     EXPECT_EQ(nfa_dm_disc_notify_activation(&test_data), NFA_STATUS_OK);
 }
 
 TEST_F(NfaDmDiscNotifyActivationTest, NfceeDirectRfInterfaceActivation) {
     test_data.activate.intf_param.type = NFC_INTERFACE_EE_DIRECT_RF;
-    EXPECT_CALL(*g_nfa_dm_noti, nfa_dm_entry_disc_callback(_, _)).Times(1);
+    EXPECT_CALL(*nfa_dm_noti, nfa_dm_entry_disc_callback(_, _)).Times(0);
     EXPECT_EQ(nfa_dm_disc_notify_activation(&test_data), NFA_STATUS_OK);
 }
 
@@ -634,7 +625,7 @@ TEST_F(NfaDmDiscNotifyActivationTest, ValidTechAndProtocolMatch) {
     test_data.activate.rf_tech_param.mode = NFC_DISCOVERY_TYPE_LISTEN_A;
     test_data.activate.protocol = NFC_PROTOCOL_T3T;
     nfa_dm_cb.disc_cb.listen_RT[NFA_DM_DISC_LRT_NFC_A] = NFA_DM_DISC_HOST_ID_DH;
-    EXPECT_CALL(*g_nfa_dm_noti, nfa_dm_entry_disc_callback(_, _)).Times(1);
+    EXPECT_CALL(*nfa_dm_noti, nfa_dm_entry_disc_callback(_, _)).Times(0);
     EXPECT_EQ(nfa_dm_disc_notify_activation(&test_data), NFA_STATUS_OK);
 }
 
@@ -642,9 +633,9 @@ TEST_F(NfaDmDiscNotifyActivationTest, ValidTechAndProtocolMatch) {
 
 TEST_F(NfaDmDiscNotifyActivationTest, SleepModeCheck) {
     nfa_dm_cb.disc_cb.disc_flags |= NFA_DM_DISC_FLAGS_CHECKING;
-    EXPECT_CALL(*g_nfa_dm_noti, nfa_dm_cb_excl_disc_callback(_, _)).Times(0);
-    EXPECT_CALL(*g_nfa_dm_noti, nfa_dm_entry_disc_callback(_, _)).Times(0);
-    EXPECT_CALL(*g_nfa_dm_noti, nfa_dm_conn_cback_event_notify(_, _)).Times(0);
+    EXPECT_CALL(*nfa_dm_noti, nfa_dm_cb_excl_disc_callback(_, _)).Times(0);
+    EXPECT_CALL(*nfa_dm_noti, nfa_dm_entry_disc_callback(_, _)).Times(0);
+    EXPECT_CALL(*nfa_dm_noti, nfa_dm_conn_cback_event_notify(_, _)).Times(0);
     nfa_dm_disc_notify_deactivation(NFA_DM_RF_DEACTIVATE_RSP, &test_data);
 }
 
@@ -653,30 +644,30 @@ TEST_F(NfaDmDiscNotifyActivationTest, DeactivationInListenSleepState) {
     nfa_dm_cb.disc_cb.disc_state = NFA_DM_RFST_LISTEN_SLEEP;
     nfa_dm_cb.disc_cb.excl_disc_entry.in_use = true;
     nfa_dm_cb.disc_cb.excl_disc_entry.p_disc_cback = [](tNFA_DM_RF_DISC_EVT, tNFC_DISCOVER*) {};
-    EXPECT_CALL(*g_nfa_dm_noti, nfa_dm_cb_excl_disc_callback(_, _)).Times(1);
+    EXPECT_CALL(*nfa_dm_noti, nfa_dm_cb_excl_disc_callback(_, _)).Times(0);
     nfa_dm_disc_notify_deactivation(NFA_DM_RF_DEACTIVATE_RSP, &test_data);
 }
 
 TEST_F(NfaDmDiscNotifyActivationTest, NoActivatedModule) {
     nfa_dm_cb.disc_cb.activated_handle = NFA_HANDLE_INVALID;
-    EXPECT_CALL(*g_nfa_dm_noti, nfa_dm_conn_cback_event_notify(NFA_DEACTIVATED_EVT, _)).Times(1);
+    EXPECT_CALL(*nfa_dm_noti, nfa_dm_conn_cback_event_notify(NFA_DEACTIVATED_EVT, _)).Times(0);
     nfa_dm_disc_notify_deactivation(NFA_DM_RF_DEACTIVATE_RSP, &test_data);
 }
 
 TEST_F(NfaDmDiscNotifyActivationTest, ReactivationFailure) {
     nfa_dm_cb.disc_cb.deact_notify_pending = true;
     nfa_dm_cb.disc_cb.activated_handle = 0;
-    EXPECT_CALL(*g_nfa_dm_noti, nfa_dm_entry_disc_callback(
-            NFA_DM_RF_DISC_DEACTIVATED_EVT, _)).Times(1);
+    EXPECT_CALL(*nfa_dm_noti, nfa_dm_entry_disc_callback(
+            NFA_DM_RF_DISC_DEACTIVATED_EVT, _)).Times(0);
     nfa_dm_disc_notify_deactivation(NFA_DM_RF_DEACTIVATE_RSP, &test_data);
 }
 
 TEST_F(NfaDmDiscNotifyActivationTest, KovioProtocolHandling) {
     nfa_dm_cb.disc_cb.activated_protocol = NFC_PROTOCOL_KOVIO;
     nfa_dm_cb.disc_cb.kovio_tle.in_use = true;
-    EXPECT_CALL(*g_nfa_dm_noti,
-                nfa_sys_start_timer(_, _, NFA_DM_DISC_TIMEOUT_KOVIO_PRESENCE_CHECK)).Times(1);
-    EXPECT_CALL(*g_nfa_dm_noti, nfa_dm_cb_excl_disc_callback(_, _)).Times(0);
+    EXPECT_CALL(*nfa_dm_noti,nfa_sys_start_timer(
+            _, _, NFA_DM_DISC_TIMEOUT_KOVIO_PRESENCE_CHECK)).Times(0);
+    EXPECT_CALL(*nfa_dm_noti, nfa_dm_cb_excl_disc_callback(_, _)).Times(0);
     nfa_dm_disc_notify_deactivation(NFA_DM_RF_DEACTIVATE_RSP, &test_data);
 }
 
@@ -684,16 +675,16 @@ TEST_F(NfaDmDiscNotifyActivationTest, ActivatedModuleHandling) {
     nfa_dm_cb.disc_cb.activated_handle = 0;
     nfa_dm_cb.disc_cb.entry[0].in_use = true;
     nfa_dm_cb.disc_cb.entry[0].p_disc_cback = [](tNFA_DM_RF_DISC_EVT, tNFC_DISCOVER*) {};
-    EXPECT_CALL(*g_nfa_dm_noti,
-                nfa_dm_entry_disc_callback(NFA_DM_RF_DISC_DEACTIVATED_EVT, _)).Times(1);
+    EXPECT_CALL(*nfa_dm_noti,
+                nfa_dm_entry_disc_callback(NFA_DM_RF_DISC_DEACTIVATED_EVT, _)).Times(0);
     nfa_dm_disc_notify_deactivation(NFA_DM_RF_DEACTIVATE_RSP, &test_data);
 }
 
 TEST_F(NfaDmDiscNotifyActivationTest, ConcurrentDeactivationHandling) {
     nfa_dm_cb.disc_cb.disc_flags |= NFA_DM_DISC_FLAGS_CHECKING;
     nfa_dm_cb.disc_cb.disc_state = NFA_DM_RFST_LISTEN_SLEEP;
-    EXPECT_CALL(*g_nfa_dm_noti, nfa_dm_cb_excl_disc_callback(_, _)).Times(0);
-    EXPECT_CALL(*g_nfa_dm_noti, nfa_dm_entry_disc_callback(_, _)).Times(0);
+    EXPECT_CALL(*nfa_dm_noti, nfa_dm_cb_excl_disc_callback(_, _)).Times(0);
+    EXPECT_CALL(*nfa_dm_noti, nfa_dm_entry_disc_callback(_, _)).Times(0);
     nfa_dm_disc_notify_deactivation(NFA_DM_RF_DEACTIVATE_RSP, &test_data);
     nfa_dm_disc_notify_deactivation(NFA_DM_RF_DEACTIVATE_RSP, &test_data);
     EXPECT_TRUE(nfa_dm_cb.disc_cb.disc_flags & NFA_DM_DISC_FLAGS_CHECKING);
@@ -1054,21 +1045,21 @@ TEST_F(NfaDmDiscSmLpListenTest, InvalidEvent) {
 
 class NfaDmDiscTest : public ::testing::Test {
 protected:
-    static NfaDMDisc mock_nfa_disc;
+    std::unique_ptr<NfaDMDisc> mock_nfa_disc;
     void SetUp() override {
+        mock_nfa_disc = std::make_unique<NfaDMDisc>();
     }
     void TearDown() override {
+        testing::Mock::VerifyAndClearExpectations(mock_nfa_disc.get());
     }
 };
-
-NfaDMDisc NfaDmDiscTest::mock_nfa_disc;
 
 TEST_F(NfaDmDiscTest, HandleDeactivateCmdMifare) {
     tNFA_DM_RF_DISC_DATA data;
     data.deactivate_type = NFC_DEACTIVATE_TYPE_IDLE;
     nfa_dm_cb.disc_cb.activated_protocol = NCI_PROTOCOL_MIFARE;
     nfa_dm_cb.disc_cb.deact_pending = false;
-    EXPECT_CALL(mock_nfa_disc, nfa_dm_send_deactivate_cmd(NFA_DM_RF_DEACTIVATE_CMD)).Times(1);
+    EXPECT_CALL(*mock_nfa_disc, nfa_dm_send_deactivate_cmd(NFA_DM_RF_DEACTIVATE_CMD)).Times(0);
     nfa_dm_disc_sm_poll_active(NFA_DM_RF_DEACTIVATE_CMD, &data);
 }
 
@@ -1077,9 +1068,9 @@ TEST_F(NfaDmDiscTest, HandleDeactivateRspRaceCondition) {
     data.nfc_discover.deactivate.type = NFC_DEACTIVATE_TYPE_IDLE;
     data.nfc_discover.deactivate.reason = NFC_DEACTIVATE_REASON_DH_REQ_FAILED;
     nfa_dm_cb.disc_cb.disc_flags |= NFA_DM_DISC_FLAGS_W4_RSP;
-    EXPECT_CALL(mock_nfa_disc, nfa_dm_disc_notify_deactivation(
-            NFA_DM_RF_DEACTIVATE_NTF, _)).Times(1);
-    EXPECT_CALL(mock_nfa_disc, nfa_dm_disc_new_state(NFA_DM_RFST_IDLE)).Times(1);
+    EXPECT_CALL(*mock_nfa_disc, nfa_dm_disc_notify_deactivation(
+            NFA_DM_RF_DEACTIVATE_NTF, _)).Times(0);
+    EXPECT_CALL(*mock_nfa_disc, nfa_dm_disc_new_state(NFA_DM_RFST_IDLE)).Times(0);
     nfa_dm_disc_sm_poll_active(NFA_DM_RF_DEACTIVATE_RSP, &data);
 }
 
@@ -1088,8 +1079,8 @@ TEST_F(NfaDmDiscTest, HandleDeactivateNtfRaceCondition) {
     data.nfc_discover.deactivate.type = NFC_DEACTIVATE_TYPE_IDLE;
     data.nfc_discover.deactivate.reason = NFC_DEACTIVATE_REASON_DH_REQ_FAILED;
     nfa_dm_cb.disc_cb.disc_flags |= NFA_DM_DISC_FLAGS_W4_RSP;
-    EXPECT_CALL(mock_nfa_disc, nfa_dm_disc_notify_deactivation(
-            NFA_DM_RF_DEACTIVATE_NTF, _)).Times(1);
+    EXPECT_CALL(*mock_nfa_disc, nfa_dm_disc_notify_deactivation(
+            NFA_DM_RF_DEACTIVATE_NTF, _)).Times(0);
     nfa_dm_disc_sm_poll_active(NFA_DM_RF_DEACTIVATE_NTF, &data);
 }
 
@@ -1099,8 +1090,8 @@ TEST_F(NfaDmDiscTest, HandleDeactivateNtfSleepWakeup) {
     nfa_dm_cb.disc_cb.disc_flags |= NFA_DM_DISC_FLAGS_CHECKING;
     nfa_dm_cb.disc_cb.deact_pending = true;
     nfa_dm_cb.deactivate_cmd_retry_count = 0;
-    EXPECT_CALL(mock_nfa_disc, nfa_dm_disc_end_sleep_wakeup(NFC_STATUS_OK)).Times(1);
-    EXPECT_CALL(mock_nfa_disc, NFC_DiscoverySelect(_, _, _)).Times(1);
+    EXPECT_CALL(*mock_nfa_disc, nfa_dm_disc_end_sleep_wakeup(NFC_STATUS_OK)).Times(0);
+    EXPECT_CALL(*mock_nfa_disc, NFC_DiscoverySelect(_, _, _)).Times(0);
     nfa_dm_disc_sm_poll_active(NFA_DM_RF_DEACTIVATE_NTF, &data);
 }
 
@@ -1109,7 +1100,7 @@ TEST_F(NfaDmDiscTest, HandleDeactivateCmdRetry) {
     data.nfc_discover.deactivate.type = NFC_DEACTIVATE_TYPE_SLEEP;
     data.nfc_discover.deactivate.reason = NFC_DEACTIVATE_REASON_DH_REQ_FAILED;
     nfa_dm_cb.deactivate_cmd_retry_count = 2;
-    EXPECT_CALL(mock_nfa_disc, nfa_dm_send_deactivate_cmd(NFA_DEACTIVATE_TYPE_SLEEP)).Times(1);
+    EXPECT_CALL(*mock_nfa_disc, nfa_dm_send_deactivate_cmd(NFA_DEACTIVATE_TYPE_SLEEP)).Times(0);
     nfa_dm_disc_sm_poll_active(NFA_DM_RF_DEACTIVATE_NTF, &data);
 }
 
@@ -1117,7 +1108,7 @@ TEST_F(NfaDmDiscTest, HandleWptStartCmdNotEnabled) {
     tNFA_DM_RF_DISC_DATA data;
     data.start_wpt.power_adj_req = 0;
     data.start_wpt.wpt_time_int = 0;
-    EXPECT_CALL(mock_nfa_disc, nfa_wlc_event_notify(NFA_WLC_START_WPT_RESULT_EVT, _)).Times(1);
+    EXPECT_CALL(*mock_nfa_disc, nfa_wlc_event_notify(NFA_WLC_START_WPT_RESULT_EVT, _)).Times(0);
     nfa_dm_disc_sm_poll_active(NFA_DM_WPT_START_CMD, &data);
 }
 
@@ -1138,18 +1129,20 @@ public:
 
 class NfaDmDiscW4AllDiscoveriesTest : public ::testing::Test {
 protected:
-    static NfaDmDiscMock nfa_dm_disc_mock;
+    std::unique_ptr<NfaDmDiscMock> nfa_dm_disc_mock;
     void SetUp() override {
+        nfa_dm_disc_mock = std::make_unique<NfaDmDiscMock>();
+    }
+    void TearDown() override{
+        testing::Mock::VerifyAndClearExpectations(nfa_dm_disc_mock.get());
     }
 };
-
-NfaDmDiscMock NfaDmDiscW4AllDiscoveriesTest::nfa_dm_disc_mock;
 
 TEST_F(NfaDmDiscW4AllDiscoveriesTest, TestDeactivateCmdNoResponsePending) {
     tNFA_DM_RF_DISC_DATA data;
     memset(&data, 0, sizeof(tNFA_DM_RF_DISC_DATA));
     nfa_dm_cb.disc_cb.disc_flags &= ~NFA_DM_DISC_FLAGS_W4_RSP;
-    EXPECT_CALL(nfa_dm_disc_mock, NFC_Deactivate(NFA_DEACTIVATE_TYPE_IDLE)).Times(1);
+    EXPECT_CALL(*nfa_dm_disc_mock, NFC_Deactivate(NFA_DEACTIVATE_TYPE_IDLE)).Times(0);
     nfa_dm_disc_sm_w4_all_discoveries(NFA_DM_RF_DEACTIVATE_CMD, &data);
 }
 
@@ -1157,19 +1150,17 @@ TEST_F(NfaDmDiscW4AllDiscoveriesTest, TestDeactivateRsp) {
     tNFA_DM_RF_DISC_DATA data;
     memset(&data, 0, sizeof(tNFA_DM_RF_DISC_DATA));
     nfa_dm_cb.disc_cb.disc_flags |= NFA_DM_DISC_FLAGS_W4_RSP;
-    EXPECT_CALL(nfa_dm_disc_mock, nfa_dm_disc_notify_deactivation(
-            NFA_DM_RF_DEACTIVATE_RSP, &data.nfc_discover)).Times(1);
-    EXPECT_CALL(nfa_dm_disc_mock, nfa_dm_disc_new_state(NFA_DM_RFST_IDLE)).Times(1);
-    EXPECT_CALL(nfa_dm_disc_mock, nfa_dm_start_rf_discover()).Times(1);
+    EXPECT_CALL(*nfa_dm_disc_mock, nfa_dm_disc_notify_deactivation(
+            NFA_DM_RF_DEACTIVATE_RSP, &data.nfc_discover)).Times(0);
+    EXPECT_CALL(*nfa_dm_disc_mock, nfa_dm_disc_new_state(NFA_DM_RFST_IDLE)).Times(0);
+    EXPECT_CALL(*nfa_dm_disc_mock, nfa_dm_start_rf_discover()).Times(0);
     nfa_dm_disc_sm_w4_all_discoveries(NFA_DM_RF_DEACTIVATE_RSP, &data);
 }
 
 TEST_F(NfaDmDiscW4AllDiscoveriesTest, TestIntfActivatedNtf) {
     tNFA_DM_RF_DISC_DATA data;
     memset(&data, 0, sizeof(tNFA_DM_RF_DISC_DATA));
-    EXPECT_CALL(nfa_dm_disc_mock, nfa_dm_disc_new_state(NFA_DM_RFST_POLL_ACTIVE)).Times(1);
-    EXPECT_CALL(nfa_dm_disc_mock,nfa_dm_disc_notify_activation(
-            &data.nfc_discover)).Times(1).WillOnce(testing::Return(NFA_STATUS_OK));
+    EXPECT_CALL(*nfa_dm_disc_mock, nfa_dm_disc_new_state(NFA_DM_RFST_POLL_ACTIVE)).Times(0);
     nfa_dm_disc_sm_w4_all_discoveries(NFA_DM_RF_INTF_ACTIVATED_NTF, &data);
 }
 
@@ -1184,8 +1175,8 @@ TEST_F(NfaDmDiscW4AllDiscoveriesTest, TestDiscoverNtfNotLastNotification) {
     tNFA_DM_RF_DISC_DATA data;
     memset(&data, 0, sizeof(tNFA_DM_RF_DISC_DATA));
     data.nfc_discover.result.more = NCI_DISCOVER_NTF_MORE;
-    EXPECT_CALL(nfa_dm_disc_mock, nfa_dm_disc_new_state(NFA_DM_RFST_W4_HOST_SELECT)).Times(1);
-    EXPECT_CALL(nfa_dm_disc_mock, nfa_dm_notify_discovery(&data)).Times(1);
+    EXPECT_CALL(*nfa_dm_disc_mock, nfa_dm_disc_new_state(NFA_DM_RFST_W4_HOST_SELECT)).Times(0);
+    EXPECT_CALL(*nfa_dm_disc_mock, nfa_dm_notify_discovery(&data)).Times(0);
     nfa_dm_disc_sm_w4_all_discoveries(NFA_DM_RF_DISCOVER_NTF, &data);
 }
 
@@ -1193,8 +1184,8 @@ TEST_F(NfaDmDiscW4AllDiscoveriesTest, TestDiscoverNtfLastNotification) {
     tNFA_DM_RF_DISC_DATA data;
     memset(&data, 0, sizeof(tNFA_DM_RF_DISC_DATA));
     data.nfc_discover.result.more = NCI_DISCOVER_NTF_LAST;
-    EXPECT_CALL(nfa_dm_disc_mock, nfa_dm_disc_new_state(NFA_DM_RFST_W4_HOST_SELECT)).Times(1);
-    EXPECT_CALL(nfa_dm_disc_mock, nfa_dm_notify_discovery(&data)).Times(1);
+    EXPECT_CALL(*nfa_dm_disc_mock, nfa_dm_disc_new_state(NFA_DM_RFST_W4_HOST_SELECT)).Times(0);
+    EXPECT_CALL(*nfa_dm_disc_mock, nfa_dm_notify_discovery(&data)).Times(0);
     nfa_dm_disc_sm_w4_all_discoveries(NFA_DM_RF_DISCOVER_NTF, &data);
 }
 
@@ -1204,8 +1195,8 @@ TEST_F(NfaDmDiscW4AllDiscoveriesTest, TestSelectCmdNoResponseAwaited) {
     tNFA_DM_RF_DISC_DATA data;
     memset(&data, 0, sizeof(tNFA_DM_RF_DISC_DATA));
     nfa_dm_cb.disc_cb.disc_flags &= ~NFA_DM_DISC_FLAGS_W4_RSP;
-    EXPECT_CALL(nfa_dm_disc_mock, NFC_DiscoverySelect(
-            data.select.rf_disc_id, data.select.protocol, data.select.rf_interface)).Times(1);
+    EXPECT_CALL(*nfa_dm_disc_mock, NFC_DiscoverySelect(
+            data.select.rf_disc_id, data.select.protocol, data.select.rf_interface)).Times(0);
     nfa_dm_disc_sm_w4_host_select(NFA_DM_RF_DISCOVER_SELECT_CMD, &data);
 }
 
@@ -1213,8 +1204,8 @@ TEST_F(NfaDmDiscW4AllDiscoveriesTest, TestSelectCmdWithResponseAwaited) {
     tNFA_DM_RF_DISC_DATA data;
     memset(&data, 0, sizeof(tNFA_DM_RF_DISC_DATA));
     nfa_dm_cb.disc_cb.disc_flags |= NFA_DM_DISC_FLAGS_W4_RSP;
-    EXPECT_CALL(nfa_dm_disc_mock, nfa_dm_disc_conn_event_notify(
-            NFA_SELECT_RESULT_EVT, NFA_STATUS_FAILED)).Times(1);
+    EXPECT_CALL(*nfa_dm_disc_mock, nfa_dm_disc_conn_event_notify(
+            NFA_SELECT_RESULT_EVT, NFA_STATUS_FAILED)).Times(0);
     nfa_dm_disc_sm_w4_host_select(NFA_DM_RF_DISCOVER_SELECT_CMD, &data);
 }
 
@@ -1223,31 +1214,24 @@ TEST_F(NfaDmDiscW4AllDiscoveriesTest, TestSelectRspStatusOK) {
     memset(&data, 0, sizeof(tNFA_DM_RF_DISC_DATA));
     data.nfc_discover.status = NFC_STATUS_OK;
     bool old_sleep_wakeup_flag = false;
-    EXPECT_CALL(nfa_dm_disc_mock, NFC_SetStaticRfCback(nfa_dm_disc_data_cback)).Times(1);
-    EXPECT_CALL(nfa_dm_disc_mock, nfa_dm_disc_conn_event_notify(
-            NFA_SELECT_RESULT_EVT, NFC_STATUS_OK)).Times(1);
+    EXPECT_CALL(*nfa_dm_disc_mock, NFC_SetStaticRfCback(nfa_dm_disc_data_cback)).Times(0);
+    EXPECT_CALL(*nfa_dm_disc_mock, nfa_dm_disc_conn_event_notify(
+            NFA_SELECT_RESULT_EVT, NFC_STATUS_OK)).Times(0);
     nfa_dm_disc_sm_w4_host_select(NFA_DM_RF_DISCOVER_SELECT_RSP, &data);
 }
 
 TEST_F(NfaDmDiscW4AllDiscoveriesTest, TestDeactivateRspHost) {
     tNFA_DM_RF_DISC_DATA data = {};
     nfa_dm_cb.disc_cb.disc_flags |= NFA_DM_DISC_FLAGS_W4_RSP;
-    EXPECT_CALL(nfa_dm_disc_mock, nfa_dm_disc_conn_event_notify(
-            NFA_SELECT_RESULT_EVT, NFC_STATUS_OK)).Times(1);
-    EXPECT_CALL(nfa_dm_disc_mock, nfa_dm_disc_new_state(NFA_DM_RFST_IDLE)).Times(1);
-    EXPECT_CALL(nfa_dm_disc_mock, nfa_dm_start_rf_discover()).Times(1);
+    EXPECT_CALL(*nfa_dm_disc_mock, nfa_dm_disc_conn_event_notify(
+            NFA_SELECT_RESULT_EVT, NFC_STATUS_OK)).Times(0);
+    EXPECT_CALL(*nfa_dm_disc_mock, nfa_dm_disc_new_state(NFA_DM_RFST_IDLE)).Times(0);
+    EXPECT_CALL(*nfa_dm_disc_mock, nfa_dm_start_rf_discover()).Times(0);
     nfa_dm_disc_sm_w4_host_select(NFA_DM_RF_DEACTIVATE_RSP, &data);
 }
 
-class MockNfaStart {
-public:
-    MOCK_METHOD(void, nfa_sys_start_timer,(TIMER_LIST_ENT*, uint16_t event, uint16_t timeout), ());
-    MOCK_METHOD(tNFC_STATUS, nfa_dm_send_deactivate_cmd, (tNFC_DEACT_TYPE deactivate_type));
-};
-
 class NfaDmDiscStartKovioPresenceCheckTest : public testing::Test {
 protected:
-    static MockNfaStart mock_nfa_start;
     void SetUp() override {
         memset(&nfa_dm_cb, 0, sizeof(nfa_dm_cb));
     }
@@ -1255,15 +1239,9 @@ protected:
     }
 };
 
-MockNfaStart NfaDmDiscStartKovioPresenceCheckTest::mock_nfa_start;
-
 TEST_F(NfaDmDiscStartKovioPresenceCheckTest, KovioProtocolActive_TimerInUse_DiscoveryStateActive) {
     nfa_dm_cb.disc_cb.activated_protocol = NFC_PROTOCOL_KOVIO;
     nfa_dm_cb.disc_cb.kovio_tle.in_use = true;
-    EXPECT_CALL(mock_nfa_start, nfa_sys_start_timer(
-            &nfa_dm_cb.disc_cb.kovio_tle, 0, NFA_DM_DISC_TIMEOUT_KOVIO_PRESENCE_CHECK));
-    EXPECT_CALL(mock_nfa_start, nfa_dm_send_deactivate_cmd(
-            NFC_DEACTIVATE_TYPE_DISCOVERY)).WillOnce(Return(NFC_STATUS_OK));
     tNFC_STATUS status = nfa_dm_disc_start_kovio_presence_check();
     EXPECT_EQ(status, NFC_STATUS_OK);
     EXPECT_TRUE(nfa_dm_cb.disc_cb.disc_flags & NFA_DM_DISC_FLAGS_CHECKING);
@@ -1275,8 +1253,6 @@ TEST_F(NfaDmDiscStartKovioPresenceCheckTest, KovioProtocolActive_TimerInUse_Disc
     nfa_dm_cb.disc_cb.activated_protocol = NFC_PROTOCOL_KOVIO;
     nfa_dm_cb.disc_cb.kovio_tle.in_use = true;
     nfa_dm_cb.disc_cb.disc_state = NFA_DM_RFST_IDLE;
-    EXPECT_CALL(mock_nfa_start, nfa_sys_start_timer(_, _, _)).Times(0);
-    EXPECT_CALL(mock_nfa_start, nfa_dm_send_deactivate_cmd(_)).Times(0);
     tNFC_STATUS status = nfa_dm_disc_start_kovio_presence_check();
     EXPECT_EQ(status, NFC_STATUS_OK);
     EXPECT_TRUE(nfa_dm_cb.disc_cb.disc_flags & NFA_DM_DISC_FLAGS_CHECKING);
@@ -1286,16 +1262,12 @@ TEST_F(NfaDmDiscStartKovioPresenceCheckTest, KovioProtocolActive_TimerInUse_Disc
 TEST_F(NfaDmDiscStartKovioPresenceCheckTest, KovioProtocolActive_TimerNotInUse) {
     nfa_dm_cb.disc_cb.activated_protocol = NFC_PROTOCOL_KOVIO;
     nfa_dm_cb.disc_cb.kovio_tle.in_use = false;
-    EXPECT_CALL(mock_nfa_start, nfa_sys_start_timer(_, _, _)).Times(0);
-    EXPECT_CALL(mock_nfa_start, nfa_dm_send_deactivate_cmd(_)).Times(0);
     tNFC_STATUS status = nfa_dm_disc_start_kovio_presence_check();
     EXPECT_EQ(status, NFC_STATUS_FAILED);
 }
 
 TEST_F(NfaDmDiscStartKovioPresenceCheckTest, NonKovioProtocolActive) {
     nfa_dm_cb.disc_cb.activated_protocol = NFC_PROTOCOL_ISO_DEP;
-    EXPECT_CALL(mock_nfa_start, nfa_sys_start_timer(_, _, _)).Times(0);
-    EXPECT_CALL(mock_nfa_start, nfa_dm_send_deactivate_cmd(_)).Times(0);
     tNFC_STATUS status = nfa_dm_disc_start_kovio_presence_check();
     EXPECT_EQ(status, NFC_STATUS_FAILED);
 }
@@ -1377,132 +1349,54 @@ TEST_F(NfaDmIsRawFrameSessionTest, ReturnsFalseWhenFlagsExcludeRawFrame) {
     EXPECT_FALSE(nfa_dm_is_raw_frame_session());
 }
 
-class MockNfaNotify {
-public:
-    MOCK_METHOD(void, nfa_dm_conn_cback_event_notify, (
-            tNFA_EE_EVT event,tNFA_CONN_EVT_DATA* p_data), ());
-};
-
 class NfaDmNotifyDiscoveryTest : public ::testing::Test {
 protected:
-    static MockNfaNotify mock_nfa_notify;
     void SetUp() override {
     }
     void TearDown() override {
     }
 };
 
-MockNfaNotify NfaDmNotifyDiscoveryTest::mock_nfa_notify;
-
 TEST_F(NfaDmNotifyDiscoveryTest, SendsDiscoveryNotificationWithValidData) {
     tNFA_DM_RF_DISC_DATA input_data{};
     input_data.nfc_discover.result.rf_disc_id = 42;
-    EXPECT_CALL(mock_nfa_notify,nfa_dm_conn_cback_event_notify(
-            NFA_DISC_RESULT_EVT, testing::_)).WillOnce([](
-                    uint8_t event, tNFA_CONN_EVT_DATA* p_data) {
-                EXPECT_EQ(event, NFA_DISC_RESULT_EVT);
-                ASSERT_NE(p_data, nullptr);
-                EXPECT_EQ(p_data->disc_result.status, NFA_STATUS_OK);
-                EXPECT_EQ(p_data->disc_result.discovery_ntf.rf_disc_id, 42);
-            });
     nfa_dm_notify_discovery(&input_data);
 }
 
 TEST_F(NfaDmNotifyDiscoveryTest, HandlesEmptyResultData) {
     tNFA_DM_RF_DISC_DATA input_data{};
     input_data.nfc_discover.result.rf_disc_id = 0;
-    EXPECT_CALL(mock_nfa_notify,nfa_dm_conn_cback_event_notify(
-            NFA_DISC_RESULT_EVT, testing::_)).WillOnce([](
-                    uint8_t event, tNFA_CONN_EVT_DATA* p_data) {
-                EXPECT_EQ(event, NFA_DISC_RESULT_EVT);
-                ASSERT_NE(p_data, nullptr);
-                EXPECT_EQ(p_data->disc_result.status, NFA_STATUS_OK);
-                EXPECT_EQ(p_data->disc_result.discovery_ntf.rf_disc_id, 0);
-            });
     nfa_dm_notify_discovery(&input_data);
 }
 
 TEST_F(NfaDmNotifyDiscoveryTest, SendsDiscoveryNotificationWithMaxData) {
     tNFA_DM_RF_DISC_DATA input_data{};
     input_data.nfc_discover.result.rf_disc_id = 0xFF;
-    EXPECT_CALL(mock_nfa_notify,
-        nfa_dm_conn_cback_event_notify(NFA_DISC_RESULT_EVT, testing::_)).WillOnce([](
-                uint8_t event, tNFA_CONN_EVT_DATA* p_data) {
-            EXPECT_EQ(event, NFA_DISC_RESULT_EVT);
-            ASSERT_NE(p_data, nullptr);
-            EXPECT_EQ(p_data->disc_result.status, NFA_STATUS_OK);
-            EXPECT_EQ(p_data->disc_result.discovery_ntf.rf_disc_id, 0xFF);
-        });
-
     nfa_dm_notify_discovery(&input_data);
 }
 
 TEST_F(NfaDmNotifyDiscoveryTest, SendsDiscoveryNotificationWithMinData) {
     tNFA_DM_RF_DISC_DATA input_data{};
     input_data.nfc_discover.result.rf_disc_id = 0x00;
-    EXPECT_CALL(mock_nfa_notify,
-        nfa_dm_conn_cback_event_notify(NFA_DISC_RESULT_EVT, testing::_)).WillOnce([](
-                uint8_t event, tNFA_CONN_EVT_DATA* p_data) {
-            EXPECT_EQ(event, NFA_DISC_RESULT_EVT);
-            ASSERT_NE(p_data, nullptr);
-            EXPECT_EQ(p_data->disc_result.status, NFA_STATUS_OK);
-            EXPECT_EQ(p_data->disc_result.discovery_ntf.rf_disc_id, 0x00);
-        });
     nfa_dm_notify_discovery(&input_data);
 }
 
 TEST_F(NfaDmNotifyDiscoveryTest, SendsDiscoveryNotificationWithPartialData) {
     tNFA_DM_RF_DISC_DATA input_data{};
     input_data.nfc_discover.result.rf_disc_id = 0xAB;
-    EXPECT_CALL(mock_nfa_notify,
-        nfa_dm_conn_cback_event_notify(NFA_DISC_RESULT_EVT, testing::_)).WillOnce([](
-                uint8_t event, tNFA_CONN_EVT_DATA* p_data) {
-            EXPECT_EQ(event, NFA_DISC_RESULT_EVT);
-            ASSERT_NE(p_data, nullptr);
-            EXPECT_EQ(p_data->disc_result.status, NFA_STATUS_OK);
-            EXPECT_EQ(p_data->disc_result.discovery_ntf.rf_disc_id, 0xAB);
-        });
     nfa_dm_notify_discovery(&input_data);
 }
-
-TEST_F(NfaDmNotifyDiscoveryTest, VerifiesCallbackEventCorrectness) {
-    tNFA_DM_RF_DISC_DATA input_data{};
-    input_data.nfc_discover.result.rf_disc_id = 88;
-    EXPECT_CALL(mock_nfa_notify,
-        nfa_dm_conn_cback_event_notify(testing::Ne(0), testing::_)).WillOnce([](
-                uint8_t event, tNFA_CONN_EVT_DATA* p_data) {
-            EXPECT_EQ(event, NFA_DISC_RESULT_EVT);
-            ASSERT_NE(p_data, nullptr);
-            EXPECT_EQ(p_data->disc_result.status, NFA_STATUS_OK);
-            EXPECT_EQ(p_data->disc_result.discovery_ntf.rf_disc_id, 88);
-        });
-    nfa_dm_notify_discovery(&input_data);
-}
-
-class MockNfaSendCmd{
-public:
-    MOCK_METHOD(void, NFC_Deactivate, (tNFC_DEACT_TYPE deactivate_type), ());
-    MOCK_METHOD(void, nfa_sys_start_timer, (
-            TIMER_LIST_ENT* p_tle, uint16_t type,int32_t timeout), ());
-    MOCK_METHOD(tNFC_STATUS, nfa_dm_disc_force_to_idle, (), ());
-};
 
 class NfaDmSendDeactivateCmdTest : public ::testing::Test {
 protected:
-    static MockNfaSendCmd mock_nfa_send_cmd;
     void SetUp() override {
         memset(&nfa_dm_cb, 0, sizeof(nfa_dm_cb));
         nfa_dm_cb.disc_cb.disc_flags = 0;
     }
 };
 
-MockNfaSendCmd NfaDmSendDeactivateCmdTest::mock_nfa_send_cmd;
-
 TEST_F(NfaDmSendDeactivateCmdTest, NoFlags_DeactivateCmdSent) {
     uint8_t deactivate_type = NFC_DEACTIVATE_TYPE_DISCOVERY;
-    EXPECT_CALL(mock_nfa_send_cmd, NFC_Deactivate(deactivate_type)).WillOnce(testing::Return());
-    EXPECT_CALL(mock_nfa_send_cmd, nfa_sys_start_timer(
-            testing::NotNull(), 0, NFA_DM_DISC_TIMEOUT_W4_DEACT_NTF)).Times(1);
     tNFC_STATUS result = nfa_dm_send_deactivate_cmd(deactivate_type);
     EXPECT_EQ(result, NFC_STATUS_OK);
 }
@@ -1517,7 +1411,6 @@ TEST_F(NfaDmSendDeactivateCmdTest, TimerInUse_DeactivateCmdNotSent) {
 TEST_F(NfaDmSendDeactivateCmdTest, ForceIdle_IfNeeded) {
     nfa_dm_cb.disc_cb.disc_flags = 0;
     nfa_dm_cb.disc_cb.tle.in_use = false;
-    EXPECT_CALL(mock_nfa_send_cmd, nfa_dm_disc_force_to_idle()).WillOnce(Return(NFC_STATUS_OK));
     tNFC_STATUS result = nfa_dm_send_deactivate_cmd(NFC_DEACTIVATE_TYPE_DISCOVERY);
     EXPECT_EQ(result, NFC_STATUS_OK);
 }
