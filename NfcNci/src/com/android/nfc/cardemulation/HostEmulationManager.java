@@ -45,6 +45,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.PowerManager;
 import android.os.RemoteException;
+import android.os.Trace;
 import android.os.UserHandle;
 import android.sysprop.NfcProperties;
 import android.util.ArraySet;
@@ -65,6 +66,7 @@ import com.android.nfc.proto.NfcEventProto;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -73,8 +75,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 import java.util.regex.Pattern;
+
+import static android.nfc.Flags.nfcHceLatencyEvents;
 
 public class HostEmulationManager {
     static final String TAG = "HostEmulationManager";
@@ -112,6 +117,11 @@ public class HostEmulationManager {
     static final int RE_ENABLE_OBSERVE_MODE_DELAY_MS = 2000;
     static final int UNBIND_SERVICES_DELAY_MS = 10_000;
 
+    static final String EVENT_HCE_ACTIVATED = "hce_active";
+    static final String EVENT_HCE_BIND_PAYMENT_SERVICE = "hce_bind_payment_service";
+    static final String EVENT_HCE_BIND_SERVICE = "hce_bind_service";
+    static final String EVENT_HCE_COMMAND_APDU = "hce_command_apdu";
+
     final Context mContext;
     final RegisteredAidCache mAidCache;
     final Messenger mMessenger = new Messenger (new MessageHandler());
@@ -121,6 +131,8 @@ public class HostEmulationManager {
     private final Looper mLooper;
 
     private final StatsdUtils mStatsdUtils;
+
+    private final Random mCookieRandom = new Random(System.currentTimeMillis());
 
     INfcOemExtensionCallback mNfcOemExtensionCallback;
 
@@ -684,6 +696,9 @@ public class HostEmulationManager {
     public void onHostEmulationActivated() {
         Log.d(TAG, "notifyHostEmulationActivated");
         synchronized (mLock) {
+            if (nfcHceLatencyEvents()) {
+                Trace.beginAsyncSection(EVENT_HCE_ACTIVATED, 0);
+            }
             rescheduleInactivityChecks();
             // Regardless of what happens, if we're having a tap again
             // activity up, close it
@@ -953,6 +968,10 @@ public class HostEmulationManager {
             if (mStatsdUtils != null) {
                 mStatsdUtils.logCardEmulationDeactivatedEvent();
             }
+
+            if (nfcHceLatencyEvents()) {
+                Trace.endAsyncSection(EVENT_HCE_ACTIVATED, 0);
+            }
         }
     }
 
@@ -1021,6 +1040,9 @@ public class HostEmulationManager {
             return mComponentNameToConnectionsMap.get(newServiceAndUser).mMessenger;
         } else {
             Log.d(TAG, "Binding to service " + service + " for userid:" + userId);
+            if (nfcHceLatencyEvents()) {
+                Trace.beginAsyncSection(EVENT_HCE_BIND_SERVICE, 0);
+            }
             if (mStatsdUtils != null) {
                 mStatsdUtils.notifyCardEmulationEventWaitingForService();
             }
@@ -1046,19 +1068,39 @@ public class HostEmulationManager {
                     mServiceBound = serviceBound;
                 }
                 if (!serviceBound) {
+                    if (nfcHceLatencyEvents()) {
+                        Trace.endAsyncSection(EVENT_HCE_BIND_SERVICE, 0);
+                    }
                     Log.e(TAG, "Could not bind service.");
                 } else {
                     mServiceUserId = userId;
                 }
             } catch (SecurityException e) {
+                if (nfcHceLatencyEvents()) {
+                    Trace.endAsyncSection(EVENT_HCE_BIND_SERVICE, 0);
+                }
                 Log.e(TAG, "Could not bind service due to security exception.");
             }
             return null;
         }
     }
 
+    private int generateApduAckCookie() {
+        byte[] token = new byte[Integer.BYTES];
+        mCookieRandom.nextBytes(token);
+        return ByteBuffer.wrap(token).getInt();
+    }
+
     void sendDataToServiceLocked(Messenger service, byte[] data) {
         mState = STATE_XFER;
+
+
+        int cookie = 0;
+        if (nfcHceLatencyEvents()) {
+            cookie = generateApduAckCookie();
+            Trace.beginAsyncSection(EVENT_HCE_COMMAND_APDU, cookie);
+        }
+
         if (!Objects.equals(service, mActiveService)) {
             sendDeactivateToActiveServiceLocked(HostApduService.DEACTIVATION_DESELECTED);
             mActiveService = service;
@@ -1086,6 +1128,9 @@ public class HostEmulationManager {
         dataBundle.putByteArray(DATA_KEY, data);
         msg.setData(dataBundle);
         msg.replyTo = mMessenger;
+        if (nfcHceLatencyEvents()) {
+            msg.arg1 = cookie;
+        }
         try {
             NfcService.getInstance().notifyOemLogEvent(new OemLogItems
                     .Builder(OemLogItems.LOG_ACTION_HCE_DATA)
@@ -1093,6 +1138,9 @@ public class HostEmulationManager {
                     .build());
             mActiveService.send(msg);
         } catch (RemoteException e) {
+            if (nfcHceLatencyEvents()) {
+                Trace.endAsyncSection(EVENT_HCE_COMMAND_APDU, cookie);
+            }
             Log.e(TAG, "Remote service " + mActiveServiceName + " has died, dropping APDU", e);
             if (Objects.equals(mActiveService, mPaymentService)) {
                 Log.wtf(TAG, "Rebinding payment service", e);
@@ -1169,6 +1217,9 @@ public class HostEmulationManager {
     }
 
     void bindPaymentServiceLocked(@UserIdInt int userId, ComponentName serviceName) {
+        if (nfcHceLatencyEvents()) {
+            Trace.beginAsyncSection(EVENT_HCE_BIND_PAYMENT_SERVICE, 0);
+        }
         unbindPaymentServiceLocked();
 
         Log.d(TAG, "Binding to payment service " + serviceName + " for userid:" + userId);
@@ -1187,9 +1238,15 @@ public class HostEmulationManager {
                 mPaymentServiceUserId = userId;
                 mLastBoundPaymentServiceName = serviceName;
             } else {
+                if (nfcHceLatencyEvents()) {
+                    Trace.endAsyncSection(EVENT_HCE_BIND_PAYMENT_SERVICE, 0);
+                }
                 Log.e(TAG, "Could not bind (persistent) payment service.");
             }
         } catch (SecurityException e) {
+            if (nfcHceLatencyEvents()) {
+                Trace.endAsyncSection(EVENT_HCE_BIND_PAYMENT_SERVICE, 0);
+            }
             Log.e(TAG, "Could not bind service due to security exception.");
         }
     }
@@ -1347,6 +1404,9 @@ public class HostEmulationManager {
                     }
                 }
                 Log.i(TAG, "Payment service bound: " + name);
+                if (nfcHceLatencyEvents()) {
+                    Trace.endAsyncSection(EVENT_HCE_BIND_PAYMENT_SERVICE, 0);
+                }
             }
             NfcInjector.getInstance().getNfcEventLog().logEvent(
                     NfcEventProto.EventType.newBuilder()
@@ -1454,7 +1514,11 @@ public class HostEmulationManager {
                     mServiceBound = true;
                 }
 
+                if (nfcHceLatencyEvents()) {
+                    Trace.endAsyncSection(EVENT_HCE_BIND_SERVICE, 0);
+                }
                 Log.d(TAG, "Service bound: " + name);
+
                 // Send pending select APDU
                 if (mSelectApdu != null) {
                     if (mStatsdUtils != null) {
@@ -1546,6 +1610,18 @@ public class HostEmulationManager {
                 } else {
                     Log.d(TAG, "Dropping data, wrong state " + Integer.toString(state));
                 }
+
+                if (nfcHceLatencyEvents()) {
+                    try {
+                        Message ackMsg = Message.obtain(null,
+                                HostApduService.MSG_RESPONSE_APDU_ACK);
+                        ackMsg.arg1 = msg.arg1;
+                        ackMsg.replyTo = mMessenger;
+                        msg.replyTo.send(ackMsg);
+                    } catch (RemoteException e) {
+                        Log.e(TAG, "Failed to acknowledge MSG_RESPONSE_APDU", e);
+                    }
+                }
             } else if (msg.what == HostApduService.MSG_UNHANDLED) {
                 synchronized (mLock) {
                     Log.d(TAG, "Received MSG_UNHANDLED");
@@ -1559,6 +1635,13 @@ public class HostEmulationManager {
                         launchResolver(mLastSelectedAid,
                             (ArrayList<ApduServiceInfo>)resolveInfo.services,
                             mActiveServiceName, resolveInfo.category);
+                    }
+                }
+            } else if (msg.what == HostApduService.MSG_COMMAND_APDU_ACK) {
+                synchronized (mLock) {
+                    Log.d(TAG, "Receive command apdu ack");
+                    if (nfcHceLatencyEvents()) {
+                        Trace.endAsyncSection(EVENT_HCE_COMMAND_APDU, msg.arg1);
                     }
                 }
             }
