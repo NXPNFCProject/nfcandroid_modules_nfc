@@ -27,7 +27,12 @@ using android::base::StringPrintf;
 #define UNUSED_PROP(X) (void)(X);
 
 std::string mLibName = "libnfc_vendor_extn.so";
+#if (defined(__arm64__) || defined(__aarch64__) || defined(_M_ARM64))
 std::string mLibPathName = "/system/lib64/" + mLibName;
+#else
+std::string mLibPathName = "/system/lib/" + mLibName;
+#endif
+
 const std::string vendor_nfc_init_name = "vendor_nfc_init";
 const std::string vendor_nfc_de_init_name = "vendor_nfc_de_init";
 const std::string vendor_nfc_handle_event_name = "vendor_nfc_handle_event";
