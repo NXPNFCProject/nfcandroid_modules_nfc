@@ -37,6 +37,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import com.android.dx.mockito.inline.extended.ExtendedMockito;
+import com.android.nfc.DeviceConfigFacade;
 import com.android.nfc.cardemulation.RegisteredAidCache.AidResolveInfo;
 import com.android.nfc.NfcInjector;
 import com.android.nfc.NfcStatsLog;
@@ -79,11 +80,14 @@ public final class NfcAidConflictOccurredTest {
         RegisteredAidCache mockAidCache = Mockito.mock(RegisteredAidCache.class);
         ApduServiceInfo apduServiceInfo = Mockito.mock(ApduServiceInfo.class);
         AidResolveInfo aidResolveInfo = mockAidCache.new AidResolveInfo();
+        NfcInjector mockNfcInjector = Mockito.mock(NfcInjector.class);
         // no defaultService and no activeService
         aidResolveInfo.services = new ArrayList<ApduServiceInfo>();
         aidResolveInfo.services.add(apduServiceInfo);
         when(mockAidCache.resolveAid(anyString())).thenReturn(aidResolveInfo);
         when(NfcInjector.getInstance()).thenReturn(Mockito.mock(NfcInjector.class));
+        when(mockNfcInjector.getDeviceConfigFacade()).
+                thenReturn(Mockito.mock(DeviceConfigFacade.class));
 
         Context mockContext = new ContextWrapper(context) {
             @Override
@@ -98,7 +102,8 @@ public final class NfcAidConflictOccurredTest {
         };
         InstrumentationRegistry.getInstrumentation().runOnMainSync(
               () -> mHostEmulation = new HostEmulationManager(
-                      mockContext, mTestLooper.getLooper(), mockAidCache));
+                      mockContext, mTestLooper.getLooper(), mockAidCache,
+                      mockNfcInjector));
         assertNotNull(mHostEmulation);
 
         if (android.nfc.Flags.nfcEventListener()) {

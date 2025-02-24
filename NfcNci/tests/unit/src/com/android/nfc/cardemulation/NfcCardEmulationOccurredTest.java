@@ -50,6 +50,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.dx.mockito.inline.extended.ExtendedMockito;
+import com.android.nfc.DeviceConfigFacade;
 import com.android.nfc.NfcInjector;
 import com.android.nfc.NfcService;
 import com.android.nfc.NfcStatsLog;
@@ -74,6 +75,7 @@ public final class NfcCardEmulationOccurredTest {
     private MockitoSession mStaticMockSession;
     private HostEmulationManager mHostEmulation;
     private RegisteredAidCache mockAidCache;
+    private NfcInjector mockNfcInjector;
     private Context mockContext;
     private PackageManager packageManager;
     private final TestLooper mTestLooper = new TestLooper();
@@ -97,6 +99,9 @@ public final class NfcCardEmulationOccurredTest {
         initMockContext(context);
 
         mockAidCache = Mockito.mock(RegisteredAidCache.class);
+        mockNfcInjector = Mockito.mock(NfcInjector.class);
+        when(mockNfcInjector.getDeviceConfigFacade()).
+                thenReturn(Mockito.mock(DeviceConfigFacade.class));
         ApduServiceInfo apduServiceInfo = Mockito.mock(ApduServiceInfo.class);
         when(apduServiceInfo.requiresUnlock()).thenReturn(false);
         when(apduServiceInfo.requiresScreenOn()).thenReturn(false);
@@ -113,7 +118,7 @@ public final class NfcCardEmulationOccurredTest {
                 .thenReturn(new ComponentNameAndUser(0, null));
         when(NfcService.getInstance()).thenReturn(mock(NfcService.class));
         when(Flags.statsdCeEventsFlag()).thenReturn(false);
-        when(NfcInjector.getInstance()).thenReturn(mock(NfcInjector.class));
+        when(NfcInjector.getInstance()).thenReturn(mockNfcInjector);
 
         InstrumentationRegistry.getInstrumentation()
                 .runOnMainSync(
@@ -122,7 +127,8 @@ public final class NfcCardEmulationOccurredTest {
                                         new HostEmulationManager(
                                                 mockContext,
                                                 mTestLooper.getLooper(),
-                                                mockAidCache));
+                                                mockAidCache,
+                                                mockNfcInjector));
         assertNotNull(mHostEmulation);
         mHostEmulation.onHostEmulationActivated();
     }
