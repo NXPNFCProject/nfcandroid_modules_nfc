@@ -561,6 +561,10 @@ static void nfaConnectionCallback(uint8_t connEvent,
       /* Return REMOVAL_DETECTION deactivation reason to service */
       {
         struct nfc_jni_native_data* nat = getNative(NULL, NULL);
+        if (!nat) {
+          LOG(ERROR) << StringPrintf("cached nat is null");
+          return;
+        }
         JNIEnv* e = NULL;
         ScopedAttach attach(nat->vm, &e);
         if (e == NULL) {
