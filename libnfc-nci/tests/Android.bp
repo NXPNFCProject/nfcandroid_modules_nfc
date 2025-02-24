@@ -22,6 +22,8 @@ cc_test {
         "packages/modules/Nfc/libnfc-nci/src/nfa/hci",
         "packages/modules/Nfc/libnfc-nci/src/nfa/wlc",
         "packages/modules/Nfc/libnfc-nci/src/nfc/tags",
+        "packages/modules/Nfc/libnfc-nci/src/nfa/sys",
+        "packages/modules/Nfc/libnfc-nci/src/nfc/nfc",
     ],
     cflags: [
         "-Wall",

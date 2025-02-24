@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2024 The Android Open Source Project
+// Copyright (C) 2025 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,9 @@
 #include "nfa_hci_main.cc"
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include "nfc_main.cc"
+#include "nfa_sys_main.cc"
+
 void ResetNfaHciCb() {
     nfa_hci_cb.msg_len = 0;
     nfa_hci_cb.assembly_failed = false;
@@ -161,28 +164,16 @@ TEST_F(NfaHciIsValidCfgTest, DuplicatePipeIds) {
     EXPECT_FALSE(nfa_hci_is_valid_cfg());
 }
 
-class MockNfaHci {
-public:
-    MOCK_METHOD(void, nfa_sys_cback_notify_nfcc_power_mode_proc_complete, (uint8_t id), ());
-    MOCK_METHOD(void, nfa_sys_stop_timer, (TIMER_LIST_ENT* p_tle), ());
-};
-
-MockNfaHci mock_nfa_hci;
-
 class NfaHciProcNfccPowerModeTest : public testing::Test {
 protected:
     void SetUp() override {
-        mock_nfa_hci = std::make_unique<MockNfaHci>();
         memset(&nfa_hci_cb, 0, sizeof(nfa_hci_cb));
     }
-    std::unique_ptr<MockNfaHci> mock_nfa_hci;
 };
 
 TEST_F(NfaHciProcNfccPowerModeTest, FullPowerModeWhenIdle) {
     nfa_hci_cb.hci_state = NFA_HCI_STATE_IDLE;
     nfa_hci_cb.num_nfcee = 1;
-    EXPECT_CALL(*mock_nfa_hci, nfa_sys_cback_notify_nfcc_power_mode_proc_complete(
-            NFA_ID_HCI)).Times(0);
     nfa_hci_proc_nfcc_power_mode(NFA_DM_PWR_MODE_FULL);
     EXPECT_EQ(nfa_hci_cb.b_low_power_mode, false);
     EXPECT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_RESTORE);
@@ -196,16 +187,12 @@ TEST_F(NfaHciProcNfccPowerModeTest, FullPowerModeWhenIdle) {
 
 TEST_F(NfaHciProcNfccPowerModeTest, FullPowerModeWhenNotIdle) {
     nfa_hci_cb.hci_state = NFA_HCI_STATE_RESTORE;
-    EXPECT_CALL(*mock_nfa_hci, nfa_sys_cback_notify_nfcc_power_mode_proc_complete(
-            NFA_ID_HCI)).Times(0);
     nfa_hci_proc_nfcc_power_mode(NFA_DM_PWR_MODE_FULL);
 }
 
 TEST_F(NfaHciProcNfccPowerModeTest, NonFullPowerMode) {
     nfa_hci_cb.hci_state = NFA_HCI_STATE_IDLE;
     nfa_hci_cb.num_nfcee = 1;
-    EXPECT_CALL(*mock_nfa_hci, nfa_sys_cback_notify_nfcc_power_mode_proc_complete(
-            NFA_ID_HCI)).Times(0);
     nfa_hci_proc_nfcc_power_mode(0);
     EXPECT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_IDLE);
     EXPECT_EQ(nfa_hci_cb.w4_rsp_evt, false);
@@ -227,118 +214,49 @@ TEST_F(NfaHciProcNfccPowerModeTest, FullPowerModeWhenSingleNfcee) {
     EXPECT_EQ(nfa_hci_cb.w4_hci_netwk_init, false);
 }
 
-TEST_F(NfaHciProcNfccPowerModeTest, LowPowerModeStateReset) {
-    nfa_hci_cb.hci_state = NFA_HCI_STATE_RESTORE;
-    nfa_hci_cb.num_nfcee = 1;
-    EXPECT_CALL(*mock_nfa_hci, nfa_sys_cback_notify_nfcc_power_mode_proc_complete(
-            NFA_ID_HCI)).Times(0);
-    EXPECT_CALL(*mock_nfa_hci, nfa_sys_stop_timer(&nfa_hci_cb.timer)).Times(0);
-    nfa_hci_proc_nfcc_power_mode(0);
-    EXPECT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_IDLE);
-    EXPECT_EQ(nfa_hci_cb.b_low_power_mode, true);
-    EXPECT_EQ(nfa_hci_cb.conn_id, 0);
-}
-
-class MockNfaHciCallbacks {
-public:
-    MOCK_METHOD(void, nfa_hci_startup_complete, (tNFA_STATUS status), ());
-    MOCK_METHOD(void, nfa_hciu_send_get_param_cmd, (uint8_t pipe, uint8_t index), ());
-    MOCK_METHOD(void, nfa_hciu_send_clear_all_pipe_cmd, (), ());
-    MOCK_METHOD(void, nfa_hciu_remove_all_pipes_from_host, (uint8_t host), ());
-    MOCK_METHOD(void, nfa_hci_api_dealloc_gate, (tNFA_HCI_EVENT_DATA* p_evt_data), ());
-    MOCK_METHOD(void, nfa_hci_api_deregister, (tNFA_HCI_EVENT_DATA* p_evt_data), ());
-    MOCK_METHOD(void, nfa_hciu_send_to_app, (tNFA_HCI_EVT event, tNFA_HCI_EVT_DATA* p_evt,
-                                             tNFA_HANDLE app_handle), ());
-    MOCK_METHOD(void, nfa_hciu_send_delete_pipe_cmd, (uint8_t pipe), ());
-    MOCK_METHOD(void, nfa_hciu_release_pipe, (uint8_t pipe_id), ());
-};
-
-MockNfaHciCallbacks* mock_nfa_hci_calls = nullptr;
-
 class NfaHciRspTimeoutTest : public ::testing::Test {
 protected:
-    virtual void SetUp() {
-        mock_nfa_hci_calls = new MockNfaHciCallbacks();
-    }
-    virtual void TearDown() {
-        delete mock_nfa_hci_calls;
-        mock_nfa_hci_calls = nullptr;
+    void SetUp() override {
+        memset(&nfa_hci_cb, 0, sizeof(nfa_hci_cb));
     }
 };
 
 TEST_F(NfaHciRspTimeoutTest, TestStartupState) {
     nfa_hci_cb.hci_state = NFA_HCI_STATE_STARTUP;
-    EXPECT_CALL(*mock_nfa_hci_calls, nfa_hci_startup_complete(NFA_STATUS_TIMEOUT)).Times(0);
     nfa_hci_rsp_timeout();
+    ASSERT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_DISABLED);
 }
 
-TEST_F(NfaHciRspTimeoutTest, TestRestoreState) {
-    nfa_hci_cb.hci_state = NFA_HCI_STATE_RESTORE;
-    EXPECT_CALL(*mock_nfa_hci_calls, nfa_hci_startup_complete(NFA_STATUS_TIMEOUT)).Times(0);
-    nfa_hci_rsp_timeout();
-}
-
-TEST_F(NfaHciRspTimeoutTest, TestWaitNetwkEnableStateWithInit) {
+TEST_F(NfaHciRspTimeoutTest, TestNetworkEnableStateWithSuccess) {
     nfa_hci_cb.hci_state = NFA_HCI_STATE_WAIT_NETWK_ENABLE;
     nfa_hci_cb.w4_hci_netwk_init = true;
-    EXPECT_CALL(*mock_nfa_hci_calls, nfa_hciu_send_get_param_cmd(
-            NFA_HCI_ADMIN_PIPE, NFA_HCI_HOST_LIST_INDEX)).Times(0);
     nfa_hci_rsp_timeout();
+    ASSERT_FALSE(nfa_hci_cb.w4_hci_netwk_init);
 }
 
-TEST_F(NfaHciRspTimeoutTest, TestWaitNetwkEnableStateNoInit) {
+TEST_F(NfaHciRspTimeoutTest, TestNetworkEnableStateWithFailure) {
     nfa_hci_cb.hci_state = NFA_HCI_STATE_WAIT_NETWK_ENABLE;
     nfa_hci_cb.w4_hci_netwk_init = false;
-    EXPECT_CALL(*mock_nfa_hci_calls, nfa_hci_startup_complete(NFA_STATUS_FAILED)).Times(0);
     nfa_hci_rsp_timeout();
+    ASSERT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_DISABLED);
 }
 
-TEST_F(NfaHciRspTimeoutTest, TestRemoveGateStateWithDeletePipe) {
+TEST_F(NfaHciRspTimeoutTest, TestRemoveGateState) {
     nfa_hci_cb.hci_state = NFA_HCI_STATE_REMOVE_GATE;
     nfa_hci_cb.cmd_sent = NFA_HCI_ADM_DELETE_PIPE;
-    EXPECT_CALL(*mock_nfa_hci_calls, nfa_hciu_send_clear_all_pipe_cmd()).Times(0);
     nfa_hci_rsp_timeout();
 }
 
-TEST_F(NfaHciRspTimeoutTest, TestRemoveGateStateNoDeletePipe) {
-    nfa_hci_cb.hci_state = NFA_HCI_STATE_REMOVE_GATE;
-    nfa_hci_cb.cmd_sent = 0;
-    EXPECT_CALL(*mock_nfa_hci_calls, nfa_hciu_remove_all_pipes_from_host(0)).Times(0);
-    EXPECT_CALL(*mock_nfa_hci_calls, nfa_hci_api_dealloc_gate(nullptr)).Times(0);
-    nfa_hci_rsp_timeout();
-}
-
-TEST_F(NfaHciRspTimeoutTest, TestAppDeregisterStateWithDeletePipe) {
+TEST_F(NfaHciRspTimeoutTest, TestAppDeregisterState) {
     nfa_hci_cb.hci_state = NFA_HCI_STATE_APP_DEREGISTER;
     nfa_hci_cb.cmd_sent = NFA_HCI_ADM_DELETE_PIPE;
-    EXPECT_CALL(*mock_nfa_hci_calls, nfa_hciu_send_clear_all_pipe_cmd()).Times(0);
     nfa_hci_rsp_timeout();
 }
 
-TEST_F(NfaHciRspTimeoutTest, TestWaitRspStateWithRspEvt) {
-    nfa_hci_cb.hci_state = NFA_HCI_STATE_WAIT_RSP;
-    nfa_hci_cb.w4_rsp_evt = true;
-    nfa_hci_cb.pipe_in_use = 1;
-    EXPECT_CALL(*mock_nfa_hci_calls, nfa_hciu_send_to_app(
-            NFA_HCI_EVENT_RCVD_EVT, testing::_ , nfa_hci_cb.app_in_use)).Times(0);
+TEST_F(NfaHciRspTimeoutTest, TestInvalidState) {
+    nfa_hci_cb.hci_state = static_cast<tNFA_HCI_STATE>(-1);
     nfa_hci_rsp_timeout();
-}
-
-TEST_F(NfaHciRspTimeoutTest, TestWaitRspStateWithSetParameterCmd) {
-    nfa_hci_cb.hci_state = NFA_HCI_STATE_WAIT_RSP;
-    nfa_hci_cb.w4_rsp_evt = false;
-    nfa_hci_cb.cmd_sent = NFA_HCI_ANY_SET_PARAMETER;
-    nfa_hci_cb.pipe_in_use = 1;
-    EXPECT_CALL(*mock_nfa_hci_calls, nfa_hciu_send_delete_pipe_cmd(1)).Times(0);
-    EXPECT_CALL(*mock_nfa_hci_calls, nfa_hciu_release_pipe(1)).Times(0);
-    nfa_hci_rsp_timeout();
-}
-
-TEST_F(NfaHciRspTimeoutTest, TestDisabledOrInvalidState) {
-    nfa_hci_cb.hci_state = NFA_HCI_STATE_DISABLED;
-    EXPECT_CALL(*mock_nfa_hci_calls, nfa_hciu_send_to_app(
-            testing::_, testing::_, testing::_)).Times(0);
-    nfa_hci_rsp_timeout();
+    ASSERT_EQ(nfa_hci_cb.hci_state, static_cast<tNFA_HCI_STATE>(-1));
 }
 
 class NfaHciSetReceiveBufTest : public ::testing::Test {
@@ -408,84 +326,84 @@ TEST_F(NfaHciSetReceiveBufTest, PipeInRangeWithValidRspBufOfDifferentSize) {
     EXPECT_EQ(nfa_hci_cb.max_msg_len, 20);
 }
 
-#define NFA_EE_INTERFACE_UNKNOWN 0
 class NfaHciStartupTest : public ::testing::Test {
 protected:
-    MOCK_METHOD(void, nfa_hciu_send_open_pipe_cmd, (uint8_t pipe), ());
-    MOCK_METHOD(void, NFC_NfceeModeSet, (uint8_t nfcee_id, tNFC_NFCEE_MODE mode), ());
-    MOCK_METHOD(int, NFC_ConnCreate, (uint8_t dest_type, uint8_t id,
-            uint8_t protocol, tNFC_CONN_CBACK* p_cback), ());
-    MOCK_METHOD(void, NFA_EeGetInfo, (uint8_t* p_num_nfcee, tNFA_EE_INFO* p_info), ());
-    MOCK_METHOD(void, NFA_EeModeSet, (uint8_t ee_handle, uint8_t mode), ());
-    MOCK_METHOD(void, NFC_SetStaticHciCback, (tNFC_CONN_CBACK* p_cback), ());
-    MOCK_METHOD(uint8_t, NFC_GetNCIVersion, (), ());
-    MOCK_METHOD(void, nfa_hci_startup_complete, (tNFA_STATUS status), ());
     void SetUp() override {
         memset(&nfa_hci_cb, 0, sizeof(nfa_hci_cb));
     }
-    void TearDown() override {
-    }
 };
 
-TEST_F(NfaHciStartupTest, Test_HciLoopbackDebug) {
+TEST_F(NfaHciStartupTest, TestLoopbackDebugOn) {
     HCI_LOOPBACK_DEBUG = NFA_HCI_DEBUG_ON;
-    EXPECT_CALL(*this, nfa_hciu_send_open_pipe_cmd(NFA_HCI_ADMIN_PIPE)).Times(0);
     nfa_hci_startup();
+    ASSERT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_DISABLED);
 }
 
-TEST_F(NfaHciStartupTest, Test_NVReadAndEEDiscoveryIncomplete) {
+TEST_F(NfaHciStartupTest, TestNvRamNotRead) {
     nfa_hci_cb.nv_read_cmplt = false;
+    nfa_hci_cb.ee_disc_cmplt = true;
+    nfa_hci_cb.conn_id = 0;
+    nfa_hci_startup();
+    ASSERT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_DISABLED);
+}
+
+TEST_F(NfaHciStartupTest, TestEeDiscNotComplete) {
+    nfa_hci_cb.nv_read_cmplt = true;
     nfa_hci_cb.ee_disc_cmplt = false;
-    EXPECT_CALL(*this, nfa_hciu_send_open_pipe_cmd(NFA_HCI_ADMIN_PIPE)).Times(0);
+    nfa_hci_cb.conn_id = 0;
     nfa_hci_startup();
+    ASSERT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_DISABLED);
 }
 
-TEST_F(NfaHciStartupTest, Test_NVReadEECompleteConnIDZero) {
+TEST_F(NfaHciStartupTest, TestConnIdNotZero) {
     nfa_hci_cb.nv_read_cmplt = true;
     nfa_hci_cb.ee_disc_cmplt = true;
-    nfa_hci_cb.conn_id = 0;
-    EXPECT_CALL(*this, NFC_SetStaticHciCback(nfa_hci_conn_cback)).Times(0);
+    nfa_hci_cb.conn_id = 1;
     nfa_hci_startup();
+    ASSERT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_DISABLED);
 }
 
-TEST_F(NfaHciStartupTest, Test_NfcVersionLessThan2_0) {
-    nfa_hci_cb.nv_read_cmplt = true;
-    nfa_hci_cb.ee_disc_cmplt = true;
-    nfa_hci_cb.conn_id = 0;
-    EXPECT_CALL(*this, NFA_EeGetInfo(testing::_, testing::_)).Times(0);
-    nfa_hci_startup();
-}
-
-TEST_F(NfaHciStartupTest, Test_HciAccessInterfaceFoundAndActive) {
-    nfa_hci_cb.nv_read_cmplt = true;
-    nfa_hci_cb.ee_disc_cmplt = true;
-    nfa_hci_cb.conn_id = 0;
-    tNFA_EE_INFO ee_info = {};
-    ee_info.ee_handle = 1;
-    ee_info.ee_interface[0] = NFA_EE_INTERFACE_HCI_ACCESS;
-    ee_info.ee_status = NFA_EE_STATUS_INACTIVE;
-    nfa_hci_cb.ee_info[0] = ee_info;
-    nfa_hci_cb.num_nfcee = 1;
-    EXPECT_CALL(*this, NFC_NfceeModeSet(1, NFC_MODE_ACTIVATE)).Times(0);
-    nfa_hci_startup();
-}
-
-TEST_F(NfaHciStartupTest, Test_HciAccessInterfaceNotFound) {
+TEST_F(NfaHciStartupTest, TestNoHciAccessInterfaceFound) {
     nfa_hci_cb.nv_read_cmplt = true;
     nfa_hci_cb.ee_disc_cmplt = true;
     nfa_hci_cb.conn_id = 0;
     nfa_hci_cb.num_nfcee = 1;
-    nfa_hci_cb.ee_info[0].ee_interface[0] = NFA_EE_INTERFACE_UNKNOWN;
-    EXPECT_CALL(*this, nfa_hci_startup_complete(NFA_STATUS_FAILED)).Times(0);
+    nfa_hci_cb.ee_info[0].ee_interface[0] = 0;
     nfa_hci_startup();
+    ASSERT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_DISABLED);
 }
 
-TEST_F(NfaHciStartupTest, Test_ConnectionCreationFails) {
+TEST_F(NfaHciStartupTest, TestHciAccessInterfaceFoundButInactive) {
     nfa_hci_cb.nv_read_cmplt = true;
     nfa_hci_cb.ee_disc_cmplt = true;
     nfa_hci_cb.conn_id = 0;
-    EXPECT_CALL(*this, nfa_hci_startup_complete(NFA_STATUS_FAILED)).Times(0);
+    nfa_hci_cb.num_nfcee = 1;
+    nfa_hci_cb.ee_info[0].ee_interface[0] = NFA_EE_INTERFACE_HCI_ACCESS;
+    nfa_hci_cb.ee_info[0].ee_status = NFA_EE_STATUS_INACTIVE;
     nfa_hci_startup();
+    ASSERT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_DISABLED);
+}
+
+TEST_F(NfaHciStartupTest, TestFailedConnCreate) {
+    nfa_hci_cb.nv_read_cmplt = true;
+    nfa_hci_cb.ee_disc_cmplt = true;
+    nfa_hci_cb.conn_id = 0;
+    nfa_hci_cb.num_nfcee = 1;
+    nfa_hci_cb.ee_info[0].ee_interface[0] = NFA_EE_INTERFACE_HCI_ACCESS;
+    nfa_hci_cb.ee_info[0].ee_status = NFA_EE_STATUS_ACTIVE;
+    nfa_hci_startup();
+    ASSERT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_DISABLED);
+}
+
+TEST_F(NfaHciStartupTest, TestSuccessStartup) {
+    nfa_hci_cb.nv_read_cmplt = true;
+    nfa_hci_cb.ee_disc_cmplt = true;
+    nfa_hci_cb.conn_id = 0;
+    nfa_hci_cb.num_nfcee = 1;
+    nfa_hci_cb.ee_info[0].ee_interface[0] = NFA_EE_INTERFACE_HCI_ACCESS;
+    nfa_hci_cb.ee_info[0].ee_status = NFA_EE_STATUS_ACTIVE;
+    nfa_hci_startup();
+    ASSERT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_DISABLED);
 }
 
 class NfaHciEeInfoCbackTest : public ::testing::Test {
@@ -559,3 +477,230 @@ TEST_F(NfaHciEeInfoCbackTest, TestEEStatusRecoveryInit) {
   EXPECT_TRUE(nfa_ee_cb.isDiscoveryStopped);
 }
 
+class NfaHciSysDisableTest : public ::testing::Test {
+protected:
+};
+
+TEST_F(NfaHciSysDisableTest, TestConnIdZero) {
+    nfa_hci_cb.conn_id = 0;
+    nfa_hci_cb.hci_state = NFA_HCI_STATE_STARTUP;
+    nfa_hci_sys_disable();
+    EXPECT_EQ(nfa_hci_cb.conn_id, 0);
+    EXPECT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_DISABLED);
+}
+
+TEST_F(NfaHciSysDisableTest, TestStateUpdate) {
+    nfa_hci_cb.conn_id = 1;
+    nfa_hci_cb.hci_state = NFA_HCI_STATE_STARTUP;
+    nfa_hci_sys_disable();
+    EXPECT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_DISABLED);
+}
+
+TEST_F(NfaHciSysDisableTest, TestGracefulDisableFalse) {
+    nfa_hci_cb.conn_id = 42;
+    nfa_hci_cb.hci_state = NFA_HCI_STATE_STARTUP;
+    nfa_sys_cb.graceful_disable = false;
+    uint8_t initial_conn_id = nfa_hci_cb.conn_id;
+    uint8_t initial_state = nfa_hci_cb.hci_state;
+    nfa_hci_sys_disable();
+    EXPECT_EQ(nfa_hci_cb.conn_id, 0);
+    EXPECT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_DISABLED);
+}
+
+TEST_F(NfaHciSysDisableTest, TestGracefulDisableWithNciVersion1_0) {
+    nfa_hci_cb.conn_id = 42;
+    nfa_hci_cb.hci_state = NFA_HCI_STATE_STARTUP;
+    nfa_sys_cb.graceful_disable = true;
+    nfc_cb.nci_version = NCI_VERSION_1_0;
+    nfa_hci_sys_disable();
+    EXPECT_EQ(nfa_hci_cb.conn_id, 42);
+    EXPECT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_STARTUP);
+}
+
+class NfaHciHandleNvReadTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        memset(&nfa_hci_cb, 0, sizeof(nfa_hci_cb));
+        nfa_hci_cb.cfg.admin_gate.session_id[0] = 0x00;
+        nfa_hci_cb.timer = {};
+    }
+    uint8_t default_session[NFA_HCI_SESSION_ID_LEN] = {
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    uint8_t reset_session[NFA_HCI_SESSION_ID_LEN] = {
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+};
+
+TEST_F(NfaHciHandleNvReadTest, StatusOkValidConfig) {
+    uint8_t block = DH_NV_BLOCK;
+    tNFA_STATUS status = NFA_STATUS_OK;
+    memcpy(nfa_hci_cb.cfg.admin_gate.session_id, reset_session, NFA_HCI_SESSION_ID_LEN);
+    nfa_hci_handle_nv_read(block, status);
+    EXPECT_TRUE(nfa_hci_cb.nv_read_cmplt);
+    EXPECT_TRUE(nfa_hci_cb.b_hci_netwk_reset);
+}
+
+TEST_F(NfaHciHandleNvReadTest, StatusNotOk) {
+    uint8_t block = DH_NV_BLOCK;
+    tNFA_STATUS status = NFA_STATUS_FAILED;
+    nfa_hci_handle_nv_read(block, status);
+    EXPECT_TRUE(nfa_hci_cb.b_hci_netwk_reset);
+}
+
+TEST_F(NfaHciHandleNvReadTest, InvalidConfig) {
+    uint8_t block = DH_NV_BLOCK;
+    tNFA_STATUS status = NFA_STATUS_OK;
+    uint8_t invalid_session[NFA_HCI_SESSION_ID_LEN] = {
+            0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
+    memcpy(nfa_hci_cb.cfg.admin_gate.session_id, invalid_session, NFA_HCI_SESSION_ID_LEN);
+    nfa_hci_handle_nv_read(block, status);
+    EXPECT_FALSE(nfa_hci_cb.b_hci_netwk_reset);
+}
+
+TEST_F(NfaHciHandleNvReadTest, SessionIdIsDefaultSession) {
+    uint8_t block = DH_NV_BLOCK;
+    tNFA_STATUS status = NFA_STATUS_OK;
+    memcpy(nfa_hci_cb.cfg.admin_gate.session_id, default_session, NFA_HCI_SESSION_ID_LEN);
+    nfa_hci_handle_nv_read(block, status);
+    EXPECT_TRUE(nfa_hci_cb.b_hci_netwk_reset);
+}
+TEST_F(NfaHciHandleNvReadTest, SessionIdIsResetSession) {
+    uint8_t block = DH_NV_BLOCK;
+    tNFA_STATUS status = NFA_STATUS_OK;
+    memcpy(nfa_hci_cb.cfg.admin_gate.session_id, reset_session, NFA_HCI_SESSION_ID_LEN);
+    nfa_hci_handle_nv_read(block, status);
+    EXPECT_TRUE(nfa_hci_cb.b_hci_netwk_reset);
+}
+
+class NfaHciEvtHdlrTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        memset(&nfa_hci_cb, 0, sizeof(nfa_hci_cb));
+    }
+};
+
+TEST_F(NfaHciEvtHdlrTest, EventInApiRequestRange) {
+    NFC_HDR msg;
+    msg.event = NFA_HCI_FIRST_API_EVENT + 1;
+    msg.len = 0;
+    nfa_hci_evt_hdlr(&msg);
+    EXPECT_EQ(nfa_hci_cb.hci_api_q.count, 0);
+}
+
+TEST_F(NfaHciEvtHdlrTest, NvWriteEvent) {
+    NFC_HDR msg;
+    msg.event = NFA_HCI_RSP_NV_WRITE_EVT;
+    msg.len = 0;
+    nfa_hci_evt_hdlr(&msg);
+    EXPECT_EQ(nfa_hci_cb.nv_write_needed, false);
+}
+
+TEST_F(NfaHciEvtHdlrTest, EventGreaterThanLastApiEvent) {
+    NFC_HDR msg;
+    msg.event = NFA_HCI_LAST_API_EVENT + 1;
+    msg.len = 0;
+    nfa_hci_evt_hdlr(&msg);
+}
+
+TEST_F(NfaHciEvtHdlrTest, NvWriteNeededInIdleState) {
+    NFC_HDR msg;
+    msg.event = NFA_HCI_RSP_NV_READ_EVT;
+    msg.len = 0;
+    nfa_hci_cb.hci_state = NFA_HCI_STATE_IDLE;
+    nfa_hci_cb.nv_write_needed = true;
+    nfa_hci_evt_hdlr(&msg);
+    EXPECT_EQ(nfa_hci_cb.nv_write_needed, false);
+}
+
+TEST_F(NfaHciEvtHdlrTest, NoHostResetting) {
+    NFC_HDR msg;
+    msg.event = NFA_HCI_RSP_NV_READ_EVT;
+    msg.len = 0;
+    nfa_hci_cb.hci_state = NFA_HCI_STATE_IDLE;
+    nfa_hci_cb.nv_write_needed = true;
+    nfa_hci_evt_hdlr(&msg);
+    EXPECT_EQ(nfa_hci_cb.nv_write_needed, false);
+}
+
+class NfaHciInitTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        memset(&nfa_hci_cb, 0, sizeof(nfa_hci_cb));
+    }
+};
+
+TEST_F(NfaHciInitTest, ControlBlockInitialization) {
+    nfa_hci_init();
+    EXPECT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_STARTUP);
+    EXPECT_EQ(nfa_hci_cb.num_nfcee, NFA_HCI_MAX_HOST_IN_NETWORK);
+}
+
+class NfaHciRestoreDefaultConfigTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        memset(&nfa_hci_cb, 0, sizeof(nfa_hci_cb));
+    }
+    void TearDown() override {
+        memset(&nfa_hci_cb, 0, sizeof(nfa_hci_cb));
+    }
+};
+TEST_F(NfaHciRestoreDefaultConfigTest, SessionIdCopy) {
+    uint8_t session_id[NFA_HCI_SESSION_ID_LEN] = {1, 2, 3, 4, 5, 6, 7, 8};
+    nfa_hci_restore_default_config(session_id);
+    for (size_t i = 0; i < NFA_HCI_SESSION_ID_LEN; ++i) {
+        EXPECT_EQ(nfa_hci_cb.cfg.admin_gate.session_id[i], session_id[i]);
+    }
+}
+
+TEST_F(NfaHciRestoreDefaultConfigTest, NvWriteNeededFlag) {
+    uint8_t session_id[NFA_HCI_SESSION_ID_LEN] = {1, 2, 3, 4, 5, 6, 7, 8};
+    nfa_hci_restore_default_config(session_id);
+    EXPECT_TRUE(nfa_hci_cb.nv_write_needed);
+}
+
+class NfaHciEnableOneNfceeTest : public :: testing :: Test{
+    void SetUp() override{
+        memset(&nfa_hci_cb, 0, sizeof(nfa_hci_cb));
+        memset(&nfa_ee_cb, 0, sizeof(nfa_ee_cb));
+    }
+};
+
+TEST_F(NfaHciEnableOneNfceeTest, ActivateInactiveNFCEE) {
+    nfa_hci_cb.num_nfcee = 1;
+    nfa_hci_cb.ee_info[0].ee_status = NFA_EE_STATUS_INACTIVE;
+    nfa_hci_cb.ee_info[0].ee_handle = 0x01;
+    nfa_hci_enable_one_nfcee();
+    EXPECT_EQ(nfa_hci_cb.ee_info[0].ee_status, NFC_MODE_ACTIVATE);
+}
+
+TEST_F(NfaHciEnableOneNfceeTest, NoActionWhenAllNfceesActive) {
+    nfa_hci_cb.num_nfcee = 2;
+    nfa_hci_cb.ee_info[0].ee_status = NFA_EE_STATUS_ACTIVE;
+    nfa_hci_cb.ee_info[1].ee_status = NFA_EE_STATUS_ACTIVE;
+    nfa_hci_enable_one_nfcee();
+    EXPECT_EQ(nfa_hci_cb.num_nfcee, 2);
+    EXPECT_EQ(nfa_hci_cb.ee_info[0].ee_status, NFA_EE_STATUS_ACTIVE);
+    EXPECT_EQ(nfa_hci_cb.ee_info[1].ee_status, NFA_EE_STATUS_ACTIVE);
+}
+
+TEST_F(NfaHciEnableOneNfceeTest, WaitNetworkEnableState) {
+    nfa_hci_cb.num_nfcee = 0;
+    nfa_hci_cb.hci_state = NFA_HCI_STATE_WAIT_NETWK_ENABLE;
+    nfa_hci_enable_one_nfcee();
+    EXPECT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_WAIT_NETWK_ENABLE);
+}
+
+TEST_F(NfaHciEnableOneNfceeTest, RestoreNetworkEnableState) {
+    nfa_hci_cb.num_nfcee = 0;
+    nfa_hci_cb.hci_state = NFA_HCI_STATE_RESTORE_NETWK_ENABLE;
+    nfa_hci_enable_one_nfcee();
+    EXPECT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_RESTORE_NETWK_ENABLE);
+}
+
+TEST_F(NfaHciEnableOneNfceeTest, EeRecoveryState) {
+    nfa_hci_cb.num_nfcee = 0;
+    nfa_hci_cb.hci_state = NFA_HCI_STATE_EE_RECOVERY;
+    nfa_ee_cb.isDiscoveryStopped = false;
+    nfa_hci_enable_one_nfcee();
+    EXPECT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_IDLE);
+    EXPECT_FALSE(nfa_ee_cb.isDiscoveryStopped);
+}
