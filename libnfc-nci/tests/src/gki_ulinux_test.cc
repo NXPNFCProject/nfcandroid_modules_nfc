@@ -60,6 +60,7 @@ TEST_F(GkiUlinuxTest, Task) {
                   (pthread_cond_t*)nullptr, nullptr);
   GKI_sched_lock();
   GKI_stop();
+  GKI_shutdown();
 }
 TEST_F(GkiUlinuxTest, Memory) {
   void* p_mem = GKI_os_malloc(sizeof(uint16_t));
