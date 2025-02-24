@@ -45,6 +45,9 @@ import androidx.annotation.VisibleForTesting;
 
 import com.android.nfc.R;
 
+import java.lang.reflect.Method;
+import java.util.Objects;
+
 /**
  * Connects / Disconnects from a Bluetooth headset (or any device that
  * might implement BT HSP, HFP, A2DP, or HOGP sink) when touched with NFC.
@@ -119,10 +122,24 @@ public class BluetoothPeripheralHandover implements BluetoothProfile.ServiceList
     BluetoothHeadset mHeadset;
     BluetoothHidHost mInput;
     boolean mShouldAbortBroadcast = false;
+    boolean mIsHidDevice = false;
 
     public interface Callback {
         public void onBluetoothPeripheralHandoverComplete(boolean connected);
     }
+
+    private static <T> int indexOf(T[] array, T value) {
+        if (array == null) return -1;
+        for (int i = 0; i < array.length; i++) {
+            if (Objects.equals(array[i], value)) return i;
+        }
+        return -1;
+    }
+
+    private static <T> boolean contains(T[] array, T value) {
+        return indexOf(array, value) != -1;
+    }
+
 
     public BluetoothPeripheralHandover(Context context, BluetoothDevice device, String name,
             int transport, OobData oobData, ParcelUuid[] uuids, BluetoothClass btClass,
@@ -188,6 +205,8 @@ public class BluetoothPeripheralHandover implements BluetoothProfile.ServiceList
         filter.addAction(BluetoothHidHost.ACTION_CONNECTION_STATE_CHANGED);
         filter.addAction(ACTION_ALLOW_CONNECT);
         filter.addAction(ACTION_DENY_CONNECT);
+        filter.addAction(BluetoothDevice.ACTION_UUID);
+        filter.setPriority(999);
 
         mContext.registerReceiver(mReceiver, filter);
 
@@ -232,40 +251,31 @@ public class BluetoothPeripheralHandover implements BluetoothProfile.ServiceList
                 mState = STATE_INIT_COMPLETE;
                 // Check connected devices and see if we need to disconnect
                 synchronized(mLock) {
-                    if (mTransport == BluetoothDevice.TRANSPORT_LE) {
-                        if (mInput.getConnectedDevices().contains(mDevice)) {
-                            Log.i(TAG, "ACTION_DISCONNECT addr=" + mDevice + " name=" + mName);
-                            mAction = ACTION_DISCONNECT;
-                        } else {
-                            Log.i(TAG, "ACTION_CONNECT addr=" + mDevice + " name=" + mName);
-                            mAction = ACTION_CONNECT;
-                        }
+                    if (mA2dp.getConnectedDevices().contains(mDevice)
+                            || mHeadset.getConnectedDevices().contains(mDevice)
+                            || mInput.getConnectedDevices().contains(mDevice)) {
+                        Log.i(TAG, "ACTION_DISCONNECT addr=" + mDevice + " name=" + mName);
+                        mAction = ACTION_DISCONNECT;
                     } else {
-                        if (mA2dp.getConnectedDevices().contains(mDevice) ||
-                                mHeadset.getConnectedDevices().contains(mDevice)) {
-                            Log.i(TAG, "ACTION_DISCONNECT addr=" + mDevice + " name=" + mName);
-                            mAction = ACTION_DISCONNECT;
-                        } else {
-                            // Check if each profile of the device is disabled or not
-                            if (mHeadset.getConnectionPolicy(mDevice) ==
-                                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN) {
-                                mIsHeadsetAvailable = false;
-                            }
-                            if (mA2dp.getConnectionPolicy(mDevice) ==
-                                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN) {
-                                mIsA2dpAvailable = false;
-                            }
-                            if (!mIsHeadsetAvailable && !mIsA2dpAvailable) {
-                                Log.i(TAG, "Both Headset and A2DP profiles are unavailable");
-                                complete(false);
-                                break;
-                            }
-                            Log.i(TAG, "ACTION_CONNECT addr=" + mDevice + " name=" + mName);
-                            mAction = ACTION_CONNECT;
+                        // Check if each profile of the device is disabled or not
+                        if (mHeadset.getConnectionPolicy(mDevice)
+                                == BluetoothProfile.CONNECTION_POLICY_FORBIDDEN) {
+                            mIsHeadsetAvailable = false;
+                        }
+                        if (mA2dp.getConnectionPolicy(mDevice)
+                                == BluetoothProfile.CONNECTION_POLICY_FORBIDDEN) {
+                            mIsA2dpAvailable = false;
+                        }
+                        if (!mIsHeadsetAvailable && !mIsA2dpAvailable) {
+                            Log.i(TAG, "Both Headset and A2DP profiles are unavailable");
+                            complete(false);
+                            break;
+                        }
+                        Log.i(TAG, "ACTION_CONNECT addr=" + mDevice + " name=" + mName);
+                        mAction = ACTION_CONNECT;
 
-                            if (mIsA2dpAvailable) {
-                                mIsMusicActive = mAudioManager.isMusicActive();
-                            }
+                        if (mIsA2dpAvailable) {
+                            mIsMusicActive = mAudioManager.isMusicActive();
                         }
                     }
                 }
@@ -279,57 +289,49 @@ public class BluetoothPeripheralHandover implements BluetoothProfile.ServiceList
             case STATE_INIT_COMPLETE:
                 mState = STATE_DISCONNECTING;
                 synchronized (mLock) {
-                    if (mTransport == BluetoothDevice.TRANSPORT_LE) {
-                        if (mInput.getConnectionState(mDevice)
-                                != BluetoothProfile.STATE_DISCONNECTED) {
-                            mHidResult = RESULT_PENDING;
-                            mDevice.disconnect();
-                            toast(getToastString(R.string.disconnecting_peripheral));
-                            break;
-                        } else {
-                            mHidResult = RESULT_DISCONNECTED;
-                        }
+                    if (mInput.getConnectionState(mDevice)
+                            != BluetoothProfile.STATE_DISCONNECTED) {
+                        mHidResult = RESULT_PENDING;
+                        mDevice.disconnect();
+                        toast(getToastString(R.string.disconnecting_peripheral));
+                        break;
                     } else {
-                        if (mHeadset.getConnectionState(mDevice)
-                                != BluetoothProfile.STATE_DISCONNECTED) {
-                            mHfpResult = RESULT_PENDING;
-                        } else {
-                            mHfpResult = RESULT_DISCONNECTED;
-                        }
-                        if (mA2dp.getConnectionState(mDevice)
-                                != BluetoothProfile.STATE_DISCONNECTED) {
-                            mA2dpResult = RESULT_PENDING;
-                        } else {
-                            mA2dpResult = RESULT_DISCONNECTED;
-                        }
-                        if (mA2dpResult == RESULT_PENDING || mHfpResult == RESULT_PENDING) {
-                            mDevice.disconnect();
-                            toast(getToastString(R.string.disconnecting_peripheral));
-                            break;
-                        }
+                        mHidResult = RESULT_DISCONNECTED;
+                    }
+                    if (mHeadset.getConnectionState(mDevice)
+                            != BluetoothProfile.STATE_DISCONNECTED) {
+                        mHfpResult = RESULT_PENDING;
+                    } else {
+                        mHfpResult = RESULT_DISCONNECTED;
+                    }
+                    if (mA2dp.getConnectionState(mDevice)
+                            != BluetoothProfile.STATE_DISCONNECTED) {
+                        mA2dpResult = RESULT_PENDING;
+                    } else {
+                        mA2dpResult = RESULT_DISCONNECTED;
+                    }
+                    if (mA2dpResult == RESULT_PENDING || mHfpResult == RESULT_PENDING) {
+                        mDevice.disconnect();
+                        toast(getToastString(R.string.disconnecting_peripheral));
+                        break;
                     }
                 }
                 // fall-through
             case STATE_DISCONNECTING:
-                if (mTransport == BluetoothDevice.TRANSPORT_LE) {
-                    if (mHidResult == RESULT_DISCONNECTED) {
-                        toast(getToastString(R.string.disconnected_peripheral));
-                        complete(false);
-                    }
-
-                    break;
-                } else {
-                    if (mA2dpResult == RESULT_PENDING || mHfpResult == RESULT_PENDING) {
-                        // still disconnecting
-                        break;
-                    }
-                    if (mA2dpResult == RESULT_DISCONNECTED && mHfpResult == RESULT_DISCONNECTED) {
-                        toast(getToastString(R.string.disconnected_peripheral));
-                    }
+                if (mHidResult == RESULT_DISCONNECTED) {
+                    toast(getToastString(R.string.disconnected_peripheral));
                     complete(false);
                     break;
                 }
-
+                if (mA2dpResult == RESULT_PENDING || mHfpResult == RESULT_PENDING) {
+                    // still disconnecting
+                    break;
+                }
+                if (mA2dpResult == RESULT_DISCONNECTED && mHfpResult == RESULT_DISCONNECTED) {
+                    toast(getToastString(R.string.disconnected_peripheral));
+                }
+                complete(false);
+                break;
         }
 
     }
@@ -339,19 +341,29 @@ public class BluetoothPeripheralHandover implements BluetoothProfile.ServiceList
     }
 
     boolean getProfileProxys() {
-
-        if (mTransport == BluetoothDevice.TRANSPORT_LE) {
-            if (!mBluetoothAdapter.getProfileProxy(mContext, this, BluetoothProfile.HID_HOST))
-                return false;
-        } else {
-            if(!mBluetoothAdapter.getProfileProxy(mContext, this, BluetoothProfile.HEADSET))
-                return false;
-
-            if(!mBluetoothAdapter.getProfileProxy(mContext, this, BluetoothProfile.A2DP))
-                return false;
+        if (!mBluetoothAdapter.getProfileProxy(mContext, this, BluetoothProfile.HID_HOST)) {
+            return false;
         }
-
+        if (!mBluetoothAdapter.getProfileProxy(mContext, this, BluetoothProfile.HEADSET)) {
+            return false;
+        }
+        if (!mBluetoothAdapter.getProfileProxy(mContext, this, BluetoothProfile.A2DP)) {
+            return false;
+        }
         return true;
+    }
+
+    private boolean bluetoothHidHostConnect() {
+        // Use reflection to connect to HID device since this method is @hide.
+        try {
+            Method connectMethod = BluetoothHidHost.class.getDeclaredMethod(
+                    "connect", BluetoothDevice.class);
+            Object ret = connectMethod.invoke(mInput, mDevice);
+            return (boolean) ret;
+        } catch (ReflectiveOperationException e) {
+            Log.d(TAG, "invoke failed" + e);
+            return false;
+        }
     }
 
     void nextStepConnect() {
@@ -380,14 +392,23 @@ public class BluetoothPeripheralHandover implements BluetoothProfile.ServiceList
                 }
                 // fall-through
             case STATE_BONDING:
+                ParcelUuid[] uuids = mDevice.getUuids();
+                if (uuids != null) {
+                    if (contains(uuids, BluetoothUuid.HID)) {
+                        mIsHidDevice = true;
+                        Log.d(TAG, "Check HID devices");
+                    }
+                }
                 // Bluetooth Profile service will correctly serialize
                 // HFP then A2DP connect
                 mState = STATE_CONNECTING;
                 synchronized (mLock) {
-                    if (mTransport == BluetoothDevice.TRANSPORT_LE) {
+                    if (mTransport == BluetoothDevice.TRANSPORT_LE || mIsHidDevice) {
+
                         if (mInput.getConnectionState(mDevice)
                                 != BluetoothProfile.STATE_CONNECTED) {
                             mHidResult = RESULT_PENDING;
+                            bluetoothHidHostConnect();
                             toast(getToastString(R.string.connecting_peripheral));
                             break;
                         } else {
@@ -430,12 +451,11 @@ public class BluetoothPeripheralHandover implements BluetoothProfile.ServiceList
                 }
                 // fall-through
             case STATE_CONNECTING:
-                if (mTransport == BluetoothDevice.TRANSPORT_LE) {
+                if (mTransport == BluetoothDevice.TRANSPORT_LE || mIsHidDevice) {
                     if (mHidResult == RESULT_PENDING) {
                         break;
                     } else if (mHidResult == RESULT_CONNECTED) {
                         toast(getToastString(R.string.connected_peripheral));
-                        mDevice.setAlias(mName);
                         complete(true);
                     } else {
                         toast (getToastString(R.string.connect_peripheral_failed));
@@ -450,7 +470,6 @@ public class BluetoothPeripheralHandover implements BluetoothProfile.ServiceList
                         // we'll take either as success
                         toast(getToastString(R.string.connected_peripheral));
                         if (mA2dpResult == RESULT_CONNECTED) startTheMusic();
-                        mDevice.setAlias(mName);
                         complete(true);
                     } else {
                         toast (getToastString(R.string.connect_peripheral_failed));
@@ -508,6 +527,8 @@ public class BluetoothPeripheralHandover implements BluetoothProfile.ServiceList
                     complete(false);
                 }
             }
+        } else if (BluetoothDevice.ACTION_UUID.equals(action) && mState == STATE_BONDING) {
+            nextStepConnect();
         } else if (BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED.equals(action) &&
                 (mState == STATE_CONNECTING || mState == STATE_DISCONNECTING)) {
             int state = intent.getIntExtra(BluetoothProfile.EXTRA_STATE, BluetoothAdapter.ERROR);
@@ -701,19 +722,22 @@ public class BluetoothPeripheralHandover implements BluetoothProfile.ServiceList
             switch (profile) {
                 case BluetoothProfile.HEADSET:
                     mHeadset = (BluetoothHeadset) proxy;
-                    if (mA2dp != null) {
+                    if (mA2dp != null && mInput != null) {
+                        Log.d(TAG, "BluetoothProfile.HEADSET onServiceConnected");
                         mHandler.sendEmptyMessage(MSG_NEXT_STEP);
                     }
                     break;
                 case BluetoothProfile.A2DP:
                     mA2dp = (BluetoothA2dp) proxy;
-                    if (mHeadset != null) {
+                    if (mHeadset != null && mInput != null) {
+                        Log.d(TAG, "BluetoothProfile.A2DP onServiceConnected");
                         mHandler.sendEmptyMessage(MSG_NEXT_STEP);
                     }
                     break;
                 case BluetoothProfile.HID_HOST:
                     mInput = (BluetoothHidHost) proxy;
-                    if (mInput != null) {
+                    if (mInput != null && mHeadset != null && mA2dp != null) {
+                        Log.d(TAG, "BluetoothProfile.HID_HOST onServiceConnected");
                         mHandler.sendEmptyMessage(MSG_NEXT_STEP);
                     }
                     break;
