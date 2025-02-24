@@ -18,6 +18,7 @@ import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -1091,5 +1092,24 @@ public class NfcAdapterTest {
         NfcAdapter adapter = createMockedInstance();
         boolean result = adapter.isTagIntentAllowed();
         Assert.assertTrue(result);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_CHARGING)
+    public void testRegisterWlcStateListener() throws RemoteException {
+        NfcAdapter adapter = createMockedInstance();
+        NfcAdapter.WlcStateListener listener = mock(NfcAdapter.WlcStateListener.class);
+        adapter.registerWlcStateListener(Executors.newSingleThreadExecutor(), listener);
+        verify(mService).registerWlcStateListener(any());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_CHARGING)
+    public void testUnregisterWlcStateListener() throws RemoteException {
+        NfcAdapter adapter = createMockedInstance();
+        NfcAdapter.WlcStateListener listener = mock(NfcAdapter.WlcStateListener.class);
+        adapter.registerWlcStateListener(Executors.newSingleThreadExecutor(), listener);
+        adapter.unregisterWlcStateListener(listener);
+        verify(mService).unregisterWlcStateListener(any());
     }
 }
