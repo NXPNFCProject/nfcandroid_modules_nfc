@@ -720,6 +720,9 @@ static int reSelect(tNFA_INTF_TYPE rfInterface, bool fSwitchIfNeeded) {
       if (!sReselectTagIdle) {
         LOG(DEBUG) << StringPrintf("%s: select interface 0x%x", __func__,
                                    rfInterface);
+        natTag.setLastSelectedTag(
+            natTag.mTechHandles[sCurrentConnectedTargetIdx],
+            natTag.mTechLibNfcTypes[sCurrentConnectedTargetIdx]);
         if (NFA_STATUS_OK !=
             (status =
                  NFA_Select(natTag.mTechHandles[sCurrentConnectedTargetIdx],
@@ -743,8 +746,10 @@ static int reSelect(tNFA_INTF_TYPE rfInterface, bool fSwitchIfNeeded) {
       LOG(ERROR) << StringPrintf("%s: waiting for Card to be activated",
                                  __func__);
       int retry = 0;
-      sConnectWaitingForComplete = JNI_TRUE;
       do {
+        // Nci retries on failures by restarting discovery, extend recovery
+        // duration till time out
+        sConnectWaitingForComplete = JNI_TRUE;
         SyncEventGuard reselectEvent(sReconnectEvent);
         if (sReconnectEvent.wait(500) == false) {  // if timeout occurred
           LOG(ERROR) << StringPrintf("%s: timeout ", __func__);
