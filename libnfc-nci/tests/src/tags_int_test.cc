@@ -30,7 +30,7 @@ TEST(TagsInitTest, T1tCmdToRspInfo) {
   for (int i = 0; i < T1T_MAX_NUM_OPCODES; i++) {
     const tT1T_CMD_RSP_INFO* p0 = &t1t_cmd_rsp_infos[i];
     const tT1T_CMD_RSP_INFO* p1 = t1t_cmd_to_rsp_info(p0->opcode);
-    EXPECT_TRUE(p1 != nullptr);
+    ASSERT_TRUE(p1 != nullptr);
     EXPECT_EQ(p1->opcode, p0->opcode);
   }
 }
@@ -40,7 +40,7 @@ TEST(TagsInitTest, T1tTagInitData) {
   for (int i = 0; i < T1T_MAX_TAG_MODELS; i++) {
     const tT1T_INIT_TAG* p0 = &t1t_init_content[i];
     const tT1T_INIT_TAG* p1 = t1t_tag_init_data(p0->tag_model);
-    EXPECT_TRUE(p1 != nullptr);
+    ASSERT_TRUE(p1 != nullptr);
     EXPECT_EQ(p1->tag_model, p0->tag_model);
   }
 }
@@ -51,10 +51,8 @@ TEST(TagsInitTest, T2tTagInitData) {
     const tT2T_INIT_TAG* p0 = &t2t_init_content[i];
     const tT2T_INIT_TAG* p1 = t2t_tag_init_data(
         p0->manufacturer_id, p0->b_multi_version, p0->version_no);
-    EXPECT_TRUE(p1 != nullptr);
-    if (p1 != nullptr) {
-      EXPECT_EQ(p1->manufacturer_id, p0->manufacturer_id);
-    }
+    ASSERT_TRUE(p1 != nullptr);
+    EXPECT_EQ(p1->manufacturer_id, p0->manufacturer_id);
   }
 }
 
@@ -63,10 +61,8 @@ TEST(TagsInitTest, T2tCmdToRspInfo) {
   for (int i = 0; i < T2T_MAX_NUM_OPCODES; i++) {
     const tT2T_CMD_RSP_INFO* p0 = &t2t_cmd_rsp_infos[i];
     const tT2T_CMD_RSP_INFO* p1 = t2t_cmd_to_rsp_info(p0->opcode);
-    EXPECT_TRUE(p1 != nullptr);
-    if (p1 != nullptr) {
-      EXPECT_EQ(p1->opcode, p0->opcode);
-    }
+    ASSERT_TRUE(p1 != nullptr);
+    EXPECT_EQ(p1->opcode, p0->opcode);
   }
 }
 
