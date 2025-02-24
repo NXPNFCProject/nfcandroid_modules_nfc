@@ -124,6 +124,7 @@ public class HostEmulationManager {
     static final String EVENT_HCE_BIND_PAYMENT_SERVICE = "hce_bind_payment_service";
     static final String EVENT_HCE_BIND_SERVICE = "hce_bind_service";
     static final String EVENT_HCE_COMMAND_APDU = "hce_command_apdu";
+    static final String EVENT_POLLING_FRAMES = "hce_polling_frames";
     static final String TRIGGER_NAME_SLOW_TAP = "android.nfc.slow-tap";
 
     final Context mContext;
@@ -1193,6 +1194,9 @@ public class HostEmulationManager {
         if (mState == STATE_IDLE) {
             mState = STATE_POLLING_LOOP;
         }
+        if (nfcHceLatencyEvents()) {
+            Trace.beginAsyncSection(EVENT_POLLING_FRAMES, generateApduAckCookie());
+        }
         try {
             mActiveService.send(msg);
         } catch (RemoteException e) {
@@ -1658,11 +1662,12 @@ public class HostEmulationManager {
                     }
                 }
             } else if (msg.what == HostApduService.MSG_COMMAND_APDU_ACK) {
-                synchronized (mLock) {
-                    Log.d(TAG, "Receive command apdu ack");
-                    if (nfcHceLatencyEvents()) {
-                        Trace.endAsyncSection(EVENT_HCE_COMMAND_APDU, msg.arg1);
-                    }
+                if (nfcHceLatencyEvents()) {
+                    Trace.endAsyncSection(EVENT_HCE_COMMAND_APDU, msg.arg1);
+                }
+            } else if (msg.what == HostApduService.MSG_POLLING_LOOP_ACK) {
+                if (nfcHceLatencyEvents()) {
+                    Trace.endAsyncSection(EVENT_POLLING_FRAMES, msg.arg1);
                 }
             }
         }
