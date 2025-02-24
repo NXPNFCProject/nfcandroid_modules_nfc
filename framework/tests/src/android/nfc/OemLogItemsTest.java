@@ -18,7 +18,11 @@ package android.nfc;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
+
+import android.os.Parcel;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,6 +32,14 @@ import java.time.Instant;
 
 @RunWith(JUnit4.class)
 public final class OemLogItemsTest {
+
+    private final int mAction = 1;
+    private final int mEvent = 2;
+    private final int mCallingPid = 1234;
+    private final byte[] mCommandApdus = new byte[] {0x01, 0x02, 0x03};
+    private final byte[] mResponseApdus = new byte[] {0x0A, 0x0B, 0x0C};
+    private final Instant mRfFieldOnTime = Instant.now();
+    private Tag mMockTag;
 
     @Test
     public void testGetAction() {
@@ -86,5 +98,132 @@ public final class OemLogItemsTest {
                 .setTag(mockTag)
                 .build();
         assertEquals(mockTag, item.getTag());
+    }
+
+    @Test
+    public void testConstructorInitialization() {
+        mMockTag = mock(Tag.class);
+        OemLogItems oemLogItems = new OemLogItems(mAction, mEvent, mCallingPid,
+                mCommandApdus, mResponseApdus, mRfFieldOnTime, mMockTag);
+
+        assertEquals(mAction, oemLogItems.getAction());
+        assertEquals(mEvent, oemLogItems.getEvent());
+        assertEquals(mCallingPid, oemLogItems.getCallingPid());
+        assertArrayEquals(mCommandApdus, oemLogItems.getCommandApdu());
+        assertArrayEquals(mResponseApdus, oemLogItems.getResponseApdu());
+        assertEquals(mRfFieldOnTime, oemLogItems.getRfFieldEventTimeMillis());
+        assertEquals(mMockTag, oemLogItems.getTag());
+    }
+
+    @Test
+    public void testParcelableImplementation() {
+        mMockTag = mock(Tag.class);
+        OemLogItems original = new OemLogItems(mAction, mEvent, mCallingPid,
+                mCommandApdus, mResponseApdus, mRfFieldOnTime, mMockTag);
+        Parcel parcel = Parcel.obtain();
+        original.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        OemLogItems recreated = OemLogItems.CREATOR.createFromParcel(parcel);
+
+        assertEquals(original.getAction(), recreated.getAction());
+        assertEquals(original.getEvent(), recreated.getEvent());
+        assertEquals(original.getCallingPid(), recreated.getCallingPid());
+        assertArrayEquals(original.getCommandApdu(), recreated.getCommandApdu());
+        assertArrayEquals(original.getResponseApdu(), recreated.getResponseApdu());
+        assertEquals(original.getRfFieldEventTimeMillis(), recreated.getRfFieldEventTimeMillis());
+        assertNotNull(recreated.getTag());
+        parcel.recycle();
+    }
+
+    @Test
+    public void testNewArray() {
+        int arraySize = 5;
+        OemLogItems[] oemLogItemsArray = OemLogItems.CREATOR.newArray(arraySize);
+
+        assertNotNull(oemLogItemsArray);
+        assertEquals(arraySize, oemLogItemsArray.length);
+    }
+
+    @Test
+    public void testParcelableWithNullRfFieldOnTime() {
+        mMockTag = mock(Tag.class);
+        OemLogItems original = new OemLogItems(mAction, mEvent, mCallingPid,
+                mCommandApdus, mResponseApdus, null, mMockTag);
+        Parcel parcel = Parcel.obtain();
+        original.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        OemLogItems recreated = OemLogItems.CREATOR.createFromParcel(parcel);
+
+        assertEquals(original.getAction(), recreated.getAction());
+        assertEquals(original.getEvent(), recreated.getEvent());
+        assertEquals(original.getCallingPid(), recreated.getCallingPid());
+        assertArrayEquals(original.getCommandApdu(), recreated.getCommandApdu());
+        assertArrayEquals(original.getResponseApdu(), recreated.getResponseApdu());
+        assertNull(recreated.getRfFieldEventTimeMillis());
+        assertNotNull(recreated.getTag());
+        parcel.recycle();
+    }
+
+    @Test
+    public void testToString() {
+        mMockTag = mock(Tag.class);
+        OemLogItems oemLogItems = new OemLogItems(mAction, mEvent, mCallingPid,
+                mCommandApdus, mResponseApdus, mRfFieldOnTime, mMockTag);
+        String expectedString = "[mCommandApdus: " + byteToHex(mCommandApdus)
+                + "[mResponseApdus: " + byteToHex(mResponseApdus)
+                + ", mCallingApi= " + mEvent
+                + ", mAction= " + mAction
+                + ", mCallingPId = " + mCallingPid
+                + ", mRfFieldOnTime= " + mRfFieldOnTime;
+
+        assertEquals(expectedString, oemLogItems.toString());
+    }
+
+    @Test
+    public void testWriteToParcel() {
+        mMockTag = mock(Tag.class);
+        OemLogItems original = new OemLogItems(mAction, mEvent, mCallingPid,
+                mCommandApdus, mResponseApdus, mRfFieldOnTime, mMockTag);
+        Parcel parcel = Parcel.obtain();
+        original.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+
+        assertEquals(mAction, parcel.readInt());
+        assertEquals(mEvent, parcel.readInt());
+        assertEquals(mCallingPid, parcel.readInt());
+
+        int commandApdusLength = parcel.readInt();
+        byte[] readCommandApdus = new byte[commandApdusLength];
+        parcel.readByteArray(readCommandApdus);
+        assertArrayEquals(mCommandApdus, readCommandApdus);
+
+        int responseApdusLength = parcel.readInt();
+        byte[] readResponseApdus = new byte[responseApdusLength];
+        parcel.readByteArray(readResponseApdus);
+        assertArrayEquals(mResponseApdus, readResponseApdus);
+
+        boolean isRfFieldOnTimeSet = parcel.readBoolean();
+        if (isRfFieldOnTimeSet) {
+            long epochSecond = parcel.readLong();
+            int nano = parcel.readInt();
+            Instant readRfFieldOnTime = Instant.ofEpochSecond(epochSecond, nano);
+            assertEquals(mRfFieldOnTime, readRfFieldOnTime);
+        } else {
+            assertNull(original.getRfFieldEventTimeMillis());
+        }
+
+        assertNotNull(parcel.readParcelable(Tag.class.getClassLoader()));
+        parcel.recycle();
+    }
+
+    private String byteToHex(byte[] bytes) {
+        char[] HexArray = "0123456789ABCDEF".toCharArray();
+        char[] hexChars = new char[bytes.length * 2];
+        for (int j = 0; j < bytes.length; j++) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = HexArray[v >>> 4];
+            hexChars[j * 2 + 1] = HexArray[v & 0x0F];
+        }
+        return new String(hexChars);
     }
 }
