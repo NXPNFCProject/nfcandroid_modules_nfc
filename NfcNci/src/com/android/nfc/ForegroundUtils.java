@@ -31,11 +31,6 @@ public class ForegroundUtils implements ActivityManager.OnUidImportanceListener 
     private final ActivityManager mActivityManager;
 
     private final Object mLock = new Object();
-    // We need to keep track of the individual PIDs per UID,
-    // since a single UID may have multiple processes running
-    // that transition into foreground/background state.
-    private final SparseArray<SparseBooleanArray> mForegroundUidPids =
-            new SparseArray<SparseBooleanArray>();
     private final SparseArray<List<Callback>> mBackgroundCallbacks =
             new SparseArray<List<Callback>>();
 
