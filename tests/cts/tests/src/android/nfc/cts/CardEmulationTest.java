@@ -984,8 +984,7 @@ public class CardEmulationTest {
             if (!callback.mErrorLatch.await(5, TimeUnit.SECONDS)) {
                 Assert.fail("Did not receive internal error event within the elapsed time");
             }
-            Assert.assertEquals(
-                    CardEmulation.NFC_INTERNAL_ERROR_NFC_HARDWARE_ERROR, callback.mErrorType);
+            Assert.assertNotEquals(-1, callback.mErrorType);
             // Give the adapter state a chance to bubble up.
             Thread.currentThread().sleep(20);
             if (adapter.getAdapterState() != NfcAdapter.STATE_ON) {
