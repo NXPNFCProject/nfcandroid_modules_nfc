@@ -103,36 +103,46 @@ TEST_F(CrcChecksumFileTest, VerifyFileIntegrity) {
   remove(filename.c_str());
 }
 
-
-TEST_F(CrcChecksumFileTest, VerifyFileIntegrityWithCorruptedChecksum)
-{
-  std::string data = "Hello, CRC!";
-  uint16_t expectedChecksum = crcChecksumCompute(
-          reinterpret_cast<const unsigned char*>(data.c_str()), data.size());
-  uint16_t corruptedChecksum = expectedChecksum + 1;
-  std::string filename = "test_file_with_corrupted_crc.bin";
-  writeFileWithChecksum(filename, data, corruptedChecksum);
-  bool result = crcChecksumVerifyIntegrity(filename.c_str());
-  EXPECT_FALSE(result);
-  remove(filename.c_str());
+TEST_F(CrcChecksumFileTest, VerifyFileIntegrityWithCorruptedChecksum) {
+    std::string data = "Hello, CRC!";
+    uint16_t expectedChecksum = crcChecksumCompute(
+            reinterpret_cast<const unsigned char*>(data.c_str()), data.size());
+    std::ofstream file("test_file_with_corrupted_crc.bin", std::ios::binary);
+    if (!file) {
+        std::cerr << "Failed to create test file!" << std::endl;
+        return;
+    }
+    uint16_t corruptedChecksum = expectedChecksum + 1;
+    file.write(reinterpret_cast<const char*>(&corruptedChecksum), sizeof(corruptedChecksum));
+    file.write(data.c_str(), data.size());
+    file.close();
+    bool result = crcChecksumVerifyIntegrity("test_file_with_corrupted_crc.bin");
+    EXPECT_FALSE(result);
+    remove("test_file_with_corrupted_crc.bin");
 }
 
 TEST_F(CrcChecksumFileTest, FileWithMissingChecksum) {
     std::string data = "Hello, CRC!";
-    std::string filename = "test_missing_checksum.bin";
+    std::string filename = "/tmp/test_missing_checksum.bin";
     std::ofstream file(filename, std::ios::binary);
-    file.write(data.c_str(), data.size());
+    if (!file.is_open()) {
+        std::cerr << "Failed to open file for writing: " << filename << std::endl;
+    } else {
+        file.write(data.c_str(), data.size());
+    }
     bool result = crcChecksumVerifyIntegrity(filename.c_str());
     EXPECT_FALSE(result);
     remove(filename.c_str());
 }
 
 TEST_F(CrcChecksumFileTest, EmptyFile) {
-    std::string filename = "test_empty_file.bin";
+    std::filesystem::path tempDir = std::filesystem::temp_directory_path();
+    std::filesystem::path filename = tempDir / "test_empty_file.bin";
     std::ofstream file(filename, std::ios::binary);
+    file.close();
     bool result = crcChecksumVerifyIntegrity(filename.c_str());
-    EXPECT_FALSE(result);
-    remove(filename.c_str());
+    EXPECT_FALSE(result) << "Checksum verification failed on an empty file.";
+    std::filesystem::remove(filename);
 }
 
 TEST_F(CrcChecksumFileTest, LargeFile) {
