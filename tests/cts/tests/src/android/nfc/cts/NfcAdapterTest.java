@@ -722,7 +722,7 @@ public class NfcAdapterTest {
             }
             nfcOemExtension.hasUserEnabledNfc();
             nfcOemExtension.isTagPresent();
-            nfcOemExtension.pausePolling(1000);
+            nfcOemExtension.pausePolling(0);
             nfcOemExtension.resumePolling();
             RoutingStatus status = nfcOemExtension.getRoutingStatus();
             status.getDefaultRoute();
