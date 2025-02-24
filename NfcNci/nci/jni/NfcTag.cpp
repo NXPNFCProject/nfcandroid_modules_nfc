@@ -502,58 +502,57 @@ void NfcTag::createNativeNfcTag(tNFA_ACTIVATED& activationData) {
     return;
   }
 
-  JNIEnv* e = NULL;
-  ScopedAttach attach(mNativeData->vm, &e);
-  if (e == NULL) {
+  ScopedAttach attach(mNativeData->vm, &mJniEnv);
+  if (mJniEnv == NULL) {
     LOG(ERROR) << StringPrintf("%s: jni env is null", fn);
     return;
   }
 
-  ScopedLocalRef<jclass> tag_cls(e,
-                                 e->GetObjectClass(mNativeData->cached_NfcTag));
-  if (e->ExceptionCheck()) {
-    e->ExceptionClear();
+  ScopedLocalRef<jclass> tag_cls(
+      mJniEnv, mJniEnv->GetObjectClass(mNativeData->cached_NfcTag));
+  if (mJniEnv->ExceptionCheck()) {
+    mJniEnv->ExceptionClear();
     LOG(ERROR) << StringPrintf("%s: failed to get class", fn);
     return;
   }
 
   // create a new Java NativeNfcTag object
-  jmethodID ctor = e->GetMethodID(tag_cls.get(), "<init>", "()V");
-  ScopedLocalRef<jobject> tag(e, e->NewObject(tag_cls.get(), ctor));
+  jmethodID ctor = mJniEnv->GetMethodID(tag_cls.get(), "<init>", "()V");
+  ScopedLocalRef<jobject> tag(mJniEnv, mJniEnv->NewObject(tag_cls.get(), ctor));
 
   // fill NativeNfcTag's mProtocols, mTechList, mTechHandles, mTechLibNfcTypes
-  fillNativeNfcTagMembers1(e, tag_cls.get(), tag.get());
+  fillNativeNfcTagMembers1(mJniEnv, tag_cls.get(), tag.get());
 
   // fill NativeNfcTag's members: mHandle, mConnectedTechnology
-  fillNativeNfcTagMembers2(e, tag_cls.get(), tag.get(), activationData);
+  fillNativeNfcTagMembers2(mJniEnv, tag_cls.get(), tag.get(), activationData);
 
   // fill NativeNfcTag's members: mTechPollBytes
-  fillNativeNfcTagMembers3(e, tag_cls.get(), tag.get(), activationData);
+  fillNativeNfcTagMembers3(mJniEnv, tag_cls.get(), tag.get(), activationData);
 
   // fill NativeNfcTag's members: mTechActBytes
-  fillNativeNfcTagMembers4(e, tag_cls.get(), tag.get(), activationData);
+  fillNativeNfcTagMembers4(mJniEnv, tag_cls.get(), tag.get(), activationData);
 
   // fill NativeNfcTag's members: mUid
-  fillNativeNfcTagMembers5(e, tag_cls.get(), tag.get(), activationData);
+  fillNativeNfcTagMembers5(mJniEnv, tag_cls.get(), tag.get(), activationData);
 
   if (mNativeData->tag != NULL) {
-    e->DeleteGlobalRef(mNativeData->tag);
+    mJniEnv->DeleteGlobalRef(mNativeData->tag);
   }
-  mNativeData->tag = e->NewGlobalRef(tag.get());
+  mNativeData->tag = mJniEnv->NewGlobalRef(tag.get());
 
   LOG(DEBUG) << StringPrintf("%s; mNumDiscNtf=%x", fn, mNumDiscNtf);
 
   if (!mNumDiscNtf) {
     // notify NFC service about this new tag
     LOG(DEBUG) << StringPrintf("%s: try notify nfc service", fn);
-    e->CallVoidMethod(mNativeData->manager,
-                      android::gCachedNfcManagerNotifyNdefMessageListeners,
-                      tag.get());
-    if (e->ExceptionCheck()) {
-      e->ExceptionClear();
+    mJniEnv->CallVoidMethod(
+        mNativeData->manager,
+        android::gCachedNfcManagerNotifyNdefMessageListeners, tag.get());
+    if (mJniEnv->ExceptionCheck()) {
+      mJniEnv->ExceptionClear();
       LOG(ERROR) << StringPrintf("%s: fail notify nfc service", fn);
     }
-    deleteglobaldata(e);
+    deleteglobaldata(mJniEnv);
   } else {
     LOG(DEBUG) << StringPrintf("%s: Selecting next tag", fn);
   }
@@ -1391,18 +1390,17 @@ bool NfcTag::isNdefDetectionTimedOut() { return mNdefDetectionTimedOut; }
 **
 *******************************************************************************/
 void NfcTag::notifyTagDiscovered(bool discovered) {
-  JNIEnv* e = NULL;
-  ScopedAttach attach(mNativeData->vm, &e);
-  if (e == NULL) {
+  ScopedAttach attach(mNativeData->vm, &mJniEnv);
+  if (mJniEnv == NULL) {
     LOG(ERROR) << "jni env is null";
     return;
   }
   LOG(DEBUG) << StringPrintf("%s: %d", __func__, discovered);
-  e->CallVoidMethod(mNativeData->manager,
-                    android::gCachedNfcManagerNotifyTagDiscovered,
-                    discovered);
-  if (e->ExceptionCheck()) {
-    e->ExceptionClear();
+  mJniEnv->CallVoidMethod(mNativeData->manager,
+                          android::gCachedNfcManagerNotifyTagDiscovered,
+                          discovered);
+  if (mJniEnv->ExceptionCheck()) {
+    mJniEnv->ExceptionClear();
     LOG(ERROR) << StringPrintf("fail notify");
   }
 }
