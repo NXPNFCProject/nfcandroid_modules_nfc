@@ -23,6 +23,7 @@ import android.database.ContentObserver;
 import android.net.Uri;
 import android.nfc.ComponentNameAndUser;
 import android.nfc.Constants;
+import android.nfc.PackageAndUser;
 import android.nfc.cardemulation.ApduServiceInfo;
 import android.nfc.cardemulation.CardEmulation;
 import android.nfc.cardemulation.Utils;
@@ -37,6 +38,7 @@ import android.provider.Settings;
 import android.provider.Settings.SettingNotFoundException;
 import android.sysprop.NfcProperties;
 import android.util.Log;
+import android.util.Pair;
 import android.util.proto.ProtoOutputStream;
 
 import com.android.nfc.ForegroundUtils;
@@ -141,8 +143,9 @@ public class PreferredServices implements com.android.nfc.ForegroundUtils.Callba
         loadDefaultsFromSettings(currentUserId, false);
 
         if (mWalletRoleObserver.isWalletRoleFeatureEnabled()) {
-            String holder = mWalletRoleObserver.getDefaultWalletRoleHolder(currentUserId);
-            onWalletRoleHolderChanged(holder, currentUserId);
+            PackageAndUser holder = mWalletRoleObserver.getDefaultWalletRoleHolder(
+                    currentUserId);
+            onWalletRoleHolderChanged(holder.getPackage(), holder.getUserId());
         }
     }
 
@@ -350,9 +353,9 @@ public class PreferredServices implements com.android.nfc.ForegroundUtils.Callba
 
         if(mWalletRoleObserver.isWalletRoleFeatureEnabled()
                 && mUserIdDefaultWalletHolder >= 0) {
-            onWalletRoleHolderChanged(mWalletRoleObserver
-                            .getDefaultWalletRoleHolder(mUserIdDefaultWalletHolder),
-                    mUserIdDefaultWalletHolder);
+            PackageAndUser roleHolder = mWalletRoleObserver
+                    .getDefaultWalletRoleHolder(mUserIdDefaultWalletHolder);
+            onWalletRoleHolderChanged(roleHolder.getPackage(), roleHolder.getUserId());
         }
     }
 
