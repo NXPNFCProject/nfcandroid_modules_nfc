@@ -1,6 +1,7 @@
 package android.nfc.cts;
 
 import static android.Manifest.permission.NFC_SET_CONTROLLER_ALWAYS_ON;
+import static android.nfc.NfcOemExtension.HCE_ACTIVATE;
 import static android.nfc.cardemulation.CardEmulation.PROTOCOL_AND_TECHNOLOGY_ROUTE_ESE;
 import static android.nfc.cardemulation.CardEmulation.PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET;
 
@@ -9,6 +10,7 @@ import static com.android.compatibility.common.util.PropertyUtil.getVsrApiLevel;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -51,6 +53,7 @@ import android.nfc.cardemulation.CardEmulation;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.RemoteException;
+import android.os.ResultReceiver;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -781,6 +784,132 @@ public class NfcAdapterTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_NFC_OEM_EXTENSION)
+    public void testOemExtensionCallback()
+            throws RemoteException, InterruptedException {
+        CountDownLatch tagDetectedCountDownLatch = new CountDownLatch(5);
+        NfcAdapter nfcAdapter = getDefaultAdapter();
+        Assert.assertNotNull(nfcAdapter);
+        NfcOemExtension nfcOemExtension = nfcAdapter.getNfcOemExtension();
+
+        Assert.assertNotNull(nfcOemExtension);
+        NfcOemExtension.Callback cb = new NfcOemExtensionCallback(tagDetectedCountDownLatch);
+        try {
+            nfcOemExtension.registerCallback(
+                    Executors.newSingleThreadExecutor(), cb);
+            NfcOemExtension.NfcOemExtensionCallback callback =
+                    nfcOemExtension.getOemNfcExtensionCallback();
+            callback.onTagConnected(true);
+            tagDetectedCountDownLatch.await();
+            // Test onStateUpdated
+            callback.onStateUpdated(NfcAdapter.STATE_OFF);
+
+            // Test onApplyRouting
+            CountDownLatch latch = new CountDownLatch(1);
+            MockResultReceiver isSkipped = new MockResultReceiver(latch);
+            callback.onApplyRouting(isSkipped);
+            latch.await();
+            assertEquals(0, isSkipped.getResultCode());
+
+            // Test onNdefRead
+            latch = new CountDownLatch(1);
+            MockResultReceiver isNdefReadSkipped = new MockResultReceiver(latch);
+            callback.onNdefRead(isNdefReadSkipped);
+            latch.await();
+            assertEquals(1, isNdefReadSkipped.getResultCode());
+
+            // Test onEnableRequested
+            latch = new CountDownLatch(1);
+            MockResultReceiver isEnableAllowed = new MockResultReceiver(latch);
+            callback.onEnable(isEnableAllowed);
+            latch.await();
+            assertEquals(1, isEnableAllowed.getResultCode());
+
+            // Test onDisableRequested
+            latch = new CountDownLatch(1);
+            MockResultReceiver isDisableAllowed = new MockResultReceiver(latch);
+            callback.onDisable(isDisableAllowed);
+            latch.await();
+            assertEquals(1, isDisableAllowed.getResultCode());
+
+            callback.onBootStarted();
+            callback.onEnableStarted();
+            callback.onDisableStarted();
+            callback.onBootFinished(0);
+            callback.onEnableFinished(0);
+            callback.onDisableFinished(0);
+
+            // Test onTagDispatch
+            latch = new CountDownLatch(1);
+            MockResultReceiver isTagDispatchSkipped = new MockResultReceiver(latch);
+            callback.onTagDispatch(isTagDispatchSkipped);
+            latch.await();
+            assertEquals(1, isTagDispatchSkipped.getResultCode());
+
+            // Test onRoutingChanged
+            latch = new CountDownLatch(1);
+            MockResultReceiver isCommitRoutingSkipped = new MockResultReceiver(latch);
+            callback.onRoutingChanged(isCommitRoutingSkipped);
+            latch.await();
+            assertEquals(0, isCommitRoutingSkipped.getResultCode());
+
+            callback.onHceEventReceived(HCE_ACTIVATE);
+            callback.onReaderOptionChanged(true);
+            callback.onCardEmulationActivated(true);
+            callback.onRfFieldDetected(true);
+            callback.onRfDiscoveryStarted(true);
+            callback.onEeListenActivated(true);
+            callback.onEeUpdated();
+
+            // Test onGetOemAppSearchIntent
+            List<String> packages = new ArrayList<>();
+            packages.add("com.example.app1");
+            packages.add("com.example.app2");
+            latch = new CountDownLatch(1);
+            MockResultReceiver intentReceiver = new MockResultReceiver(latch);
+            callback.onGetOemAppSearchIntent(packages, intentReceiver);
+            latch.await();
+            assertNotNull(intentReceiver.getResultData());
+
+            // Test onNdefMessage
+            latch = new CountDownLatch(1);
+            MockResultReceiver receiver = new MockResultReceiver(latch);
+            callback.onNdefMessage(null, null, receiver);
+            latch.await();
+            assertEquals(1, receiver.getResultCode());
+
+            // Test onLaunchHceAppChooserActivity
+            String selectedAid = "A0000000031010";
+            List<ApduServiceInfo> services = new ArrayList<>();
+            ComponentName failedComponent =
+                    new ComponentName("com.example", "com.example.Activity");
+            String category = "android.nfc.cardemulation.category.DEFAULT";
+            callback.onLaunchHceAppChooserActivity(
+                    selectedAid, services, failedComponent, category);
+
+            // Test onLaunchHceTapAgainDialog
+            callback.onLaunchHceTapAgainActivity(null, category);
+
+            // Test onRoutingTableFull
+            callback.onRoutingTableFull();
+
+            // Test onLogEventNotified
+            OemLogItems logItem =
+                    new OemLogItems.Builder(OemLogItems.LOG_ACTION_NFC_TOGGLE).build();
+            callback.onLogEventNotified(logItem);
+
+            // Test onExtractOemPackages
+            latch = new CountDownLatch(1);
+            MockResultReceiver packageReceiver = new MockResultReceiver(latch);
+            callback.onExtractOemPackages(null, packageReceiver);
+            latch.await();
+            assertNotNull(packageReceiver.getResultData());
+        } finally {
+            nfcOemExtension.unregisterCallback(cb);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_OEM_EXTENSION)
     public void testOemExtensionSetControllerAlwaysOn() throws InterruptedException {
         NfcAdapter nfcAdapter = getDefaultAdapter();
         Assert.assertNotNull(nfcAdapter);
@@ -845,18 +974,22 @@ public class NfcAdapterTest {
 
         @Override
         public void onApplyRouting(@NonNull Consumer<Boolean> isSkipped) {
+            isSkipped.accept(false);
         }
 
         @Override
         public void onNdefRead(@NonNull Consumer<Boolean> isSkipped) {
+            isSkipped.accept(true);
         }
 
         @Override
         public void onEnableRequested(@NonNull Consumer<Boolean> isAllowed) {
+            isAllowed.accept(true);
         }
 
         @Override
         public void onDisableRequested(@NonNull Consumer<Boolean> isAllowed) {
+            isAllowed.accept(true);
         }
 
         @Override
@@ -885,10 +1018,12 @@ public class NfcAdapterTest {
 
         @Override
         public void onTagDispatch(@NonNull Consumer<Boolean> isSkipped) {
+            isSkipped.accept(true);
         }
 
         @Override
         public void onRoutingChanged(@NonNull Consumer<Boolean> isSkipped) {
+            isSkipped.accept(false);
         }
 
         @Override
@@ -925,11 +1060,13 @@ public class NfcAdapterTest {
         @Override
         public void onGetOemAppSearchIntent(@NonNull List<String> packages,
                                             @NonNull Consumer<Intent> intentConsumer) {
+            intentConsumer.accept(new Intent());
         }
 
         @Override
         public void onNdefMessage(@NonNull Tag tag, @NonNull NdefMessage message,
                                   @NonNull Consumer<Boolean> hasOemExecutableContent) {
+            hasOemExecutableContent.accept(true);
         }
 
         @Override
@@ -950,11 +1087,46 @@ public class NfcAdapterTest {
 
         @Override
         public void onLogEventNotified(@NonNull OemLogItems item) {
+            item.getAction();
+            item.getEvent();
+            item.getCallingPid();
+            item.getTag();
+            item.getCommandApdu();
+            item.getResponseApdu();
+            item.getRfFieldEventTimeMillis();
         }
 
         @Override
         public void onExtractOemPackages(@NonNull NdefMessage message,
                 @NonNull Consumer<List<String>> packageConsumer) {
+            packageConsumer.accept(new ArrayList<>());
+        }
+    }
+
+    private class MockResultReceiver extends ResultReceiver {
+
+        int mResultCode;
+        Bundle mResultData;
+        CountDownLatch mLatch;
+
+        MockResultReceiver(CountDownLatch latch) {
+            super(null);
+            mLatch = latch;
+        }
+
+        @Override
+        protected void onReceiveResult(int resultCode, Bundle resultData) {
+            mResultCode = resultCode;
+            mResultData = resultData;
+            mLatch.countDown();
+        }
+
+        public int getResultCode() {
+            return mResultCode;
+        }
+
+        public Bundle getResultData() {
+            return mResultData;
         }
     }
 
