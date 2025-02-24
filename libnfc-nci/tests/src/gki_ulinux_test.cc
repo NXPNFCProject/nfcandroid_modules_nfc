@@ -49,6 +49,8 @@ TEST_F(GkiUlinuxTest, Task) {
   GKI_sched_unlock();
   GKI_create_task((TASKPTR)TASK_A, NFC_TASK, (int8_t*)"TASK_A", nullptr, 0,
                   (pthread_cond_t*)nullptr, nullptr);
+  // Wait for TASK_A to run GKI_wait() to avoid race condition.
+  sleep(1);
   EXPECT_EQ(GKI_map_taskname(NFC_TASK), (int8_t*)"TASK_A");
   EXPECT_EQ(GKI_isend_event(NFC_TASK, NFC_TASK_EVT_TRANSPORT_READY),
             GKI_SUCCESS);
