@@ -56,7 +56,6 @@
     <uses-permission android:name="android.permission.DISPATCH_NFC_MESSAGE" />
     <uses-permission android:name="android.permission.OVERRIDE_WIFI_CONFIG" />
     <uses-permission android:name="android.permission.DEVICE_POWER" />
-    <uses-permission android:name="android.permission.ACCESS_VR_STATE"/>
     <uses-permission android:name="android.permission.USER_ACTIVITY" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.START_ACTIVITIES_FROM_BACKGROUND" />
