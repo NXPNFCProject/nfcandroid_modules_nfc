@@ -413,6 +413,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     private static int mDispatchFailedMax;
 
     static final int INVALID_NATIVE_HANDLE = -1;
+    static final int MOCK_NATIVE_HANDLE = 0;
     byte mDebounceTagUid[];
     int mDebounceTagDebounceMs;
     int mDebounceTagNativeHandle = INVALID_NATIVE_HANDLE;
@@ -2525,12 +2526,16 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 throws RemoteException {
             NfcPermissions.enforceUserPermissions(mContext);
 
-            if (debounceMs == 0 && mDebounceTagNativeHandle != INVALID_NATIVE_HANDLE
-                && nativeHandle == mDebounceTagNativeHandle) {
-              // Remove any previous messages and immediately debounce.
-              mHandler.removeMessages(MSG_TAG_DEBOUNCE);
-              mHandler.sendEmptyMessage(MSG_TAG_DEBOUNCE);
-              return true;
+            if (nativeHandle == MOCK_NATIVE_HANDLE
+                    || (debounceMs == 0 && mDebounceTagNativeHandle != INVALID_NATIVE_HANDLE
+                        && nativeHandle == mDebounceTagNativeHandle)) {
+                // Remove any previous messages and immediately debounce.
+                mHandler.removeMessages(MSG_TAG_DEBOUNCE);
+                synchronized (NfcService.this) {
+                    mDebounceTagRemovedCallback = callback;
+                }
+                mHandler.sendEmptyMessage(MSG_TAG_DEBOUNCE);
+                return true;
             }
 
             TagEndpoint tag = (TagEndpoint) findAndRemoveObject(nativeHandle);
