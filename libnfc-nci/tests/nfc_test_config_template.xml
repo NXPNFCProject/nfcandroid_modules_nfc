@@ -13,7 +13,7 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<configuration description="Configuration for {MODULE} Rust tests">
+<configuration description="Configuration for {MODULE} cpp tests">
    <target_preparer class="com.android.tradefed.targetprep.RootTargetPreparer"/>
    <option name="config-descriptor:metadata" key="mainline-param" value="com.google.android.nfcservices.apex" />
    <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
@@ -21,8 +21,8 @@
        <option name="push" value="{MODULE}->/data/local/tmp/{MODULE}" />
        <option name="append-bitness" value="true" />
    </target_preparer>
-   <test class="com.android.tradefed.testtype.rust.RustBinaryTest" >
-       <option name="test-device-path" value="/data/local/tmp" />
+   <test class="com.android.tradefed.testtype.GTest" >
+       <option name="native-test-device-path" value="/data/local/tmp" />
        <option name="module-name" value="{MODULE}" />
    </test>
    <object type="module_controller"
