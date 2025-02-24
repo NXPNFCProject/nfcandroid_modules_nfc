@@ -942,6 +942,64 @@ public class CardEmulationTest {
     }
 
     @Test
+    @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_EVENT_LISTENER})
+    @ApiTest(apis = {
+            "android.nfc.cardemulation.CardEmulation.NfcEventCallback#onInternalErrorReported"
+    })
+    public void testEventListener_hardwareError() throws InterruptedException {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        adapter.notifyHceDeactivated();
+        CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        class InternalErrorCallback implements CardEmulation.NfcEventCallback {
+            CountDownLatch mErrorLatch = new CountDownLatch(1);
+            CountDownLatch mStateOnLatch = new CountDownLatch(1);
+            int mErrorType = -1;
+
+            @Override
+            public void onNfcStateChanged(int state) {
+                if (state == NfcAdapter.STATE_ON && mStateOnLatch != null) {
+                    mStateOnLatch.countDown();
+                }
+            }
+
+            @Override
+            public void onInternalErrorReported(@CardEmulation.NfcInternalErrorType int errorType) {
+                synchronized (this) {
+                    mErrorType = errorType;
+                    if (mErrorLatch != null) {
+                        mErrorLatch.countDown();
+                    }
+                }
+            }
+        }
+        InternalErrorCallback callback = new InternalErrorCallback();
+        cardEmulation.registerNfcEventCallback(pool, callback);
+        Activity activity = createAndResumeActivity();
+        try {
+            /* nfc_ncif_proc_proprietary_rsp() marks the data response for this gid
+             * and oid as not a vs response, so this will cause a hardware error */
+            adapter.sendVendorNciMessage(0x00, 0x03, 0x00, new byte[0]);
+            if (!callback.mErrorLatch.await(5, TimeUnit.SECONDS)) {
+                Assert.fail("Did not receive internal error event within the elapsed time");
+            }
+            Assert.assertEquals(
+                    CardEmulation.NFC_INTERNAL_ERROR_NFC_HARDWARE_ERROR, callback.mErrorType);
+            // Give the adapter state a chance to bubble up.
+            Thread.currentThread().sleep(20);
+            if (adapter.getAdapterState() != NfcAdapter.STATE_ON) {
+                // The adapter is restarting due to the hardware error, wait for it to turn back on.
+                Assert.assertTrue(callback.mStateOnLatch.await(5, TimeUnit.SECONDS));
+            }
+        } finally {
+            activity.finish();
+            adapter.notifyHceDeactivated();
+            cardEmulation.unregisterNfcEventCallback(callback);
+        }
+    }
+
+    @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void testTypeAPollingLoopToForeground() {
         assumeVsrApiGreaterThanUdc();
