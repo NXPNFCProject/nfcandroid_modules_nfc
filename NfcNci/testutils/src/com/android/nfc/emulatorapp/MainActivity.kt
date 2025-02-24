@@ -26,6 +26,9 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.textview.MaterialTextView
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 
 class MainActivity : AppCompatActivity() {
 
@@ -45,17 +48,12 @@ class MainActivity : AppCompatActivity() {
     viewModel.uiState.observe(this, observer)
     EmulatorHostApduService.viewModel = viewModel
 
-    findViewById<MaterialButton>(R.id.service_button).setOnClickListener {
-      startHostApduService()
-      findViewById<MaterialButton>(R.id.service_button).isEnabled = false
-    }
-
-    val snoopFile = intent.getStringExtra(SNOOP_FILE_FLAG)
-    if (snoopFile != null) {
-      val apdus = openAndParseFile(PARSED_FILES_DIR + snoopFile)
+    val snoopData = intent.getStringExtra(SNOOP_DATA_FLAG)
+    if (snoopData != null) {
+      val apdus = parseJsonString(snoopData)
       updateService(apdus)
-      viewModel.setSnoopFile(snoopFile)
     }
+    startHostApduService()
   }
 
   private fun startHostApduService() {
@@ -66,24 +64,20 @@ class MainActivity : AppCompatActivity() {
     )
   }
 
-  /** Opens the snoop file and extracts all APDU commands and responses. */
-  private fun openAndParseFile(file: String): List<ApduPair> {
+  /** Extracts all APDU commands and responses from JSON string. */
+  private fun parseJsonString(text: String): List<ApduPair> {
     val apduPairs = mutableListOf<ApduPair>()
-    val text = BufferedReader(InputStreamReader(getAssets().open(file))).use { it.readText() }
-    val lines = text.split("\n").toTypedArray()
-    for (line in lines) {
-      val arr = line.split(";").toTypedArray()
-      if (arr.size != 2) { // Should contain commands, followed by responses
+    val array = Json.parseToJsonElement(text).jsonArray
+    for (element in array) {
+      val pair = element.jsonObject
+      val commands = pair.get("commands")?.jsonArray
+      val responses = pair.get("responses")?.jsonArray
+      if (commands == null || responses == null || commands.size != responses.size) {
         continue
       }
-      val commands = arr[0].split(",").toTypedArray()
-      val responses = arr[1].split(",").toTypedArray()
-      if (commands.size != responses.size) {
-        continue
-      }
-      for (i in commands.indices) {
-        val command = standardize(commands[i])
-        val response = standardize(responses[i])
+      for (i in 0..<commands.size) {
+        val command = standardize(commands.get(i).toString())
+        val response = standardize(responses.get(i).toString())
         apduPairs.add(ApduPair(command, response))
       }
     }
@@ -91,7 +85,7 @@ class MainActivity : AppCompatActivity() {
   }
 
   private fun standardize(s: String): String {
-    return s.replace("[", "").replace("]", "").replace("\'", "").replace(" ", "")
+    return s.replace("[", "").replace("]", "").replace("\'", "").replace(" ", "").replace("\"", "")
   }
 
   /** Updates EmulatorHostApduService with the given APDU commands and responses. */
@@ -111,7 +105,7 @@ class MainActivity : AppCompatActivity() {
 
   companion object {
     private const val TAG = "EmulatorHostApduServiceLog"
-    private const val SNOOP_FILE_FLAG = "snoop_file"
+    const val SNOOP_DATA_FLAG = "snoop_data"
     private const val PARSED_FILES_DIR = "src/com/android/nfc/emulatorapp/parsed_files/"
   }
 }
