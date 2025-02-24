@@ -33,26 +33,27 @@ public class PollingLoopBroadcastReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (CardEmulationTest.sCurrentPollLoopReceiver != null) {
+        if (CardEmulationTest.sWalletRolePollLoopReceiver != null) {
             String className = intent.getStringExtra(CLASS_NAME_KEY);
             switch (intent.getAction()) {
                 case POLLING_LOOP_FIRED:
-                    List<PollingFrame> frames = intent.getParcelableArrayListExtra(FRAMES_KEY,
-                            PollingFrame.class);
-                    CardEmulationTest.sCurrentPollLoopReceiver.notifyPollingLoop(className, frames);
+                    List<PollingFrame> frames =
+                            intent.getParcelableArrayListExtra(FRAMES_KEY, PollingFrame.class);
+                    CardEmulationTest.sWalletRolePollLoopReceiver.notifyPollingLoop(
+                            className, frames);
                     break;
                 case OBSERVE_MODE_CHANGED:
                     if (intent.hasExtra("enabled")) {
-                        boolean  isEnabled = intent.getBooleanExtra("enabled", false);
-                        CardEmulationTest.sCurrentPollLoopReceiver.onObserveModeStateChanged(
+                        boolean isEnabled = intent.getBooleanExtra("enabled", false);
+                        CardEmulationTest.sWalletRolePollLoopReceiver.onObserveModeStateChanged(
                                 className, isEnabled);
                     }
                     break;
                 case PREFERRED_SERVISE_CHANGED:
                     if (intent.hasExtra("preferred")) {
-                        boolean  isPreferred = intent.getBooleanExtra("preferred", false);
-                        CardEmulationTest.sCurrentPollLoopReceiver.onPreferredServiceChanged(
-                                className,  isPreferred);
+                        boolean isPreferred = intent.getBooleanExtra("preferred", false);
+                        CardEmulationTest.sWalletRolePollLoopReceiver.onPreferredServiceChanged(
+                                className, isPreferred);
                     }
                     break;
             }
