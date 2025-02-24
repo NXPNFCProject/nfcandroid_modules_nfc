@@ -18,6 +18,8 @@ package com.android.nfc;
 
 import android.util.proto.ProtoOutputStream;
 
+import java.util.Objects;
+
 /**
  * Parameters for enabling NFC tag discovery and polling,
  * and host card emulation.
@@ -64,7 +66,8 @@ public final class NfcDiscoveryParameters {
 
     static final int NFC_POLL_DEFAULT = -1;
 
-    // NOTE: when adding a new field, don't forget to update equals() and toString() below
+    // NOTE: when adding a new field, don't forget to update equals(), hashCode()
+    // and toString() below
     private int mTechMask = 0;
     private boolean mEnableLowPowerDiscovery = true;
     private boolean mEnableReaderMode = false;
@@ -90,6 +93,11 @@ public final class NfcDiscoveryParameters {
 
     public boolean shouldEnableDiscovery() {
         return mTechMask != 0 || mEnableHostRouting;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(mTechMask, mEnableLowPowerDiscovery, mEnableReaderMode, mEnableHostRouting);
     }
 
     @Override
