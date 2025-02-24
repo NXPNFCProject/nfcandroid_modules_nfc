@@ -42,6 +42,8 @@ import android.os.ResultReceiver;
 import android.se.omapi.Reader;
 import android.util.Log;
 
+import com.android.internal.annotations.VisibleForTesting;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.nio.charset.StandardCharsets;
@@ -530,6 +532,12 @@ public final class NfcOemExtension {
         mOemNfcExtensionCallback = new NfcOemExtensionCallback();
     }
 
+    /** @hide */
+    @VisibleForTesting
+    public NfcOemExtensionCallback getOemNfcExtensionCallback() {
+        return mOemNfcExtensionCallback;
+    }
+
     /**
      * Get an instance of {@link T4tNdefNfcee} object for performing T4T (Type-4 Tag)
      * NDEF (NFC Data Exchange Format) NFCEE (NFC Execution Environment) operations.
@@ -920,7 +928,8 @@ public final class NfcOemExtension {
                 () -> NfcAdapter.sService.commitRouting(), COMMIT_ROUTING_STATUS_FAILED);
     }
 
-    private final class NfcOemExtensionCallback extends INfcOemExtensionCallback.Stub {
+    /** @hide */
+    public final class NfcOemExtensionCallback extends INfcOemExtensionCallback.Stub {
 
         @Override
         public void onTagConnected(boolean connected) throws RemoteException {
