@@ -2029,6 +2029,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 }
                 if (mState == NfcAdapter.STATE_ON && mCardEmulationManager != null) {
                     mCardEmulationManager.updateForShouldDefaultToObserveMode(getUserId());
+                    mCardEmulationManager.updateFirmwareExitFramesForWalletRole(getUserId());
                 }
                 if (mAlwaysOnState != NfcAdapter.STATE_TURNING_ON) {
                     Intent intent = new Intent(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED);
@@ -6096,4 +6097,28 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         }
     }
 
+    public boolean isFirmwareExitFramesSupported() {
+        return mDeviceHost.isFirmwareExitFramesSupported();
+    }
+
+    public int getNumberOfFirmwareExitFramesSupported() {
+        return mDeviceHost.getNumberOfFirmwareExitFramesSupported();
+    }
+
+    public boolean setFirmwareExitFrameTable(List<ExitFrame> exitFrames, int timeoutMs) {
+        byte[] timeoutBytes = new byte[2];
+        if (timeoutMs > 0xFFFF) {
+            Log.w(TAG,
+                    "Exit frame timeout is larger than 16 bits, timeout will be truncated.");
+            timeoutBytes = new byte[] {(byte) 0xFF, (byte) 0xFF};
+        } else {
+            // Convert to little endian, two byte array
+            timeoutBytes[0] = (byte) timeoutMs;
+            timeoutBytes[1] = (byte) (timeoutMs >> 8);
+        }
+
+        return mDeviceHost.setFirmwareExitFrameTable(exitFrames.toArray(ExitFrame[]::new),
+                timeoutBytes);
+    }
 }
+

@@ -63,14 +63,16 @@ import android.util.proto.ProtoOutputStream;
 
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.nfc.DeviceConfigFacade;
-import com.android.nfc.NfcEventLog;
+import com.android.nfc.ExitFrame;
 import com.android.nfc.ForegroundUtils;
+import com.android.nfc.NfcEventLog;
 import com.android.nfc.NfcInjector;
 import com.android.nfc.NfcPermissions;
 import com.android.nfc.NfcService;
-import com.android.nfc.cardemulation.util.TelephonyUtils;
-import com.android.nfc.proto.NfcEventProto;
 import com.android.nfc.R;
+import com.android.nfc.cardemulation.util.TelephonyUtils;
+import com.android.nfc.flags.Flags;
+import com.android.nfc.proto.NfcEventProto;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
@@ -80,9 +82,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * CardEmulationManager is the central entity
@@ -123,6 +128,7 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
             new byte[] {(byte) 0xd2, 0x76, 0x00, 0x00, (byte) 0x85, 0x01, 0x01};
     /** Select APDU header */
     static final byte[] SELECT_AID_HDR = new byte[] {0x00, (byte) 0xa4, 0x04, 0x00};
+    private static final int FIRMWARE_EXIT_FRAME_TIMEOUT_MS = 5000;
 
     final RegisteredAidCache mAidCache;
     final RegisteredT3tIdentifiersCache mT3tIdentifiersCache;
@@ -857,6 +863,11 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
                                     .setPollingLoopFilter(pollingLoopFilter)
                                     .build())
                             .build());
+            if (Flags.exitFrames()
+                    && mAidCache.isDefaultOrAssociatedWalletPackage(service.getPackageName(),
+                    userId)) {
+                updateFirmwareExitFramesForWalletRole(userId);
+            }
             return true;
         }
 
@@ -892,6 +903,11 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
                                     .setPollingLoopFilter(pollingLoopFilter)
                                     .build())
                             .build());
+            if (Flags.exitFrames()
+                    && mAidCache.isDefaultOrAssociatedWalletPackage(service.getPackageName(),
+                    userId)) {
+                updateFirmwareExitFramesForWalletRole(userId);
+            }
             return true;
         }
 
@@ -927,6 +943,11 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
                                     .setPollingLoopFilter(pollingLoopPatternFilter)
                                     .build())
                             .build());
+            if (Flags.exitFrames()
+                    && mAidCache.isDefaultOrAssociatedWalletPackage(service.getPackageName(),
+                    userId)) {
+                updateFirmwareExitFramesForWalletRole(userId);
+            }
             return true;
         }
 
@@ -962,6 +983,11 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
                                     .setPollingLoopFilter(pollingLoopPatternFilter)
                                     .build())
                             .build());
+            if (Flags.exitFrames()
+                    && mAidCache.isDefaultOrAssociatedWalletPackage(service.getPackageName(),
+                    userId)) {
+                updateFirmwareExitFramesForWalletRole(userId);
+            }
             return true;
         }
 
@@ -1605,6 +1631,49 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         }
     }
 
+    public void updateFirmwareExitFramesForWalletRole(int userId) {
+        if (!Flags.exitFrames()) {
+            return;
+        }
+
+        NfcService nfcService = NfcService.getInstance();
+        if (!nfcService.isFirmwareExitFramesSupported()
+                || nfcService.getNumberOfFirmwareExitFramesSupported() <= 0) {
+            return;
+        }
+
+        // Get all services then find those associated with role holder
+        Stream<ApduServiceInfo> roleServices = mServiceCache.getServices(userId).stream().filter(
+                serviceInfo -> mAidCache.isDefaultOrAssociatedWalletService(serviceInfo, userId));
+
+        // Not every pattern filter is a valid exit frame, so this function catches
+        // exceptions that could be thrown creating an ExitFrame object from a pattern.
+        Function<String, ExitFrame> toExitFrameOrNull = (s) -> {
+            try {
+                return new ExitFrame(s);
+            } catch (Exception e) {
+                return null;
+            }
+        };
+        // Combine filters and pattern filters, slice to size of supported, build list of exit
+        // frames
+        List<ExitFrame> exitFrames = roleServices.flatMap(serviceInfo ->
+                        Stream.concat(
+                                        serviceInfo.getPollingLoopFilters().stream(),
+                                        serviceInfo.getPollingLoopPatternFilters()
+                                                .stream().map(Pattern::toString)
+                                )
+                                .filter(
+                                        serviceInfo::getShouldAutoTransact))
+                .distinct()
+                .map(toExitFrameOrNull)
+                .filter(Objects::nonNull)
+                .limit(nfcService.getNumberOfFirmwareExitFramesSupported())
+                .collect(Collectors.toList());
+        Log.d(TAG, "Updating firmware exit frame table with " + exitFrames.size() + " frames");
+        nfcService.setFirmwareExitFrameTable(exitFrames, FIRMWARE_EXIT_FRAME_TIMEOUT_MS);
+    }
+
     public void onObserveModeStateChange(boolean enabled) {
         mHostEmulationManager.onObserveModeStateChange(enabled);
         if (android.nfc.Flags.nfcEventListener()) {
@@ -1616,6 +1685,9 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
     public void onWalletRoleHolderChanged(String holder, int userId) {
         mPreferredServices.onWalletRoleHolderChanged(holder, userId);
         mAidCache.onWalletRoleHolderChanged(holder, userId);
+        if (Flags.exitFrames()) {
+            updateFirmwareExitFramesForWalletRole(userId);
+        }
     }
 
     @Override
