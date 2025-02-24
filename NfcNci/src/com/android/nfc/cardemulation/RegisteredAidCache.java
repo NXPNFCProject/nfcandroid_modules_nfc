@@ -18,6 +18,7 @@ package com.android.nfc.cardemulation;
 
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.ActivityManager;
 import android.content.ComponentName;
@@ -1319,6 +1320,7 @@ public class RegisteredAidCache {
         }
     }
 
+    @SuppressLint("NewApi")
     private void generateAssociatedRoleServicesLocked(int userId) {
         if (!Flags.nfcAssociatedRoleServices()) {
             return;
