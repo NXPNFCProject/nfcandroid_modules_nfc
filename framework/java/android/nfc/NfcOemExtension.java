@@ -754,13 +754,13 @@ public final class NfcOemExtension {
 
     /**
      * Pauses NFC tag reader mode polling for a {@code timeoutInMs} millisecond.
-     * In case of {@code timeoutInMs} is zero or invalid polling will be stopped indefinitely.
+     * In case of {@code timeoutInMs} is zero, polling will be stopped indefinitely.
      * Use {@link #resumePolling()} to resume the polling.
      * Use {@link #getMaxPausePollingTimeoutMs()} to check the max timeout value.
      * @param timeoutInMs the pause polling duration in millisecond.
      * @return status of the operation
      * @throws IllegalArgumentException if timeoutInMs value is invalid
-     *         (0 < timeoutInMs < max).
+     *         (timeoutinMs > max or timeoutInMs < 0).
      */
     @FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
     @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
