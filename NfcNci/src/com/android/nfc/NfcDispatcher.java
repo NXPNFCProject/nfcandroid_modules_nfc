@@ -181,7 +181,10 @@ class NfcDispatcher {
 
     public synchronized void setForegroundDispatch(PendingIntent intent,
             IntentFilter[] filters, String[][] techLists) {
-        if (DBG) Log.d(TAG, "Set Foreground Dispatch");
+        if (DBG) {
+            Log.d(TAG, "Uid " + Binder.getCallingUid()
+                    + (intent == null ? " Reset Foreground Dispatch" : " Set Foreground Dispatch"));
+        }
         mOverrideIntent = intent;
         mOverrideFilters = filters;
         mOverrideTechLists = techLists;
