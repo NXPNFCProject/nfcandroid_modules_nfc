@@ -70,4 +70,5 @@
     <!-- Waiting time for removal detection -->
     <integer name="removal_detection_waiting_time">19</integer>
     <integer name="inactive_presence_check_allowed_time">20000</integer>
+    <integer name="slow_tap_threshold_millis">2000</integer>
 </resources>

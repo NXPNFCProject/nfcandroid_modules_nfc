@@ -89,10 +89,3 @@ flag {
     bug: "357505987"
 }
 
-flag {
-    name: "nfc_hce_latency_events"
-    is_exported: true
-    namespace: "wallet_integration"
-    description: "Enables tracking latency for HCE"
-    bug: "379849603"
-}

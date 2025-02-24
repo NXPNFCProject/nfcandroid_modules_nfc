@@ -41,6 +41,7 @@ public class DeviceConfigFacade {
     public static final String KEY_ENABLE_READER_OPTION_SUPPORT = "enable_reader_option_support";
     public static final String KEY_SECURE_NFC_CAPABLE = "enable_secure_nfc_support";
     public static final String KEY_SECURE_NFC_DEFAULT = "secure_nfc_default";
+    public static final String KEY_SLOW_TAP_THRESHOLD_MILLIS = "slow_tap_threshold_millis";
 
     private boolean mNfcDefaultState;
     private boolean mReaderOptionSupport;
@@ -51,6 +52,7 @@ public class DeviceConfigFacade {
     private String mDefaultIsoDepRoute;
     private String mDefaultOffHostRoute;
     private String mDefaultScRoute;
+    private int mSlowTapThresholdMillis;
 
     private static DeviceConfigFacade sInstance;
     public static DeviceConfigFacade getInstance(Context context, Handler handler) {
@@ -113,6 +115,10 @@ public class DeviceConfigFacade {
         mDefaultScRoute = DeviceConfig.getString(DEVICE_CONFIG_NAMESPACE_NFC,
                 "nfc_default_sc_route",
                 mContext.getResources().getString(R.string.nfc_default_sc_route));
+
+        mSlowTapThresholdMillis = DeviceConfig.getInt(DEVICE_CONFIG_NAMESPACE_NFC,
+                KEY_SLOW_TAP_THRESHOLD_MILLIS,
+                mContext.getResources().getInteger(R.integer.slow_tap_threshold_millis));
     }
 
     private boolean isSecureNfcCapableDefault() {
@@ -145,4 +151,5 @@ public class DeviceConfigFacade {
     public String getDefaultIsoDepRoute() { return mDefaultIsoDepRoute; }
     public String getDefaultOffHostRoute() { return mDefaultOffHostRoute; }
     public String getDefaultScRoute() { return mDefaultScRoute; }
+    public int getSlowTapThresholdMillis() { return mSlowTapThresholdMillis; }
 }

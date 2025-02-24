@@ -170,7 +170,7 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         mAidCache = new RegisteredAidCache(context, mWalletRoleObserver);
         mT3tIdentifiersCache = new RegisteredT3tIdentifiersCache(context);
         mHostEmulationManager =
-                new HostEmulationManager(context, Looper.getMainLooper(), mAidCache);
+                new HostEmulationManager(context, Looper.getMainLooper(), mAidCache, nfcInjector);
         mHostNfcFEmulationManager = new HostNfcFEmulationManager(context, mT3tIdentifiersCache);
         mServiceCache = new RegisteredServicesCache(context, this);
         mNfcFServicesCache = new RegisteredNfcFServicesCache(context, this);
