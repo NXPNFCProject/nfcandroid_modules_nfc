@@ -985,11 +985,36 @@ public class CardEmulationTest {
                 Assert.fail("Did not receive internal error event within the elapsed time");
             }
             Assert.assertNotEquals(-1, callback.mErrorType);
-            // Give the adapter state a chance to bubble up.
-            Thread.currentThread().sleep(20);
-            if (adapter.getAdapterState() != NfcAdapter.STATE_ON) {
-                // The adapter is restarting due to the hardware error, wait for it to turn back on.
-                Assert.assertTrue(callback.mStateOnLatch.await(5, TimeUnit.SECONDS));
+            // ToDo: can we query the recovery_option from the NfcConfig to make sure
+            // the error matches the config?
+            switch (callback.mErrorType) {
+                case CardEmulation.NFC_INTERNAL_ERROR_COMMAND_TIMEOUT:
+                {
+                    // A timeout error indicates that we will crash the NFC service and restart it.
+                    // Give the adapter state a chance to bubble up.
+                    Thread.currentThread().sleep(300);
+                    if (adapter.getAdapterState() != NfcAdapter.STATE_ON) {
+                        cardEmulation.registerNfcEventCallback(pool, callback);
+                        // The adapter is restarting due to the timeout error, wait for it to
+                        // turn back on.
+                        if (!callback.mStateOnLatch.await(20, TimeUnit.SECONDS)) {
+                            Assert.assertEquals(adapter.getAdapterState(), NfcAdapter.STATE_ON);
+                        }
+                    }
+                    Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
+                    Assert.assertTrue(
+                            cardEmulation.setPreferredService(
+                                    activity, new ComponentName(mContext,
+                                    CustomHostApduService.class)));
+                }
+                break;
+                case CardEmulation.NFC_INTERNAL_ERROR_NFC_HARDWARE_ERROR:
+                    // If the recovery option config is set to 1, we will reset the NFC service and
+                    // send a hardware error. We should be good to go at this point.
+                    break;
+                default:
+                    Assert.fail("Expected a hardware error or timeout error but got: "
+                                    + callback.mErrorType);
             }
         } finally {
             activity.finish();
