@@ -549,7 +549,13 @@ TEST_F(NfaHciEeInfoCbackTest, TestEEStatusModeSetComplete) {
 }
 
 TEST_F(NfaHciEeInfoCbackTest, TestEEStatusRecoveryInit) {
-    nfa_hci_ee_info_cback(NFA_EE_RECOVERY_INIT);
-    EXPECT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_EE_RECOVERY);
-    EXPECT_TRUE(nfa_ee_cb.isDiscoveryStopped);
+  tNFA_DM_CB nfa_dm_cb_mock;
+  nfa_dm_cb_mock = tNFA_DM_CB{};
+  nfa_dm_cb_mock.disc_cb = tNFA_DM_DISC_CB{};
+  nfa_dm_cb_mock.disc_cb.disc_flags = 0xFFFF;
+  nfa_dm_cb = nfa_dm_cb_mock;
+  nfa_hci_ee_info_cback(NFA_EE_RECOVERY_INIT);
+  EXPECT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_EE_RECOVERY);
+  EXPECT_TRUE(nfa_ee_cb.isDiscoveryStopped);
 }
+

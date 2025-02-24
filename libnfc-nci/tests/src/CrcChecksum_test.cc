@@ -145,8 +145,3 @@ TEST_F(CrcChecksumFileTest, LargeFile) {
     EXPECT_TRUE(result);
     remove(filename.c_str());
 }
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
