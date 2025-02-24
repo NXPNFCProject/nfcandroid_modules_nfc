@@ -2310,8 +2310,9 @@ static void nfa_ee_build_discover_req_evt(tNFA_EE_DISCOVER_REQ* p_evt_data) {
     p_info++;
 
     LOG(VERBOSE) << StringPrintf(
-        "[%d] ee_handle:0x%x, listen protocol A:%d, B:%d, F:%d, BP:%d",
-        p_evt_data->num_ee, p_cb->nfcee_id, p_cb->la_protocol,
+        "%s; [%d] ee_handle:0x%x, listen protocol A:0x%x, B:0x%x, F:0x%x, "
+        "BP:0x%x",
+        __func__, p_evt_data->num_ee, p_cb->nfcee_id, p_cb->la_protocol,
         p_cb->lb_protocol, p_cb->lf_protocol, p_cb->lbp_protocol);
   }
 
@@ -2656,10 +2657,10 @@ void nfa_ee_nci_disc_req_ntf(tNFA_EE_MSG* p_data) {
                             &nfa_ee_cback_data);
       }
       LOG(VERBOSE) << StringPrintf(
-          "nfcee_id=0x%x ee_status=0x%x ecb_flags=0x%x la_protocol=0x%x "
-          "la_protocol=0x%x la_protocol=0x%x",
-          p_cb->nfcee_id, p_cb->ee_status, p_cb->ecb_flags, p_cb->la_protocol,
-          p_cb->lb_protocol, p_cb->lf_protocol);
+          "%s; nfcee_id=0x%x ee_status=0x%x ecb_flags=0x%x la_protocol=0x%x "
+          "lb_protocol=0x%x lf_protocol=0x%x",
+          __func__, p_cb->nfcee_id, p_cb->ee_status, p_cb->ecb_flags,
+          p_cb->la_protocol, p_cb->lb_protocol, p_cb->lf_protocol);
     } else {
       if (p_cbk->info[xx].tech_n_mode == NFC_DISCOVERY_TYPE_LISTEN_A) {
         p_cb->la_protocol = 0;
