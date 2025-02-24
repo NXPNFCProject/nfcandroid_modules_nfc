@@ -754,6 +754,9 @@ public class CardEmulationTest {
         final CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
         EventPollLoopReceiver eventPollLoopReceiver = new EventPollLoopReceiver(mContext);
         sCurrentPollLoopReceiver = eventPollLoopReceiver;
+        EventPollLoopReceiver walletRolePollLoopReceiver =
+                new EventPollLoopReceiver(mContext);
+        sWalletRolePollLoopReceiver = walletRolePollLoopReceiver;
 
         final int startingEvents = eventPollLoopReceiver.mEvents.size();
         eventPollLoopReceiver.setNumEventsToWaitFor(1);
@@ -767,10 +770,12 @@ public class CardEmulationTest {
                             "Didn't receive any events",
                             startingEvents < eventPollLoopReceiver.mEvents.size());
                     int numEvents = eventPollLoopReceiver.mEvents.size();
-
+                    int numWalletEvents =
+                            walletRolePollLoopReceiver.mEvents.size();
                     Activity activity = createAndResumeActivity();
 
-                    eventPollLoopReceiver.setNumEventsToWaitFor(2);
+                    eventPollLoopReceiver.setNumEventsToWaitFor(1);
+                    walletRolePollLoopReceiver.setNumEventsToWaitFor(1);
                     Assert.assertTrue(
                             cardEmulation.setPreferredService(
                                     activity,
@@ -778,21 +783,21 @@ public class CardEmulationTest {
 
                     try {
                         eventPollLoopReceiver.waitForEvents();
+                        walletRolePollLoopReceiver.waitForEvents();
                         Assert.assertTrue(
-                                "Didn't receive two events",
-                                numEvents + 1 < eventPollLoopReceiver.mEvents.size());
-                        EventPollLoopReceiver.EventLogEntry event1 =
-                                eventPollLoopReceiver.mEvents.get(numEvents);
-                        EventPollLoopReceiver.EventLogEntry event2 =
-                                eventPollLoopReceiver.mEvents.get(numEvents + 1);
-                        EventPollLoopReceiver.EventLogEntry gainedEvent =
-                                (boolean)event1.mState ? event1 : event2;
-                        EventPollLoopReceiver.EventLogEntry lostEvent =
-                                (boolean)event1.mState ? event2 : event1;
+                                "Didn't receive event",
+                                numEvents < eventPollLoopReceiver.mEvents.size());
+                        Assert.assertTrue(
+                                "Didn't receive event",
+                                numWalletEvents < walletRolePollLoopReceiver.mEvents.size());
 
-                        Assert.assertEquals(
-                                WALLET_HOLDER_PACKAGE_NAME,
-                                lostEvent.mServicePackageName);
+                        EventPollLoopReceiver.EventLogEntry gainedEvent =
+                                walletRolePollLoopReceiver.mEvents.getLast();
+                        EventPollLoopReceiver.EventLogEntry lostEvent =
+                                eventPollLoopReceiver.mEvents.getLast();
+
+                        Assert.assertEquals(WALLET_HOLDER_PACKAGE_NAME,
+                                            lostEvent.mServicePackageName);
                         Assert.assertEquals(
                                 EventPollLoopReceiver.PREFERRED_SERVICE, lostEvent.mEventType);
                         Assert.assertFalse((boolean)lostEvent.mState);
@@ -828,13 +833,23 @@ public class CardEmulationTest {
                         Assert.assertFalse((boolean)event.mState);
                         Assert.assertFalse(adapter.isObserveModeEnabled());
                         numEvents = eventPollLoopReceiver.mEvents.size();
-                        eventPollLoopReceiver.setNumEventsToWaitFor(2);
+                        numWalletEvents =
+                                walletRolePollLoopReceiver.mEvents.size();
+                        eventPollLoopReceiver.setNumEventsToWaitFor(1);
+                        walletRolePollLoopReceiver.setNumEventsToWaitFor(1);
                         Assert.assertTrue(cardEmulation.unsetPreferredService(activity));
                         eventPollLoopReceiver.waitForEvents();
-                        event1 = eventPollLoopReceiver.mEvents.get(numEvents);
-                        event2 = eventPollLoopReceiver.mEvents.get(numEvents + 1);
-                        gainedEvent = (boolean)event1.mState ? event1 : event2;
-                        lostEvent = (boolean)event1.mState ? event2 : event1;
+                        walletRolePollLoopReceiver.waitForEvents();
+                        Assert.assertTrue(
+                                "Didn't receive event",
+                                numEvents < eventPollLoopReceiver.mEvents.size());
+                        Assert.assertTrue(
+                                "Didn't receive event",
+                                numWalletEvents < walletRolePollLoopReceiver.mEvents.size());
+
+                        gainedEvent =
+                                walletRolePollLoopReceiver.mEvents.getLast();
+                        lostEvent = eventPollLoopReceiver.mEvents.getLast();
 
                         Assert.assertEquals(
                                 CtsMyHostApduService.class.getPackageName(),
@@ -843,9 +858,8 @@ public class CardEmulationTest {
                                 EventPollLoopReceiver.PREFERRED_SERVICE, lostEvent.mEventType);
                         Assert.assertFalse((boolean)lostEvent.mState);
 
-                        Assert.assertEquals(
-                                WALLET_HOLDER_PACKAGE_NAME,
-                                gainedEvent.mServicePackageName);
+                        Assert.assertEquals(WALLET_HOLDER_PACKAGE_NAME,
+                                            gainedEvent.mServicePackageName);
                         Assert.assertEquals(
                                 EventPollLoopReceiver.PREFERRED_SERVICE, gainedEvent.mEventType);
                         Assert.assertTrue((boolean)gainedEvent.mState);
@@ -2107,6 +2121,7 @@ public class CardEmulationTest {
     }
 
     static PollLoopReceiver sCurrentPollLoopReceiver = null;
+    static PollLoopReceiver sWalletRolePollLoopReceiver = null;
 
     static class PollLoopReceiver  {
         int mFrameIndex = 0;
@@ -2166,24 +2181,37 @@ public class CardEmulationTest {
         }
     }
 
-    private List<PollingFrame> notifyPollingLoopAndWait(ArrayList<PollingFrame> frames,
-            String serviceName) {
+    private List<PollingFrame> notifyPollingLoopAndWait(
+            ArrayList<PollingFrame> frames, String serviceName) {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
-        sCurrentPollLoopReceiver = new PollLoopReceiver(frames, serviceName);
+        boolean receiveFromWalletRoleHoder =
+                getWalletRoleHolderService().getClassName().equals(serviceName);
+        if (receiveFromWalletRoleHoder) {
+            sWalletRolePollLoopReceiver = new PollLoopReceiver(frames, serviceName);
+        } else {
+            sCurrentPollLoopReceiver = new PollLoopReceiver(frames, serviceName);
+        }
         for (PollingFrame frame : frames) {
             adapter.notifyPollingLoop(frame);
         }
-        synchronized (sCurrentPollLoopReceiver) {
+        PollLoopReceiver pollLoopReceiver =
+                receiveFromWalletRoleHoder ? sWalletRolePollLoopReceiver : sCurrentPollLoopReceiver;
+
+        synchronized (pollLoopReceiver) {
             try {
-                sCurrentPollLoopReceiver.wait(10000);
+                pollLoopReceiver.wait(10000);
             } catch (InterruptedException ie) {
                 Assert.assertNull(ie);
             }
         }
-        sCurrentPollLoopReceiver.test();
-        Assert.assertEquals(frames.size(), sCurrentPollLoopReceiver.mFrameIndex);
-        List<PollingFrame> receivedFrames =  sCurrentPollLoopReceiver.mReceivedFrames;
-        sCurrentPollLoopReceiver = null;
+        pollLoopReceiver.test();
+        Assert.assertEquals(frames.size(), pollLoopReceiver.mFrameIndex);
+        List<PollingFrame> receivedFrames = pollLoopReceiver.mReceivedFrames;
+        if (receiveFromWalletRoleHoder) {
+            sWalletRolePollLoopReceiver = null;
+        } else {
+            sCurrentPollLoopReceiver = null;
+        }
         return receivedFrames;
     }
 
