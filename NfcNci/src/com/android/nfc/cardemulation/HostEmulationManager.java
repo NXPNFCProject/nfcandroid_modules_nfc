@@ -1039,7 +1039,7 @@ public class HostEmulationManager {
             Log.d(TAG, "Service" + service + " already bound as regular service.");
             return mComponentNameToConnectionsMap.get(newServiceAndUser).mMessenger;
         } else {
-            Log.d(TAG, "Binding to service " + service + " for userid:" + userId);
+            Log.d(TAG, "Binding to service " + service + " for userId:" + userId);
             if (nfcHceLatencyEvents()) {
                 Trace.beginAsyncSection(EVENT_HCE_BIND_SERVICE, 0);
             }
@@ -1222,7 +1222,7 @@ public class HostEmulationManager {
         }
         unbindPaymentServiceLocked();
 
-        Log.d(TAG, "Binding to payment service " + serviceName + " for userid:" + userId);
+        Log.d(TAG, "Binding to payment service " + serviceName + " for userId:" + userId);
         Intent intent = new Intent(HostApduService.SERVICE_INTERFACE);
         intent.setComponent(serviceName);
         try {
