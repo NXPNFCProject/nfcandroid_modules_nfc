@@ -871,6 +871,20 @@ public class CardEmulationTest {
         InternalErrorCallback callback = new InternalErrorCallback();
         cardEmulation.registerNfcEventCallback(pool, callback);
         Activity activity = createAndResumeActivity();
+        IntentFilter filter = new IntentFilter(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED);
+        CountDownLatch adapterStateLatch = new CountDownLatch(1);
+        BroadcastReceiver receiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    if (intent.getAction() == NfcAdapter.ACTION_ADAPTER_STATE_CHANGED
+                            && intent.hasExtra(NfcAdapter.EXTRA_ADAPTER_STATE)
+                            && intent.getIntExtra(NfcAdapter.EXTRA_ADAPTER_STATE, 0)
+                                    == NfcAdapter.STATE_ON) {
+                        adapterStateLatch.countDown();
+                    }
+                }
+            };
+        mContext.registerReceiver(receiver,filter);
         try {
             /* nfc_ncif_proc_proprietary_rsp() marks the data response for this gid
              * and oid as not a vs response, so this will cause a hardware error */
@@ -887,22 +901,9 @@ public class CardEmulationTest {
                     // A timeout error indicates that we will crash the NFC service and restart it.
                     // Give the adapter state a chance to bubble up.
                     Thread.currentThread().sleep(300);
-                    int adapterState = NfcAdapter.STATE_OFF;
-                    while (adapterState == NfcAdapter.STATE_OFF) {
-                        try {
-                            adapterState = adapter.getAdapterState();
-                        } catch (Throwable doe) {
-                            // DOE means the service is restarting, wait and try again.
-                            Thread.currentThread().sleep(100);
-                        }
-                    }
-                    if (adapterState != NfcAdapter.STATE_ON) {
-                        cardEmulation.registerNfcEventCallback(pool, callback);
-                        // The adapter is restarting due to the timeout error, wait for it to
-                        // turn back on.
-                        if (!callback.mStateOnLatch.await(20, TimeUnit.SECONDS)) {
-                            Assert.assertEquals(adapter.getAdapterState(), NfcAdapter.STATE_ON);
-                        }
+                    if (adapter.getAdapterState() != NfcAdapter.STATE_ON) {
+                        adapterStateLatch.await(20, TimeUnit.SECONDS);
+                        Assert.assertEquals(adapter.getAdapterState(), NfcAdapter.STATE_ON);
                     }
                     Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
                     Assert.assertTrue(
@@ -920,6 +921,7 @@ public class CardEmulationTest {
                                     + callback.mErrorType);
             }
         } finally {
+            mContext.unregisterReceiver(receiver);
             activity.finish();
             adapter.notifyHceDeactivated();
             cardEmulation.unregisterNfcEventCallback(callback);
