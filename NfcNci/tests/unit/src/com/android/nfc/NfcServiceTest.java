@@ -29,6 +29,7 @@ import static com.android.nfc.NfcService.SOUND_ERROR;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyFloat;
@@ -130,7 +131,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -143,7 +143,9 @@ import java.io.FileDescriptor;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -215,7 +217,7 @@ public final class NfcServiceTest {
         mStaticMockSession = ExtendedMockito.mockitoSession()
                 .mockStatic(NfcProperties.class)
                 .mockStatic(android.nfc.Flags.class)
-                .mockStatic(com.android.nfc.flags.Flags.class)
+                .mockStatic(Flags.class)
                 .mockStatic(NfcStatsLog.class)
                 .mockStatic(android.permission.flags.Flags.class)
                 .mockStatic(NfcInjector.class)
@@ -1182,11 +1184,11 @@ public final class NfcServiceTest {
 
     @Test
     public void testOnObserveModeStateChanged() {
-        when(com.android.nfc.flags.Flags.postCallbacks()).thenReturn(true);
+        when(Flags.postCallbacks()).thenReturn(true);
         mNfcService.onObserveModeStateChanged(true);
         mLooper.dispatchAll();
         verify(mCardEmulationManager, atLeastOnce()).onObserveModeStateChange(anyBoolean());
-        when(com.android.nfc.flags.Flags.postCallbacks()).thenReturn(false);
+        when(Flags.postCallbacks()).thenReturn(false);
         mNfcService.onObserveModeStateChanged(false);
         verify(mCardEmulationManager, atLeastOnce()).onObserveModeStateChange(anyBoolean());
     }
@@ -1197,13 +1199,13 @@ public final class NfcServiceTest {
         List<PollingFrame> frames = new ArrayList<>();
         frames.add(pollingFrame);
         when(android.nfc.Flags.nfcReadPollingLoop()).thenReturn(true);
-        when(com.android.nfc.flags.Flags.postCallbacks()).thenReturn(true);
+        when(Flags.postCallbacks()).thenReturn(true);
         mNfcService.onPollingLoopDetected(frames);
         mLooper.dispatchAll();
         ArgumentCaptor<List<PollingFrame>> listArgumentCaptor = ArgumentCaptor.forClass(List.class);
         verify(mCardEmulationManager).onPollingLoopDetected(listArgumentCaptor.capture());
         assertThat(frames).isEqualTo(listArgumentCaptor.getValue());
-        when(com.android.nfc.flags.Flags.postCallbacks()).thenReturn(false);
+        when(Flags.postCallbacks()).thenReturn(false);
         mNfcService.onPollingLoopDetected(frames);
         verify(mCardEmulationManager, atLeastOnce()).onPollingLoopDetected(listArgumentCaptor.capture());
         assertThat(frames).isEqualTo(listArgumentCaptor.getValue());
@@ -1286,7 +1288,7 @@ public final class NfcServiceTest {
         mLooper.dispatchAll();
         verify(mCardEmulationManager).onOffHostAidSelected();
         verify(mPackageManager).queryBroadcastReceiversAsUser(any(), anyInt(), any());
-        verify(mApplication).sendBroadcastAsUser(any(), any(), ArgumentMatchers.isNull(), any());
+        verify(mApplication).sendBroadcastAsUser(any(), any(), isNull(), any());
     }
 
     @Test
@@ -1349,7 +1351,7 @@ public final class NfcServiceTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_COALESCE_RF_EVENTS)
     public void testOnRemoteFieldCoalessing() throws RemoteException {
-        Assume.assumeTrue(com.android.nfc.flags.Flags.coalesceRfEvents());
+        Assume.assumeTrue(Flags.coalesceRfEvents());
         createNfcServiceWithoutStatsdUtils();
         List<String> userlist = new ArrayList<>();
         userlist.add("com.android.nfc");
@@ -2238,5 +2240,36 @@ public final class NfcServiceTest {
         callback.onTagDisconnected();
         assertThat(mNfcService.mCookieUpToDate).isLessThan(0);
         verify(oemExtensionCallback).onTagConnected(anyBoolean());
+    }
+
+    @Test
+    public void testSetFirmwareExitFrameTable() {
+        ArgumentCaptor<ExitFrame[]> frameCaptor = ArgumentCaptor.forClass(ExitFrame[].class);
+        ArgumentCaptor<byte[]> timeoutCaptor = ArgumentCaptor.forClass(byte[].class);
+
+        mNfcService.setFirmwareExitFrameTable(Collections.singletonList(new ExitFrame("1234")),
+                5000);
+
+        verify(mDeviceHost).setFirmwareExitFrameTable(frameCaptor.capture(),
+                timeoutCaptor.capture());
+        ExitFrame[] frames = frameCaptor.getValue();
+        assertThat(frames).hasLength(1);
+        assertThat(frames[0].getData()).isEqualTo(HexFormat.of().parseHex("1234"));
+        byte[] timeoutBytes = timeoutCaptor.getValue();
+        // 5000 in little-endian bytes
+        assertArrayEquals(new byte[] {(byte) 0x88, 0x13}, timeoutBytes);
+    }
+
+
+    @Test
+    public void testSetFirmwareExitFrameTable_largeTimeout() {
+        ArgumentCaptor<byte[]> timeoutCaptor = ArgumentCaptor.forClass(byte[].class);
+
+        mNfcService.setFirmwareExitFrameTable(Collections.singletonList(new ExitFrame("1234")),
+                500000);
+
+        verify(mDeviceHost).setFirmwareExitFrameTable(any(), timeoutCaptor.capture());
+        byte[] timeoutBytes = timeoutCaptor.getValue();
+        assertArrayEquals(new byte[] {(byte) 0xFF, (byte) 0xFF}, timeoutBytes);
     }
 }

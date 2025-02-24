@@ -4,3 +4,4 @@
 -keep class com.android.nfc.wlc.NfcCharging { *; }
 -keep class com.android.nfc.NfcVendorNciResponse { *; }
 -keep class com.android.nfc.proto.** { *; }
+-keep class com.android.nfc.ExitFrame {*; }
