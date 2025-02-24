@@ -325,11 +325,12 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
     def on_fail(self, record):
         if self.user_params.get('take_bug_report_on_fail', False):
             test_name = record.test_name
-            self.emulator.take_bug_report(
-                test_name=self.emulator.debug_tag + "_" + test_name,
-                destination=self.current_test_info.output_path,
-            )
-            if self.pn532 is None:
+            if hasattr(self, 'emulator') and hasattr(self.emulator, 'nfc_emulator'):
+                self.emulator.take_bug_report(
+                    test_name=self.emulator.debug_tag + "_" + test_name,
+                    destination=self.current_test_info.output_path,
+                )
+            if hasattr(self, 'reader') and hasattr(self.reader, 'nfc_reader'):
                 self.reader.take_bug_report(
                     test_name=self.reader.debug_tag + "_" + test_name,
                     destination=self.current_test_info.output_path,
@@ -1143,7 +1144,8 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
 
         # 1. Mute the field before starting the emulator
         # in order to be able to trigger ON event when the test starts
-        self.pn532.mute()
+        if self.pn532:
+            self.pn532.mute()
 
         # 2. Start emulator activity
         self._set_up_emulator(
@@ -1268,7 +1270,8 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         asserts.skip_if(not self.emulator.nfc_emulator.isObserveModeSupported(),
                     "Skipping polling frame gain test, observe mode not supported")
 
-        self.pn532.mute()
+        if self.pn532:
+            self.pn532.mute()
         emulator = self.emulator.nfc_emulator
 
         self._set_up_emulator(
@@ -1349,7 +1352,8 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         """
         asserts.skip_if(not self.emulator.nfc_emulator.isObserveModeSupported(),
                     "Skipping polling frame type test, observe mode not supported")
-        self.pn532.mute()
+        if self.pn532:
+            self.pn532.mute()
         emulator = self.emulator.nfc_emulator
 
         self._set_up_emulator(
@@ -1400,7 +1404,8 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         """
         asserts.skip_if(not self.emulator.nfc_emulator.isObserveModeSupported(),
                     "Skipping polling frame data test, observe mode not supported")
-        self.pn532.mute()
+        if self.pn532:
+            self.pn532.mute()
         emulator = self.emulator.nfc_emulator
 
         self._set_up_emulator(
