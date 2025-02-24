@@ -17,16 +17,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import android.app.Activity;
@@ -36,11 +30,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.nfc.AvailableNfcAntenna;
 import android.nfc.Flags;
-import android.nfc.INfcAdapter;
 import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
 import android.nfc.NfcAntennaInfo;
@@ -55,9 +46,11 @@ import android.nfc.RoutingTableTechnologyEntry;
 import android.nfc.T4tNdefNfcee;
 import android.nfc.T4tNdefNfceeCcFileInfo;
 import android.nfc.Tag;
-import android.nfc.TechListParcel;
+import android.nfc.WlcListenerDeviceInfo;
 import android.nfc.cardemulation.ApduServiceInfo;
 import android.nfc.cardemulation.CardEmulation;
+import android.nfc.tech.IsoDep;
+import android.nfc.tech.TagTechnology;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.RemoteException;
@@ -72,7 +65,6 @@ import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.core.app.ApplicationProvider;
 
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
@@ -82,8 +74,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.internal.util.reflection.FieldReader;
-import org.mockito.internal.util.reflection.FieldSetter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -97,9 +87,7 @@ import java.util.function.Consumer;
 public class NfcAdapterTest {
 
     private static final long MAX_POLLING_PAUSE_TIMEOUT = 40000;
-    @Mock private INfcAdapter mService;
     @Mock private DevicePolicyManager mDevicePolicyManager;
-    private INfcAdapter mSavedService;
     private Context mContext;
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -119,22 +107,6 @@ public class NfcAdapterTest {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         Assume.assumeNotNull(adapter);
         Assume.assumeTrue(NfcUtils.enableNfc(adapter, mContext));
-        mSavedService = (INfcAdapter) (
-            new FieldReader(adapter, adapter.getClass().getDeclaredField("sService")).read());
-    }
-
-    @After
-    public void tearDown() throws NoSuchFieldException {
-        if (!supportsHardware()) return;
-        // Restore the original service.
-        if (!supportsHardware()) {
-            return;
-        }
-        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
-        if (adapter != null) {
-            FieldSetter.setField(adapter,
-                    adapter.getClass().getDeclaredField("sService"), mSavedService);
-        }
     }
 
     @Test
@@ -144,177 +116,163 @@ public class NfcAdapterTest {
     }
 
     @Test
-    public void testAddNfcUnlockHandler() {
-            NfcAdapter adapter = getDefaultAdapter();
-            adapter.addNfcUnlockHandler(new CtsNfcUnlockHandler(), new String[]{"IsoDep"});
+    public void testAddAndRemoveNfcUnlockHandler() {
+        NfcAdapter adapter = getDefaultAdapter();
+        CtsNfcUnlockHandler unlockHandler = new CtsNfcUnlockHandler();
+
+        adapter.addNfcUnlockHandler(unlockHandler, new String[]{"IsoDep"});
+        adapter.removeNfcUnlockHandler(unlockHandler);
     }
 
     @Test
-    public void testDisableWithNoParams() throws NoSuchFieldException, RemoteException {
+    public void testEnableAndDisable() throws NoSuchFieldException, RemoteException {
         NfcAdapter adapter = getDefaultAdapter();
+        Assert.assertTrue(adapter.isEnabled());
+
+        // Disable NFC
         Assert.assertTrue(NfcUtils.disableNfc(adapter, mContext));
-    }
+        Assert.assertFalse(adapter.isEnabled());
 
-    @Test
-    public void testDisableWithParam() throws NoSuchFieldException, RemoteException {
-        NfcAdapter adapter = getDefaultAdapter();
-        Assert.assertTrue(NfcUtils.disableNfc(adapter, mContext, true));
-    }
-
-    @Test
-    public void testDisableForegroundDispatch() {
-            NfcAdapter adapter = getDefaultAdapter();
-            Activity activity = createAndResumeActivity();
-            adapter.disableForegroundDispatch(activity);
-    }
-
-    @Test
-    public void testDisableReaderMode() {
-            NfcAdapter adapter = getDefaultAdapter();
-            Activity activity = createAndResumeActivity();
-            adapter.disableReaderMode(activity);
-    }
-
-    @Test
-    public void testEnable() throws NoSuchFieldException, RemoteException {
-        NfcAdapter adapter = getDefaultAdapter();
-        Assert.assertTrue(NfcUtils.disableNfc(adapter, mContext, true));
+        // Re-enable NFC
         Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
+        Assert.assertTrue(adapter.isEnabled());
     }
 
     @Test
-    public void testEnableForegroundDispatch() throws RemoteException {
-            NfcAdapter adapter = getDefaultAdapter();
-            Activity activity = createAndResumeActivity();
-            Intent intent = new Intent(ApplicationProvider.getApplicationContext(),
-                NfcFCardEmulationActivity.class);
-            PendingIntent pendingIntent
-                = PendingIntent.getActivity(ApplicationProvider.getApplicationContext(),
-                    0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
-            String[][] techLists = new String[][]{new String[]{}};
-            doNothing().when(mService).setForegroundDispatch(any(PendingIntent.class),
-                any(IntentFilter[].class), any(TechListParcel.class));
-            adapter.enableForegroundDispatch(activity, pendingIntent, null, techLists);
-    }
-
-    @Test
-    public void testEnableReaderMode() {
-            NfcAdapter adapter = getDefaultAdapter();
-            Activity activity = createAndResumeActivity();
-            adapter.enableReaderMode(activity, new CtsReaderCallback(),
-                NfcAdapter.FLAG_READER_NFC_A, new Bundle());
-    }
-
-    @Test
-    public void testEnableReaderOption() throws NoSuchFieldException, RemoteException {
+    public void testEnableAndDisablePersist() throws NoSuchFieldException, RemoteException {
         NfcAdapter adapter = getDefaultAdapter();
-        adapter.enableReaderOption(true);
+        Assert.assertTrue(adapter.isEnabled());
+
+        // Disable NFC
+        Assert.assertTrue(NfcUtils.disableNfc(adapter, mContext, /* persist = */ false));
+        Assert.assertFalse(adapter.isEnabled());
+
+        // Re-enable NFC
+        Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
+        Assert.assertTrue(adapter.isEnabled());
     }
 
     @Test
-    public void testEnableSecureNfc() throws RemoteException {
-        NfcAdapter adapter = createMockedInstance();
-        when(mService.setNfcSecure(anyBoolean())).thenReturn(true);
-        boolean result = adapter.enableSecureNfc(true);
-        Assert.assertTrue(result);
+    public void testEnableAndDisableForegroundDispatch() throws RemoteException {
+        NfcAdapter adapter = getDefaultAdapter();
+        Activity activity = createAndResumeActivity();
+        Intent intent = new Intent(ApplicationProvider.getApplicationContext(),
+            NfcFCardEmulationActivity.class);
+        PendingIntent pendingIntent
+            = PendingIntent.getActivityAsUser(ApplicationProvider.getApplicationContext(), 0,
+            intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE, null,
+            UserHandle.of(mContext.getUser().getIdentifier()));
+        String[][] techLists = new String[][]{new String[]{}};
+
+        adapter.enableForegroundDispatch(activity, pendingIntent, null, techLists);
+        adapter.disableForegroundDispatch(activity);
+    }
+
+    @Test
+    public void testEnableAndDisableReaderMode() {
+        NfcAdapter adapter = getDefaultAdapter();
+        Activity activity = createAndResumeActivity();
+        Intent intent = new Intent(ApplicationProvider.getApplicationContext(),
+            NfcFCardEmulationActivity.class);
+        PendingIntent pendingIntent
+            = PendingIntent.getActivityAsUser(ApplicationProvider.getApplicationContext(), 0,
+            intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE, null,
+            UserHandle.of(mContext.getUser().getIdentifier()));
+        String[][] techLists = new String[][]{new String[]{}};
+        // Move activity to the foreground
+        adapter.enableForegroundDispatch(activity, pendingIntent, null, techLists);
+
+        adapter.enableReaderMode(activity, new CtsReaderCallback(),
+            NfcAdapter.FLAG_READER_NFC_A | NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK, new Bundle());
+        adapter.disableReaderMode(activity);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_READER_OPTION)
+    public void testEnableAndDisableReaderOption() throws NoSuchFieldException, RemoteException {
+        NfcAdapter adapter = getDefaultAdapter();
+        assumeTrue(adapter.isReaderOptionSupported());
+
+        Assert.assertTrue(adapter.enableReaderOption(/* enable = */ true));
+        Assert.assertTrue(adapter.isReaderOptionEnabled());
+
+        Assert.assertTrue(adapter.enableReaderOption(/* enable = */ false));
+        Assert.assertFalse(adapter.isReaderOptionEnabled());
+    }
+
+    @Test
+    public void testEnableAndDisableSecureNfc() throws RemoteException {
+        NfcAdapter adapter = getDefaultAdapter();
+        assumeTrue(adapter.isSecureNfcSupported());
+
+        Assert.assertTrue(adapter.enableSecureNfc(/* enable = */ true));
+        Assert.assertTrue(adapter.isSecureNfcEnabled());
+
+        Assert.assertTrue(adapter.enableSecureNfc(/* enable = */ false));
+        Assert.assertFalse(adapter.isSecureNfcEnabled());
     }
 
     @Test
     public void testGetNfcAntennaInfo() throws NoSuchFieldException, RemoteException {
-        NfcAdapter adapter = createMockedInstance();
-        NfcAntennaInfo info = new NfcAntennaInfo(0, 0, false,
-            new ArrayList<AvailableNfcAntenna>());
-        when(mService.getNfcAntennaInfo()).thenReturn(info);
-        NfcAntennaInfo result = adapter.getNfcAntennaInfo();
-        Assert.assertEquals(info, result);
-        resetMockedInstance();
+        NfcAdapter adapter = getDefaultAdapter();
+        NfcAntennaInfo antenna = adapter.getNfcAntennaInfo();
+        Assert.assertNotNull(antenna);
     }
 
     @Test
     public void testIgnore() throws NoSuchFieldException, RemoteException {
-        NfcAdapter adapter = createMockedInstance();
-        Tag tag = new Tag(new byte[]{0x00}, new int[]{}, new Bundle[]{}, 0, 0L, null);
-        when(mService.ignore(anyInt(), anyInt(), eq(null))).thenReturn(true);
-        boolean result = adapter.ignore(tag, 0, null, null);
-        Assert.assertTrue(result);
-    }
-
-    @Test
-    public void testIsControllerAlwaysOn() throws NoSuchFieldException, RemoteException {
-        NfcAdapter adapter = createMockedInstance();
-        when(mService.isControllerAlwaysOn()).thenReturn(true);
-        boolean result = adapter.isControllerAlwaysOn();
-        Assert.assertTrue(result);
-        resetMockedInstance();
-    }
-
-    @Test
-    public void testIsControllerAlwaysOnSupported() throws NoSuchFieldException, RemoteException {
-        NfcAdapter adapter = createMockedInstance();
-        when(mService.isControllerAlwaysOnSupported()).thenReturn(true);
-        boolean result = adapter.isControllerAlwaysOnSupported();
-        Assert.assertTrue(result);
-        resetMockedInstance();
-    }
-
-    @Test
-    public void testIsEnabled() throws NoSuchFieldException, RemoteException {
-        NfcAdapter adapter = createMockedInstance();
-        when(mService.getState()).thenReturn(NfcAdapter.STATE_ON);
-        boolean result = adapter.isEnabled();
-        Assert.assertTrue(result);
-        resetMockedInstance();
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_READER_OPTION)
-    public void testIsReaderOptionEnabled() throws NoSuchFieldException, RemoteException {
         NfcAdapter adapter = getDefaultAdapter();
-        boolean result = adapter.isReaderOptionEnabled();
-        Assert.assertTrue(result);
+        CtsOnTagRemovedListener listener = new CtsOnTagRemovedListener();
+        IsoDep isoDep = createIsoDepTag();
+
+        // This is a fake tag, so ignore() will always return false.
+        Assert.assertFalse(adapter.ignore(isoDep.getTag(), 0, listener, null));
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_READER_OPTION)
-    public void testIsReaderOptionSupported() throws NoSuchFieldException, RemoteException {
-        NfcAdapter adapter = createMockedInstance();
-        when(mService.isReaderOptionSupported()).thenReturn(true);
-        boolean result = adapter.isReaderOptionSupported();
-        Assert.assertTrue(result);
-        resetMockedInstance();
+    public void testEnableThenDisableControllerAlwaysOnSupported()
+        throws NoSuchFieldException, InterruptedException, RemoteException {
+        NfcAdapter adapter = getDefaultAdapter();
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+            .getUiAutomation().adoptShellPermissionIdentity(NFC_SET_CONTROLLER_ALWAYS_ON);
+        assumeTrue(adapter.isControllerAlwaysOnSupported());
+        NfcControllerAlwaysOnListener cb = null;
+        CountDownLatch countDownLatch;
+        try {
+            countDownLatch = new CountDownLatch(1);
+            cb = new NfcControllerAlwaysOnListener(countDownLatch);
+            adapter.registerControllerAlwaysOnListener(Executors.newSingleThreadExecutor(), cb);
+            Assert.assertTrue(adapter.setControllerAlwaysOn(true));
+            assertTrue(countDownLatch.await(1, TimeUnit.SECONDS));
+            Assert.assertTrue(adapter.isControllerAlwaysOn());
+            adapter.unregisterControllerAlwaysOnListener(cb);
+
+            countDownLatch = new CountDownLatch(1);
+            cb = new NfcControllerAlwaysOnListener(countDownLatch);
+            adapter.registerControllerAlwaysOnListener(Executors.newSingleThreadExecutor(), cb);
+            Assert.assertTrue(adapter.setControllerAlwaysOn(false));
+            assertTrue(countDownLatch.await(1, TimeUnit.SECONDS));
+            Assert.assertFalse(adapter.isControllerAlwaysOn());
+            adapter.unregisterControllerAlwaysOnListener(cb);
+        } finally {
+            if (cb != null)
+                adapter.unregisterControllerAlwaysOnListener(cb);
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation().dropShellPermissionIdentity();
+        }
+
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_MAINLINE)
     public void testAdapterState() throws NoSuchFieldException, RemoteException {
-        NfcAdapter adapter = createMockedInstance();
-        when(mService.getState()).thenReturn(NfcAdapter.STATE_ON);
-        Assert.assertEquals(adapter.getAdapterState(), NfcAdapter.STATE_ON);
-        resetMockedInstance();
-    }
-
-    @Test
-    public void testIsSecureNfcEnabled() throws NoSuchFieldException, RemoteException {
-        NfcAdapter adapter = createMockedInstance();
-        when(mService.isNfcSecureEnabled()).thenReturn(true);
-        boolean result = adapter.isSecureNfcEnabled();
-        Assert.assertTrue(result);
-    }
-
-    @Test
-    public void testIsSecureNfcSupported() throws NoSuchFieldException, RemoteException {
-        NfcAdapter adapter = createMockedInstance();
-        when(mService.deviceSupportsNfcSecure()).thenReturn(true);
-        boolean result = adapter.isSecureNfcSupported();
-        Assert.assertTrue(result);
-        resetMockedInstance();
-    }
-
-    @Test
-    public void testRemoveNfcUnlockHandler() {
         NfcAdapter adapter = getDefaultAdapter();
-        boolean result = adapter.removeNfcUnlockHandler(new CtsNfcUnlockHandler());
-        Assert.assertTrue(result);
+
+        Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
+        Assert.assertTrue(adapter.getAdapterState() == NfcAdapter.STATE_ON);
+
+        Assert.assertTrue(NfcUtils.disableNfc(adapter, mContext));
+        Assert.assertTrue(adapter.getAdapterState() == NfcAdapter.STATE_OFF);
     }
 
     @Test
@@ -564,18 +522,16 @@ public class NfcAdapterTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_CHARGING)
-    public void testEnableNfcCharging() throws NoSuchFieldException, RemoteException {
+    public void testDisableAndEnableNfcCharging() throws NoSuchFieldException, RemoteException {
         NfcAdapter adapter = getDefaultAdapter();
-        boolean result = adapter.setWlcEnabled(true);
-        Assert.assertTrue(result);
-    }
 
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_CHARGING)
-    public void testIsNfcChargingEnabled() throws NoSuchFieldException, RemoteException {
-        NfcAdapter adapter = getDefaultAdapter();
-        boolean result = adapter.isWlcEnabled();
-        Assert.assertTrue(result);
+        // Disable charging feature
+        Assert.assertTrue(adapter.setWlcEnabled(false));
+        Assert.assertFalse(adapter.isWlcEnabled());
+
+        // Enable charging feature
+        Assert.assertTrue(adapter.setWlcEnabled(true));
+        Assert.assertTrue(adapter.isWlcEnabled());
     }
 
     @Test
@@ -786,24 +742,23 @@ public class NfcAdapterTest {
     @RequiresFlagsEnabled(Flags.FLAG_NFC_OEM_EXTENSION)
     public void testOemExtensionMaybeTriggerFirmwareUpdate()
             throws InterruptedException, RemoteException {
-        NfcAdapter nfcAdapter = createMockedInstance();
+        NfcAdapter nfcAdapter = getDefaultAdapter();
         Assert.assertNotNull(nfcAdapter);
         NfcOemExtension nfcOemExtension = nfcAdapter.getNfcOemExtension();
         Assert.assertNotNull(nfcOemExtension);
         nfcOemExtension.maybeTriggerFirmwareUpdate();
-        verify(mService).checkFirmware();
+        Assert.assertTrue(NfcUtils.disableNfc(nfcAdapter, mContext));
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_NFC_OEM_EXTENSION)
     public void testOemExtensionTriggerInitialization()
             throws InterruptedException, RemoteException {
-        NfcAdapter nfcAdapter = createMockedInstance();
+        NfcAdapter nfcAdapter = getDefaultAdapter();
         Assert.assertNotNull(nfcAdapter);
         NfcOemExtension nfcOemExtension = nfcAdapter.getNfcOemExtension();
         Assert.assertNotNull(nfcOemExtension);
         nfcOemExtension.triggerInitialization();
-        verify(mService).triggerInitialization();
     }
 
     @Test
@@ -1196,6 +1151,16 @@ public class NfcAdapterTest {
         }
     }
 
+    private static class CtsWlcStateListener implements NfcAdapter.WlcStateListener {
+        @Override
+        public void onWlcStateChanged(WlcListenerDeviceInfo deviceInfo) {}
+    }
+
+    private static class CtsOnTagRemovedListener implements NfcAdapter.OnTagRemovedListener {
+        @Override
+        public void onTagRemoved() {}
+    }
+
     private Activity createAndResumeActivity() {
         CardEmulationTest.ensureUnlocked();
         Intent intent = new Intent(ApplicationProvider.getApplicationContext(),
@@ -1207,35 +1172,16 @@ public class NfcAdapterTest {
     }
 
     private NfcAdapter getDefaultAdapter() {
-        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
-        try {
-            FieldSetter.setField(adapter, adapter.getClass().getDeclaredField("sService"),
-                    mSavedService);
-        } catch (NoSuchFieldException nsfe) {
-            throw new RuntimeException(nsfe);
-        }
-        return adapter;
+        return NfcAdapter.getDefaultAdapter(mContext);
     }
 
-    private NfcAdapter createMockedInstance() {
-        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
-        try {
-            FieldSetter.setField(adapter, adapter.getClass().getDeclaredField("sService"),
-                    mService);
-        } catch (NoSuchFieldException nsfe)  {
-            throw new RuntimeException(nsfe);
-        }
-        return adapter;
-    }
-
-    private void resetMockedInstance() {
-        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
-        try {
-            FieldSetter.setField(adapter, adapter.getClass().getDeclaredField("sService"),
-                    mSavedService);
-        } catch (NoSuchFieldException nsfe) {
-            throw new RuntimeException(nsfe);
-        }
+    private IsoDep createIsoDepTag() {
+        Bundle extras = new Bundle();
+        extras.putByteArray(IsoDep.EXTRA_HI_LAYER_RESP, new byte[]{0x00});
+        extras.putByteArray(IsoDep.EXTRA_HIST_BYTES, new byte[]{0x00});
+        Tag tag = new Tag(new byte[]{0x00}, new int[]{TagTechnology.ISO_DEP},
+            new Bundle[]{extras}, 0, 0L, null);
+        return IsoDep.get(tag);
     }
 
     private ComponentName setDefaultPaymentService(Class serviceClass) {
@@ -1263,49 +1209,39 @@ public class NfcAdapterTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_NFC_CHECK_TAG_INTENT_PREFERENCE)
-    public void testIsTagIntentAllowed() throws NoSuchFieldException, RemoteException {
-        when(mService.isTagIntentAllowed(anyString(), anyInt())).thenReturn(true);
-        NfcAdapter adapter = createMockedInstance();
-        boolean result = adapter.isTagIntentAllowed();
-        Assert.assertTrue(result);
-    }
+    public void testSetTagIntentAppPreference() throws NoSuchFieldException, RemoteException {
+        NfcAdapter adapter = getDefaultAdapter();
+        assumeTrue(adapter.isTagIntentAppPreferenceSupported());
+        int user = mContext.getUser().getIdentifier();
 
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NFC_CHECK_TAG_INTENT_PREFERENCE)
-    public void testIsTagIntentAppPreferenceSupported() throws NoSuchFieldException,
-             RemoteException {
-        when(mService.isTagIntentAppPreferenceSupported()).thenReturn(true);
-        NfcAdapter adapter = createMockedInstance();
-        boolean result = adapter.isTagIntentAppPreferenceSupported();
-        Assert.assertTrue(result);
-    }
+        // Disallow package
+        Assert.assertEquals(NfcAdapter.TAG_INTENT_APP_PREF_RESULT_SUCCESS,
+            adapter.setTagIntentAppPreferenceForUser(
+            user, "android.nfc.cts", /* allow = */ false));
+        Map<String, Boolean> disallowMap = adapter.getTagIntentAppPreferenceForUser(user);
+        Assert.assertNotNull(disallowMap);
+        Assert.assertFalse(disallowMap.isEmpty());
+        Assert.assertEquals(false, disallowMap.get("android.nfc.cts"));
+        Assert.assertFalse(adapter.isTagIntentAllowed());
 
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NFC_CHECK_TAG_INTENT_PREFERENCE)
-    public void testIsTagIntentAllowedWhenNotSupported() throws NoSuchFieldException,
-             RemoteException {
-        when(mService.isTagIntentAppPreferenceSupported()).thenReturn(false);
-        NfcAdapter adapter = createMockedInstance();
-        boolean result = adapter.isTagIntentAllowed();
-        Assert.assertTrue(result);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_CHARGING)
-    public void testRegisterWlcStateListener() throws RemoteException {
-        NfcAdapter adapter = createMockedInstance();
-        NfcAdapter.WlcStateListener listener = mock(NfcAdapter.WlcStateListener.class);
-        adapter.registerWlcStateListener(Executors.newSingleThreadExecutor(), listener);
-        verify(mService).registerWlcStateListener(any());
+        // Allow package
+        Assert.assertEquals(NfcAdapter.TAG_INTENT_APP_PREF_RESULT_SUCCESS,
+            adapter.setTagIntentAppPreferenceForUser(
+                user, "android.nfc.cts", /* allow = */ true));
+        Map<String, Boolean> allowMap = adapter.getTagIntentAppPreferenceForUser(user);
+        Assert.assertNotNull(allowMap);
+        Assert.assertFalse(allowMap.isEmpty());
+        Assert.assertEquals(true, allowMap.get("android.nfc.cts"));
+        Assert.assertTrue(adapter.isTagIntentAllowed());
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_CHARGING)
-    public void testUnregisterWlcStateListener() throws RemoteException {
-        NfcAdapter adapter = createMockedInstance();
-        NfcAdapter.WlcStateListener listener = mock(NfcAdapter.WlcStateListener.class);
+    public void testRegisterAndUnregisterWlcStateListener() throws RemoteException {
+        NfcAdapter adapter = getDefaultAdapter();
+        CtsWlcStateListener listener = new CtsWlcStateListener();
+
         adapter.registerWlcStateListener(Executors.newSingleThreadExecutor(), listener);
         adapter.unregisterWlcStateListener(listener);
-        verify(mService).unregisterWlcStateListener(any());
     }
 }
