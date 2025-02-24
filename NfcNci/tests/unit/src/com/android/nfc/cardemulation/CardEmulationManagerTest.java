@@ -49,6 +49,7 @@ import android.content.res.Resources;
 import android.nfc.ComponentNameAndUser;
 import android.nfc.INfcCardEmulation;
 import android.nfc.NfcAdapter;
+import android.nfc.PackageAndUser;
 import android.nfc.cardemulation.AidGroup;
 import android.nfc.cardemulation.ApduServiceInfo;
 import android.nfc.cardemulation.CardEmulation;
@@ -61,6 +62,7 @@ import android.os.UserHandle;
 import android.os.UserManager;
 import android.provider.Settings;
 import android.telephony.SubscriptionManager;
+import android.util.Pair;
 
 import com.android.dx.mockito.inline.extended.ExtendedMockito;
 import com.android.nfc.ExitFrame;
@@ -501,7 +503,7 @@ public class CardEmulationManagerTest {
         when(mRegisteredServicesCache.hasService(eq(USER_ID), any())).thenReturn(true);
         when(mWalletRoleObserver.isWalletRoleFeatureEnabled()).thenReturn(true);
         when(mWalletRoleObserver.getDefaultWalletRoleHolder(eq(USER_ID)))
-                .thenReturn(WALLET_HOLDER_PACKAGE_NAME);
+                .thenReturn(new PackageAndUser(USER_ID, WALLET_HOLDER_PACKAGE_NAME));
 
         assertTrue(
                 mCardEmulationManager
@@ -1524,7 +1526,7 @@ public class CardEmulationManagerTest {
             throws RemoteException {
         when(mWalletRoleObserver.isWalletRoleFeatureEnabled()).thenReturn(true);
         when(mWalletRoleObserver.getDefaultWalletRoleHolder(anyInt()))
-                .thenReturn(WALLET_HOLDER_PACKAGE_NAME);
+                .thenReturn(new PackageAndUser(USER_ID, WALLET_HOLDER_PACKAGE_NAME));
         when(Binder.getCallingUserHandle()).thenReturn(USER_HANDLE);
 
         assertTrue(
@@ -1538,7 +1540,8 @@ public class CardEmulationManagerTest {
     public void testCardEmulationIsDefaultPaymentRegistered_walletRoleEnabledWalletNone()
             throws RemoteException {
         when(mWalletRoleObserver.isWalletRoleFeatureEnabled()).thenReturn(true);
-        when(mWalletRoleObserver.getDefaultWalletRoleHolder(anyInt())).thenReturn(null);
+        when(mWalletRoleObserver.getDefaultWalletRoleHolder(anyInt())).thenReturn(
+                new PackageAndUser(USER_ID, null));
         when(Binder.getCallingUserHandle()).thenReturn(USER_HANDLE);
 
         assertFalse(
@@ -2273,7 +2276,7 @@ public class CardEmulationManagerTest {
                 TEST_DATA_2[0] & 0xFF);
         when(mWalletRoleObserver.isWalletRoleFeatureEnabled()).thenReturn(true);
         when(mWalletRoleObserver.getDefaultWalletRoleHolder(eq(USER_ID)))
-                .thenReturn(WALLET_HOLDER_PACKAGE_NAME);
+                .thenReturn(new PackageAndUser(USER_ID, WALLET_HOLDER_PACKAGE_NAME));
 
         return new CardEmulationManager(
                 mContext,
@@ -2556,8 +2559,8 @@ public class CardEmulationManagerTest {
         assertThat(iNfcCardEmulation).isNotNull();
         when(mWalletRoleObserver.isWalletRoleFeatureEnabled()).thenReturn(true);
         when(Binder.getCallingUserHandle()).thenReturn(USER_HANDLE);
-        when(mWalletRoleObserver.getDefaultWalletRoleHolder(0))
-                .thenReturn("com.android.test");
+        when(mWalletRoleObserver.getDefaultWalletRoleHolder(USER_ID))
+                .thenReturn(new PackageAndUser(USER_ID, "com.android.test"));
         boolean result = iNfcCardEmulation.isDefaultPaymentRegistered();
         assertThat(result).isTrue();
 

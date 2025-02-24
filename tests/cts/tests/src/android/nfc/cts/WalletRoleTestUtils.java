@@ -16,6 +16,7 @@
 
 package android.nfc.cts;
 
+import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.Manifest.permission.MANAGE_DEFAULT_APPLICATIONS;
 import static android.Manifest.permission.MANAGE_ROLE_HOLDERS;
 import static android.Manifest.permission.OBSERVE_ROLE_HOLDERS;
@@ -39,7 +40,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 
 public final class WalletRoleTestUtils {
 
@@ -168,7 +168,9 @@ public final class WalletRoleTestUtils {
             roleManager.addOnRoleHoldersChangedListenerAsUser(context.getMainExecutor(),
                     onRoleHoldersChangedListener, context.getUser());
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-                    .getUiAutomation().adoptShellPermissionIdentity(MANAGE_DEFAULT_APPLICATIONS);
+                    .getUiAutomation()
+                    .adoptShellPermissionIdentity(
+                            MANAGE_DEFAULT_APPLICATIONS, INTERACT_ACROSS_USERS_FULL);
             Assert.assertTrue(setDefaultWalletRoleHolder(context, roleHolder));
             countDownLatch.await(4000, TimeUnit.MILLISECONDS);
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
@@ -189,7 +191,8 @@ public final class WalletRoleTestUtils {
         String previousHolder = getDefaultWalletRoleHolder(context);
         try {
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-                    .getUiAutomation().adoptShellPermissionIdentity(MANAGE_DEFAULT_APPLICATIONS);
+                    .getUiAutomation().adoptShellPermissionIdentity(
+                            MANAGE_DEFAULT_APPLICATIONS, INTERACT_ACROSS_USERS_FULL);
             boolean canSet = setDefaultWalletRoleHolder(context, packageName);
             if (canSet && previousHolder != null) {
                 setDefaultWalletRoleHolder(context, previousHolder);

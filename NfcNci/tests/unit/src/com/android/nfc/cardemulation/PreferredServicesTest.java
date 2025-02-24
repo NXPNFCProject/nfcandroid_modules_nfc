@@ -41,12 +41,14 @@ import android.database.ContentObserver;
 import android.net.Uri;
 import android.nfc.ComponentNameAndUser;
 import android.nfc.Constants;
+import android.nfc.PackageAndUser;
 import android.nfc.cardemulation.ApduServiceInfo;
 import android.nfc.cardemulation.CardEmulation;
 import android.os.Process;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.provider.Settings;
+import android.util.Pair;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -154,7 +156,8 @@ public class PreferredServicesTest {
         when(UserHandle.getUserHandleForUid(anyInt())).thenReturn(mUserHandle);
         when(UserHandle.of(anyInt())).thenReturn(mUserHandle);
         when(mUserHandle.getIdentifier()).thenReturn(FOREGROUND_UID);
-        when(mObserver.getDefaultWalletRoleHolder(anyInt())).thenReturn(null);
+        when(mObserver.getDefaultWalletRoleHolder(anyInt())).thenReturn(
+                new PackageAndUser(USER_ID, null));
         when(mServiceInfoPayment.getComponent()).thenReturn(TEST_COMPONENT);
         when(mServiceInfoPayment.getAids()).thenReturn(getAids());
         when(mServiceInfoPayment.getCategoryForAid(anyString()))
@@ -384,7 +387,7 @@ public class PreferredServicesTest {
         when(mServicesCache.getInstalledServices(eq(USER_ID))).thenReturn(getPaymentServices());
         when(mServicesCache.getService(anyInt(), any())).thenReturn(mServiceInfoPayment);
         when(mObserver.getDefaultWalletRoleHolder(eq(USER_ID)))
-                .thenReturn(WALLET_HOLDER_PACKAGE_NAME);
+                .thenReturn(new PackageAndUser(USER_ID, WALLET_HOLDER_PACKAGE_NAME));
         services = new PreferredServices(mContext, mServicesCache, mAidCache, mObserver, mCallback);
         services.mUserIdDefaultWalletHolder = USER_ID;
         services.mForegroundCurrent = TEST_COMPONENT;
@@ -406,7 +409,7 @@ public class PreferredServicesTest {
         when(mServicesCache.getInstalledServices(eq(USER_ID))).thenReturn(getPaymentServices());
         when(mServicesCache.getService(anyInt(), any())).thenReturn(mServiceInfoNonPayment);
         when(mObserver.getDefaultWalletRoleHolder(eq(USER_ID)))
-                .thenReturn(WALLET_HOLDER_PACKAGE_NAME);
+                .thenReturn(new PackageAndUser(USER_ID, WALLET_HOLDER_PACKAGE_NAME));
         mResolveInfo.category = CardEmulation.CATEGORY_PAYMENT;
         mResolveInfo.defaultService = mServiceInfoNonPayment;
         services = new PreferredServices(mContext, mServicesCache, mAidCache, mObserver, mCallback);
@@ -431,7 +434,7 @@ public class PreferredServicesTest {
         when(mServicesCache.getInstalledServices(eq(USER_ID))).thenReturn(getPaymentServices());
         when(mServicesCache.getService(anyInt(), any())).thenReturn(mServiceInfoNonPayment);
         when(mObserver.getDefaultWalletRoleHolder(eq(USER_ID)))
-                .thenReturn(WALLET_HOLDER_PACKAGE_NAME);
+                .thenReturn(new PackageAndUser(USER_ID, WALLET_HOLDER_PACKAGE_NAME));
         mResolveInfo.category = CardEmulation.CATEGORY_PAYMENT;
         mResolveInfo.defaultService = null;
         services = new PreferredServices(mContext, mServicesCache, mAidCache, mObserver, mCallback);

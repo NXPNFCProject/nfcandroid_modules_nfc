@@ -36,6 +36,7 @@ import android.nfc.INfcFCardEmulation;
 import android.nfc.INfcOemExtensionCallback;
 import android.nfc.NfcAdapter;
 import android.nfc.NfcOemExtension;
+import android.nfc.PackageAndUser;
 import android.nfc.cardemulation.AidGroup;
 import android.nfc.cardemulation.ApduServiceInfo;
 import android.nfc.cardemulation.CardEmulation;
@@ -59,6 +60,7 @@ import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.Pair;
 import android.util.proto.ProtoOutputStream;
 
 import com.android.internal.annotations.VisibleForTesting;
@@ -250,8 +252,10 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         mForegroundUid = Process.INVALID_UID;
         if (mWalletRoleObserver.isWalletRoleFeatureEnabled()) {
             int currentUser = ActivityManager.getCurrentUser();
-            onWalletRoleHolderChanged(
-                    mWalletRoleObserver.getDefaultWalletRoleHolder(currentUser), currentUser);
+            PackageAndUser roleHolder =
+                    mWalletRoleObserver.getDefaultWalletRoleHolder(currentUser);
+            onWalletRoleHolderChanged(roleHolder.getPackage(),
+                    roleHolder.getUserId());
         }
 
         if (android.nfc.Flags.nfcEventListener()) {
@@ -736,8 +740,13 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
                 return false;
             }
             if (mWalletRoleObserver.isWalletRoleFeatureEnabled()) {
-                return service.getPackageName()
-                        .equals(mWalletRoleObserver.getDefaultWalletRoleHolder(userId));
+                PackageAndUser holder =
+                        mWalletRoleObserver.getDefaultWalletRoleHolder(userId);
+                if (holder.getPackage() == null) {
+                    return false;
+                }
+                return service.getPackageName().equals(
+                        holder.getPackage()) && userId == holder.getUserId();
             }
             ComponentName defaultService =
                     getDefaultServiceForCategory(userId, category, true);
@@ -1127,8 +1136,8 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         public boolean isDefaultPaymentRegistered() throws RemoteException {
             if (mWalletRoleObserver.isWalletRoleFeatureEnabled()) {
                 int callingUserId = Binder.getCallingUserHandle().getIdentifier();
-                return mWalletRoleObserver
-                        .getDefaultWalletRoleHolder(callingUserId) != null;
+                return mWalletRoleObserver.getDefaultWalletRoleHolder(
+                        callingUserId).getPackage() != null;
             }
             String defaultComponent = Settings.Secure.getString(mContext.getContentResolver(),
                     Constants.SETTINGS_SECURE_NFC_PAYMENT_DEFAULT_COMPONENT);
