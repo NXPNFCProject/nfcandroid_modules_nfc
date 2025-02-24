@@ -36,7 +36,6 @@ import android.app.KeyguardManager;
 import android.app.KeyguardManager.DeviceLockedStateListener;
 import android.app.KeyguardManager.KeyguardLockedStateListener;
 import android.app.PendingIntent;
-import android.app.VrManager;
 import android.app.admin.SecurityLog;
 import android.app.backup.BackupManager;
 import android.app.role.RoleManager;
@@ -503,7 +502,6 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     private Vibrator mVibrator;
     private VibrationEffect mVibrationEffect;
     private ISecureElementService mSEService;
-    private VrManager mVrManager;
     private final AlarmManager mAlarmManager;
 
     private ScreenStateHelper mScreenStateHelper;
@@ -514,8 +512,6 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     private static boolean sToast_debounce = false;
     private static int sToast_debounce_time_ms = 3000;
     public  static boolean sIsDtaMode = false;
-
-    boolean mIsVrModeEnabled;
 
     private final boolean mIsTagAppPrefSupported;
     private int mTagAppBlockListHash;
@@ -1124,12 +1120,6 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
         mNfcDiagnostics = mNfcInjector.getNfcDiagnostics();
 
-        if (pm.hasSystemFeature(PackageManager.FEATURE_VR_MODE_HIGH_PERFORMANCE) &&
-                !mIsWatchType) {
-            mVrManager = mContext.getSystemService(VrManager.class);
-        } else {
-            mVrManager = null;
-        }
         mAlarmManager = mContext.getSystemService(AlarmManager.class);
 
         mCheckDisplayStateForScreenState =
@@ -2073,10 +2063,6 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
     public void playSound(int sound) {
         synchronized (this) {
-            if (mVrManager != null && mVrManager.isVrModeEnabled()) {
-                Log.d(TAG, "Not playing NFC sound when Vr Mode is enabled");
-                return;
-            }
             switch (sound) {
                 case SOUND_END:
                     // Lazy init sound pool when needed.
@@ -5989,8 +5975,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         proto.write(NfcServiceDumpProto.HCE_CAPABLE, mIsHceCapable);
         proto.write(NfcServiceDumpProto.HCE_F_CAPABLE, mIsHceFCapable);
         proto.write(NfcServiceDumpProto.SECURE_NFC_CAPABLE, mIsSecureNfcCapable);
-        proto.write(NfcServiceDumpProto.VR_MODE_ENABLED,
-                (mVrManager != null) ? mVrManager.isVrModeEnabled() : false);
+        proto.write(NfcServiceDumpProto.VR_MODE_ENABLED, false);
 
         long token = proto.start(NfcServiceDumpProto.DISCOVERY_PARAMS);
         mCurrentDiscoveryParameters.dumpDebug(proto);
