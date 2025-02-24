@@ -27,6 +27,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import android.os.IBinder;
 import android.os.RemoteException;
 
 import com.android.dx.mockito.inline.extended.MockedVoidMethod;
@@ -60,6 +61,7 @@ public class NfcVendorNciCallbackListenerTest {
     @Before
     public void setUp() {
         when(NfcAdapter.getService()).thenReturn(mINfcAdapter);
+        when(mINfcAdapter.asBinder()).thenReturn(mock(IBinder.class));
         doCallRealMethod()
                 .when(
                         (MockedVoidMethod)

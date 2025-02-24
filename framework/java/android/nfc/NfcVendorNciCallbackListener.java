@@ -18,7 +18,11 @@ package android.nfc;
 import android.annotation.NonNull;
 import android.nfc.NfcAdapter.NfcVendorNciCallback;
 import android.os.Binder;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Looper;
 import android.os.RemoteException;
+import android.util.Log;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,8 +33,39 @@ public final class NfcVendorNciCallbackListener extends INfcVendorNciCallback.St
     private static final String TAG = "Nfc.NfcVendorNciCallbacks";
     private boolean mIsRegistered = false;
     private final Map<NfcVendorNciCallback, Executor> mCallbackMap = new HashMap<>();
+    private IBinder.DeathRecipient mDeathRecipient;
 
     public NfcVendorNciCallbackListener() {}
+
+    private void linkToNfcDeath() {
+        try {
+            mDeathRecipient = new IBinder.DeathRecipient() {
+                @Override
+                public void binderDied() {
+                    Handler handler = new Handler(Looper.getMainLooper());
+                    handler.postDelayed(new Runnable() {
+                        public void run() {
+                            try {
+                                synchronized (this) {
+                                    if (mCallbackMap.size() > 0) {
+                                        NfcAdapter.callService(() ->
+                                                NfcAdapter.getService()
+                                                        .registerVendorExtensionCallback(
+                                                                NfcVendorNciCallbackListener.this));
+                                    }
+                                }
+                            } catch (Throwable t) {
+                                handler.postDelayed(this, 50);
+                            }
+                        }
+                    }, 50);
+                }
+            };
+            NfcAdapter.getService().asBinder().linkToDeath(mDeathRecipient, 0);
+        } catch (RemoteException re) {
+            Log.e(TAG, "Couldn't link to death");
+        }
+    }
 
     public void register(@NonNull Executor executor, @NonNull NfcVendorNciCallback callback) {
         synchronized (this) {
@@ -42,6 +77,7 @@ public final class NfcVendorNciCallbackListener extends INfcVendorNciCallback.St
                 final  NfcVendorNciCallbackListener listener = this;
                 NfcAdapter.callService(() -> {
                     NfcAdapter.getService().registerVendorExtensionCallback(listener);
+                    linkToNfcDeath();
                     mIsRegistered = true;
                 });
             }
@@ -57,6 +93,7 @@ public final class NfcVendorNciCallbackListener extends INfcVendorNciCallback.St
                 final NfcVendorNciCallbackListener listener = this;
                 NfcAdapter.callService(() -> {
                     NfcAdapter.getService().unregisterVendorExtensionCallback(listener);
+                    NfcAdapter.getService().asBinder().unlinkToDeath(mDeathRecipient, 0);
                     mIsRegistered = false;
                 });
             }
