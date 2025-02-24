@@ -37,6 +37,7 @@ android_test {
         "flag-junit",
         "platform-test-annotations",
         "testables",
+        "modules-utils-extended-mockito-rule",
     ],
     libs: [
         "androidx.annotation_annotation",
