@@ -476,6 +476,7 @@ class NfcTag {
   int mTechListTail;  // Index of Last added entry in mTechList
   bool mIsMultiProtocolTag;
   NfcStatsUtil* mNfcStatsUtil;
+  JNIEnv* mJniEnv = NULL;
 
   /*******************************************************************************
   **
