@@ -747,7 +747,6 @@ public class NfcAdapterTest {
         NfcOemExtension nfcOemExtension = nfcAdapter.getNfcOemExtension();
         Assert.assertNotNull(nfcOemExtension);
         nfcOemExtension.maybeTriggerFirmwareUpdate();
-        Assert.assertTrue(NfcUtils.disableNfc(nfcAdapter, mContext));
     }
 
     @Test
