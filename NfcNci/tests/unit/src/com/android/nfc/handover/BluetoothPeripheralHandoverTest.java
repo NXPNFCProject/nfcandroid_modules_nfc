@@ -148,6 +148,9 @@ public class BluetoothPeripheralHandoverTest {
             bluetoothPeripheralHandover = new BluetoothPeripheralHandover(mockContext, mockDevice,
                     "Test Device", transport, mockOobData, new ParcelUuid[]{}, mockBtClass,
                     mockCallback, mockBluetoothAdapter);
+            bluetoothPeripheralHandover.mA2dp = mockA2dp;
+            bluetoothPeripheralHandover.mHeadset = mockHeadset;
+            bluetoothPeripheralHandover.mInput = mockInput;
         });
         return bluetoothPeripheralHandover;
     }
@@ -418,6 +421,10 @@ public class BluetoothPeripheralHandoverTest {
     public void testGetProfileProxys_withTransportLE_success() {
         when(mockBluetoothAdapter.getProfileProxy(eq(mockContext), eq(bluetoothPeripheralHandover),
                 eq(BluetoothProfile.HID_HOST))).thenReturn(true);
+        when(mockBluetoothAdapter.getProfileProxy(eq(mockContext), eq(bluetoothPeripheralHandover),
+                eq(BluetoothProfile.HEADSET))).thenReturn(true);
+        when(mockBluetoothAdapter.getProfileProxy(eq(mockContext), eq(bluetoothPeripheralHandover),
+                eq(BluetoothProfile.A2DP))).thenReturn(true);
 
         boolean result = bluetoothPeripheralHandover.getProfileProxys();
         assertTrue(result);
@@ -441,13 +448,16 @@ public class BluetoothPeripheralHandoverTest {
         bluetoothPeripheralHandover = createBluetoothPerHandOvrInstance(
                 BluetoothDevice.TRANSPORT_AUTO);
         when(mockBluetoothAdapter.getProfileProxy(eq(mockContext), eq(bluetoothPeripheralHandover),
+                eq(BluetoothProfile.HID_HOST))).thenReturn(true);
+        when(mockBluetoothAdapter.getProfileProxy(eq(mockContext), eq(bluetoothPeripheralHandover),
                 eq(BluetoothProfile.HEADSET))).thenReturn(true);
-
         when(mockBluetoothAdapter.getProfileProxy(eq(mockContext), eq(bluetoothPeripheralHandover),
                 eq(BluetoothProfile.A2DP))).thenReturn(true);
 
         boolean result = bluetoothPeripheralHandover.getProfileProxys();
         assertTrue(result);
+        verify(mockBluetoothAdapter).getProfileProxy(mockContext, bluetoothPeripheralHandover,
+                BluetoothProfile.HID_HOST);
         verify(mockBluetoothAdapter).getProfileProxy(mockContext, bluetoothPeripheralHandover,
                 BluetoothProfile.HEADSET);
         verify(mockBluetoothAdapter).getProfileProxy(mockContext, bluetoothPeripheralHandover,
@@ -459,10 +469,14 @@ public class BluetoothPeripheralHandoverTest {
         bluetoothPeripheralHandover = createBluetoothPerHandOvrInstance(
                 BluetoothDevice.TRANSPORT_AUTO);
         when(mockBluetoothAdapter.getProfileProxy(eq(mockContext), eq(bluetoothPeripheralHandover),
+                eq(BluetoothProfile.HID_HOST))).thenReturn(true);
+        when(mockBluetoothAdapter.getProfileProxy(eq(mockContext), eq(bluetoothPeripheralHandover),
                 eq(BluetoothProfile.HEADSET))).thenReturn(false);
 
         boolean result = bluetoothPeripheralHandover.getProfileProxys();
         assertFalse(result);
+        verify(mockBluetoothAdapter).getProfileProxy(mockContext, bluetoothPeripheralHandover,
+                BluetoothProfile.HID_HOST);
         verify(mockBluetoothAdapter).getProfileProxy(mockContext, bluetoothPeripheralHandover,
                 BluetoothProfile.HEADSET);
         verify(mockBluetoothAdapter, never()).getProfileProxy(mockContext,
@@ -474,12 +488,16 @@ public class BluetoothPeripheralHandoverTest {
         bluetoothPeripheralHandover = createBluetoothPerHandOvrInstance(
                 BluetoothDevice.TRANSPORT_AUTO);
         when(mockBluetoothAdapter.getProfileProxy(eq(mockContext), eq(bluetoothPeripheralHandover),
+                eq(BluetoothProfile.HID_HOST))).thenReturn(true);
+        when(mockBluetoothAdapter.getProfileProxy(eq(mockContext), eq(bluetoothPeripheralHandover),
                 eq(BluetoothProfile.HEADSET))).thenReturn(true);
         when(mockBluetoothAdapter.getProfileProxy(eq(mockContext), eq(bluetoothPeripheralHandover),
                 eq(BluetoothProfile.A2DP))).thenReturn(false);
         boolean result = bluetoothPeripheralHandover.getProfileProxys();
 
         assertFalse(result);
+        verify(mockBluetoothAdapter).getProfileProxy(mockContext, bluetoothPeripheralHandover,
+                BluetoothProfile.HID_HOST);
         verify(mockBluetoothAdapter).getProfileProxy(mockContext, bluetoothPeripheralHandover,
                 BluetoothProfile.HEADSET);
         verify(mockBluetoothAdapter).getProfileProxy(mockContext, bluetoothPeripheralHandover,
@@ -676,6 +694,8 @@ public class BluetoothPeripheralHandoverTest {
         bluetoothPeripheralHandover.mState = STATE_WAITING_FOR_PROXIES;
         bluetoothPeripheralHandover.mInput = mockInput;
         when(mockDevice.getBondState()).thenReturn(BluetoothDevice.BOND_BONDING);
+        when(mockA2dp.getConnectionPolicy(mockDevice)).thenReturn(
+                BluetoothProfile.CONNECTION_POLICY_ALLOWED);
 
         bluetoothPeripheralHandover.nextStepInit();
         assertEquals(ACTION_CONNECT, bluetoothPeripheralHandover.mAction);
@@ -741,6 +761,8 @@ public class BluetoothPeripheralHandoverTest {
         bluetoothPeripheralHandover.mInput = mockInput;
         when(mockDevice.getBondState()).thenReturn(BluetoothDevice.BOND_BONDING);
         when(Toast.makeText(mockContext, eq(any()), anyInt())).thenReturn(mockToast);
+        when(mockA2dp.getConnectionPolicy(mockDevice)).thenReturn(
+                BluetoothProfile.CONNECTION_POLICY_ALLOWED);
 
         bluetoothPeripheralHandover.nextStepInit();
         assertEquals(ACTION_CONNECT, bluetoothPeripheralHandover.mAction);
