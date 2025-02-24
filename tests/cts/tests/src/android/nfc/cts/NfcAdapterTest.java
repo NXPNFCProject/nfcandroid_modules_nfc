@@ -2,6 +2,10 @@ package android.nfc.cts;
 
 import static android.Manifest.permission.NFC_SET_CONTROLLER_ALWAYS_ON;
 import static android.nfc.NfcOemExtension.HCE_ACTIVATE;
+import static android.nfc.NfcRoutingTableEntry.TYPE_AID;
+import static android.nfc.NfcRoutingTableEntry.TYPE_PROTOCOL;
+import static android.nfc.NfcRoutingTableEntry.TYPE_SYSTEM_CODE;
+import static android.nfc.NfcRoutingTableEntry.TYPE_TECHNOLOGY;
 import static android.nfc.cardemulation.CardEmulation.PROTOCOL_AND_TECHNOLOGY_ROUTE_ESE;
 import static android.nfc.cardemulation.CardEmulation.PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET;
 
@@ -44,6 +48,10 @@ import android.nfc.NfcOemExtension;
 import android.nfc.NfcRoutingTableEntry;
 import android.nfc.OemLogItems;
 import android.nfc.RoutingStatus;
+import android.nfc.RoutingTableAidEntry;
+import android.nfc.RoutingTableProtocolEntry;
+import android.nfc.RoutingTableSystemCodeEntry;
+import android.nfc.RoutingTableTechnologyEntry;
 import android.nfc.T4tNdefNfcee;
 import android.nfc.T4tNdefNfceeCcFileInfo;
 import android.nfc.Tag;
@@ -747,9 +755,25 @@ public class NfcAdapterTest {
             }
             List<NfcRoutingTableEntry> entries = nfcOemExtension.getRoutingTable();
             assertThat(entries).isNotNull();
-            entries.getFirst().getType();
-            entries.getFirst().getRouteType();
-            entries.getFirst().getNfceeId();
+            for (NfcRoutingTableEntry entry : entries) {
+                switch (entry.getType()) {
+                    case TYPE_AID:
+                        ((RoutingTableAidEntry) entry).getAid();
+                        break;
+                    case TYPE_PROTOCOL:
+                        ((RoutingTableProtocolEntry) entry).getProtocol();
+                        break;
+                    case TYPE_TECHNOLOGY:
+                        ((RoutingTableTechnologyEntry) entry).getTechnology();
+                        break;
+                    case TYPE_SYSTEM_CODE:
+                        ((RoutingTableSystemCodeEntry) entry).getSystemCode();
+                        break;
+                    default:
+                }
+                entries.getFirst().getRouteType();
+                entries.getFirst().getNfceeId();
+            }
             nfcOemExtension.forceRoutingTableCommit();
             assertEquals(MAX_POLLING_PAUSE_TIMEOUT,
                     nfcOemExtension.getMaxPausePollingTimeoutMills());
