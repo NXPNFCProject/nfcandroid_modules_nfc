@@ -29,6 +29,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.android.nfc.NfcInjector;
@@ -49,6 +50,10 @@ public class ConfirmConnectActivity extends Activity {
         if (mDevice == null) finish();
         Resources res = getResources();
         String btExtraName = launchIntent.getStringExtra(BluetoothDevice.EXTRA_NAME);
+        if (TextUtils.isEmpty(btExtraName)) {
+            // If name is empty in the handover data, use a generic name.
+            btExtraName = getApplicationContext().getResources().getString(R.string.device);
+        }
         String confirmString = String.format(res.getString(R.string.confirm_pairing),
                 "\"" + btExtraName.replaceAll("\\r|\\n", "") + "\"");
         builder.setMessage(confirmString)
