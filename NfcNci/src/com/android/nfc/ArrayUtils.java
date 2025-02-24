@@ -62,8 +62,8 @@ public class ArrayUtils {
 
     /**
      * Converts from List of bytes to byte array
-     * @param list
-     * @return byte[]
+     * @param list the list of bytes
+     * @return byte array
      */
     public static byte[] toPrimitive(List<byte[]> list) {
         if (list.size() == 0) {
