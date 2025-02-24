@@ -978,8 +978,25 @@ public final class CardEmulation {
     @SetServiceEnabledStatusCode
     public int setServiceEnabledForCategoryOther(@NonNull ComponentName service,
             boolean status) {
+        return setServiceEnabledForCategoryOther(
+                service, mContext.getUser().getIdentifier(), status);
+    }
+
+    /**
+     * Same as {@link #setServiceEnabledForCategoryOther(ComponentName, boolean)} for a particular
+     * user.
+     *
+     * @param service The ComponentName of the service
+     * @param userId User id
+     * @param status  true to enable, false to disable
+     * @return status code defined in {@link SetServiceEnabledStatusCode}
+     * @hide
+     */
+    @SetServiceEnabledStatusCode
+    public int setServiceEnabledForCategoryOther(@NonNull ComponentName service,
+            @UserIdInt int userId, boolean status) {
         return callServiceReturn(() ->
-                sService.setServiceEnabledForCategoryOther(mContext.getUser().getIdentifier(),
+                sService.setServiceEnabledForCategoryOther(userId,
                         service, status), SET_SERVICE_ENABLED_STATUS_FAILURE_UNKNOWN_ERROR);
     }
 
