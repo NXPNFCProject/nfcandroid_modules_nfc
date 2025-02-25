@@ -494,6 +494,7 @@ typedef uint8_t tNFA_EE_WAIT;
 #define NFA_EE_FLAG_WAIT_DISCONN 0x04
 typedef uint8_t tNFA_EE_FLAGS;
 
+#define NFA_EE_FLAG_RECOVERY 0x10
 /* NFCEE DISCOVER in progress       */
 #define NFA_EE_DISC_STS_ON 0x00
 /* disable NFCEE DISCOVER           */
