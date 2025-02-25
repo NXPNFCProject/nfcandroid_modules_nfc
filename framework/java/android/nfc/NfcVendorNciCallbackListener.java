@@ -19,24 +19,18 @@ import android.annotation.NonNull;
 import android.nfc.NfcAdapter.NfcVendorNciCallback;
 import android.os.Binder;
 import android.os.RemoteException;
-import android.util.Log;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
-/**
- * @hide
- */
+/** @hide */
 public final class NfcVendorNciCallbackListener extends INfcVendorNciCallback.Stub {
     private static final String TAG = "Nfc.NfcVendorNciCallbacks";
-    private final INfcAdapter mAdapter;
     private boolean mIsRegistered = false;
     private final Map<NfcVendorNciCallback, Executor> mCallbackMap = new HashMap<>();
 
-    public NfcVendorNciCallbackListener(@NonNull INfcAdapter adapter) {
-        mAdapter = adapter;
-    }
+    public NfcVendorNciCallbackListener() {}
 
     public void register(@NonNull Executor executor, @NonNull NfcVendorNciCallback callback) {
         synchronized (this) {
@@ -45,14 +39,11 @@ public final class NfcVendorNciCallbackListener extends INfcVendorNciCallback.St
             }
             mCallbackMap.put(callback, executor);
             if (!mIsRegistered) {
-                try {
-                    mAdapter.registerVendorExtensionCallback(this);
+                final  NfcVendorNciCallbackListener listener = this;
+                NfcAdapter.callService(() -> {
+                    NfcAdapter.getService().registerVendorExtensionCallback(listener);
                     mIsRegistered = true;
-                } catch (RemoteException e) {
-                    Log.w(TAG, "Failed to register adapter state callback");
-                    mCallbackMap.remove(callback);
-                    throw e.rethrowFromSystemServer();
-                }
+                });
             }
         }
     }
@@ -63,17 +54,13 @@ public final class NfcVendorNciCallbackListener extends INfcVendorNciCallback.St
                 return;
             }
             if (mCallbackMap.size() == 1) {
-                try {
-                    mAdapter.unregisterVendorExtensionCallback(this);
+                final NfcVendorNciCallbackListener listener = this;
+                NfcAdapter.callService(() -> {
+                    NfcAdapter.getService().unregisterVendorExtensionCallback(listener);
                     mIsRegistered = false;
-                    mCallbackMap.remove(callback);
-                } catch (RemoteException e) {
-                    Log.w(TAG, "Failed to unregister AdapterStateCallback with service");
-                    throw e.rethrowFromSystemServer();
-                }
-            } else {
-                mCallbackMap.remove(callback);
+                });
             }
+            mCallbackMap.remove(callback);
         }
     }
 
