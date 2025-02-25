@@ -178,215 +178,230 @@ TEST_F(NfaDmTest, HandleMessage_RegisteredHandler) {
 }
 
 TEST_F(NfaDmTest, HandleMessage_UnregisteredHandler) {
-    uint8_t event = 1;
-    tNFA_NDEF_EVT_DATA event_data = {};
-    uint8_t msg_buf[sizeof(tNFA_NDEF_EVT_DATA)];
-    memcpy(msg_buf, &event_data, sizeof(tNFA_NDEF_EVT_DATA));
-    EXPECT_CALL(mock_handler, OnNDEFData(event, &event_data)).Times(0);
-    uint32_t len = sizeof(tNFA_NDEF_EVT_DATA);
-    tNFA_STATUS status = NFA_STATUS_OK;
-    nfa_dm_ndef_handle_message(status, msg_buf, len);
+  nfa_dm_cb = nfa_dm_cb_mock;
+  uint8_t event = 1;
+  tNFA_NDEF_EVT_DATA event_data = {};
+  uint8_t msg_buf[sizeof(tNFA_NDEF_EVT_DATA)];
+  memcpy(msg_buf, &event_data, sizeof(tNFA_NDEF_EVT_DATA));
+  EXPECT_CALL(mock_handler, OnNDEFData(event, &event_data)).Times(0);
+  uint32_t len = sizeof(tNFA_NDEF_EVT_DATA);
+  tNFA_STATUS status = NFA_STATUS_OK;
+  nfa_dm_ndef_handle_message(status, msg_buf, len);
 }
 
 TEST_F(NfaDmTest, HandleMessage_InvalidEvent) {
-    tNFA_DM_API_REG_NDEF_HDLR reg_info = {};
-    reg_info.p_ndef_cback = NDEFCallbackBridge;
-    reg_info.tnf = NFA_TNF_DEFAULT;
-    reg_info.name_len = 5;
-    uint8_t name[] = "Test";
-    memcpy(reg_info.name, name, reg_info.name_len);
-    nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info);
-    uint8_t invalid_event = 99;
-    tNFA_NDEF_EVT_DATA event_data = {};
-    uint8_t msg_buf[sizeof(tNFA_NDEF_EVT_DATA)];
-    memcpy(msg_buf, &event_data, sizeof(tNFA_NDEF_EVT_DATA));
-    EXPECT_CALL(mock_handler, OnNDEFData(invalid_event, &event_data)).Times(0);
-    uint32_t len = sizeof(tNFA_NDEF_EVT_DATA);
-    tNFA_STATUS status = NFA_STATUS_OK;
-    nfa_dm_ndef_handle_message(status, msg_buf, len);
+  nfa_dm_cb = nfa_dm_cb_mock;
+  tNFA_DM_API_REG_NDEF_HDLR reg_info = {};
+  reg_info.p_ndef_cback = NDEFCallbackBridge;
+  reg_info.tnf = NFA_TNF_DEFAULT;
+  reg_info.name_len = 5;
+  uint8_t name[] = "Test";
+  memcpy(reg_info.name, name, reg_info.name_len);
+  nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info);
+  uint8_t invalid_event = 99;
+  tNFA_NDEF_EVT_DATA event_data = {};
+  uint8_t msg_buf[sizeof(tNFA_NDEF_EVT_DATA)];
+  memcpy(msg_buf, &event_data, sizeof(tNFA_NDEF_EVT_DATA));
+  EXPECT_CALL(mock_handler, OnNDEFData(invalid_event, &event_data)).Times(0);
+  uint32_t len = sizeof(tNFA_NDEF_EVT_DATA);
+  tNFA_STATUS status = NFA_STATUS_OK;
+  nfa_dm_ndef_handle_message(status, msg_buf, len);
 }
 
 TEST_F(NfaDmTest, HandleMessage_CallbackInvocation) {
-    tNFA_DM_API_REG_NDEF_HDLR reg_info = {};
-    reg_info.p_ndef_cback = NDEFCallbackBridge;
-    reg_info.tnf = NFA_TNF_DEFAULT;
-    reg_info.name_len = 5;
-    uint8_t name[] = "Test";
-    memcpy(reg_info.name, name, reg_info.name_len);
-    nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info);
-    uint8_t event = 2;
-    tNFA_NDEF_EVT_DATA event_data = {};
-    EXPECT_CALL(mock_handler, OnNDEFData(::testing::_, ::testing::_)).Times(0);
-    uint8_t msg_buf[sizeof(tNFA_NDEF_EVT_DATA)];
-    memcpy(msg_buf, &event_data, sizeof(tNFA_NDEF_EVT_DATA));
-    uint32_t len = sizeof(tNFA_NDEF_EVT_DATA);
-    tNFA_STATUS status = NFA_STATUS_OK;
-    nfa_dm_ndef_handle_message(status, msg_buf, len);
+  nfa_dm_cb = nfa_dm_cb_mock;
+  tNFA_DM_API_REG_NDEF_HDLR reg_info = {};
+  reg_info.p_ndef_cback = NDEFCallbackBridge;
+  reg_info.tnf = NFA_TNF_DEFAULT;
+  reg_info.name_len = 5;
+  uint8_t name[] = "Test";
+  memcpy(reg_info.name, name, reg_info.name_len);
+  nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info);
+  uint8_t event = 2;
+  tNFA_NDEF_EVT_DATA event_data = {};
+  EXPECT_CALL(mock_handler, OnNDEFData(::testing::_, ::testing::_)).Times(0);
+  uint8_t msg_buf[sizeof(tNFA_NDEF_EVT_DATA)];
+  memcpy(msg_buf, &event_data, sizeof(tNFA_NDEF_EVT_DATA));
+  uint32_t len = sizeof(tNFA_NDEF_EVT_DATA);
+  tNFA_STATUS status = NFA_STATUS_OK;
+  nfa_dm_ndef_handle_message(status, msg_buf, len);
 }
 
 TEST_F(NfaDmTest, HandleMultipleMessages) {
-    tNFA_DM_API_REG_NDEF_HDLR reg_info = {};
-    reg_info.p_ndef_cback = NDEFCallbackBridge;
-    reg_info.tnf = NFA_TNF_DEFAULT;
-    reg_info.name_len = 5;
-    uint8_t name[] = "Test";
-    memcpy(reg_info.name, name, reg_info.name_len);
-    nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info);
-    uint8_t event1 = 1, event2 = 2;
-    tNFA_NDEF_EVT_DATA event_data1 = {};
-    tNFA_NDEF_EVT_DATA event_data2 = {};
-    uint8_t msg_buf1[sizeof(tNFA_NDEF_EVT_DATA)];
-    uint8_t msg_buf2[sizeof(tNFA_NDEF_EVT_DATA)];
-    memcpy(msg_buf1, &event_data1, sizeof(tNFA_NDEF_EVT_DATA));
-    memcpy(msg_buf2, &event_data2, sizeof(tNFA_NDEF_EVT_DATA));
-    EXPECT_CALL(mock_handler, OnNDEFData(event1, &event_data1)).Times(0);
-    EXPECT_CALL(mock_handler, OnNDEFData(event2, &event_data2)).Times(0);
-    uint32_t len = sizeof(tNFA_NDEF_EVT_DATA);
-    tNFA_STATUS status = NFA_STATUS_OK;
-    nfa_dm_ndef_handle_message(status, msg_buf1, len);
-    nfa_dm_ndef_handle_message(status, msg_buf2, len);
+  nfa_dm_cb = nfa_dm_cb_mock;
+  tNFA_DM_API_REG_NDEF_HDLR reg_info = {};
+  reg_info.p_ndef_cback = NDEFCallbackBridge;
+  reg_info.tnf = NFA_TNF_DEFAULT;
+  reg_info.name_len = 5;
+  uint8_t name[] = "Test";
+  memcpy(reg_info.name, name, reg_info.name_len);
+  nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info);
+  uint8_t event1 = 1, event2 = 2;
+  tNFA_NDEF_EVT_DATA event_data1 = {};
+  tNFA_NDEF_EVT_DATA event_data2 = {};
+  uint8_t msg_buf1[sizeof(tNFA_NDEF_EVT_DATA)];
+  uint8_t msg_buf2[sizeof(tNFA_NDEF_EVT_DATA)];
+  memcpy(msg_buf1, &event_data1, sizeof(tNFA_NDEF_EVT_DATA));
+  memcpy(msg_buf2, &event_data2, sizeof(tNFA_NDEF_EVT_DATA));
+  EXPECT_CALL(mock_handler, OnNDEFData(event1, &event_data1)).Times(0);
+  EXPECT_CALL(mock_handler, OnNDEFData(event2, &event_data2)).Times(0);
+  uint32_t len = sizeof(tNFA_NDEF_EVT_DATA);
+  tNFA_STATUS status = NFA_STATUS_OK;
+  nfa_dm_ndef_handle_message(status, msg_buf1, len);
+  nfa_dm_ndef_handle_message(status, msg_buf2, len);
 }
 
 //nfa_dm_ndef_find_next_handler
 
 TEST_F(NfaDmTest, FindNextHandler_Success) {
-    tNFA_DM_API_REG_NDEF_HDLR reg_info1 = {};
-    reg_info1.p_ndef_cback = NDEFCallbackBridge;
-    reg_info1.tnf = NFA_TNF_DEFAULT;
-    reg_info1.name_len = 5;
-    uint8_t name1[] = "Test1";
-    memcpy(reg_info1.name, name1, reg_info1.name_len);
-    nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info1);
-    tNFA_DM_API_REG_NDEF_HDLR reg_info2 = {};
-    reg_info2.p_ndef_cback = NDEFCallbackBridge;
-    reg_info2.tnf = NFA_TNF_DEFAULT;
-    reg_info2.name_len = 5;
-    uint8_t name2[] = "Test2";
-    memcpy(reg_info2.name, name2, reg_info2.name_len);
-    nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info2);
-    unsigned char event = 1;
-    unsigned char* p_name = nullptr;
-    unsigned char name_len = 0;
-    unsigned char* p_tnf = nullptr;
-    unsigned int index = 0;
-    bool result = nfa_dm_ndef_find_next_handler(
-            (tNFA_DM_API_REG_NDEF_HDLR*)&reg_info1, event, p_name, name_len, p_tnf, index);
-    EXPECT_FALSE(result);
-    result = nfa_dm_ndef_find_next_handler(
-            (tNFA_DM_API_REG_NDEF_HDLR*)&reg_info2, event, p_name, name_len, p_tnf, index);
-    EXPECT_FALSE(result);
+  nfa_dm_cb = nfa_dm_cb_mock;
+  tNFA_DM_API_REG_NDEF_HDLR reg_info1 = {};
+  reg_info1.p_ndef_cback = NDEFCallbackBridge;
+  reg_info1.tnf = NFA_TNF_DEFAULT;
+  reg_info1.name_len = 5;
+  uint8_t name1[] = "Test1";
+  memcpy(reg_info1.name, name1, reg_info1.name_len);
+  nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info1);
+  tNFA_DM_API_REG_NDEF_HDLR reg_info2 = {};
+  reg_info2.p_ndef_cback = NDEFCallbackBridge;
+  reg_info2.tnf = NFA_TNF_DEFAULT;
+  reg_info2.name_len = 5;
+  uint8_t name2[] = "Test2";
+  memcpy(reg_info2.name, name2, reg_info2.name_len);
+  nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info2);
+  unsigned char event = 1;
+  unsigned char* p_name = nullptr;
+  unsigned char name_len = 0;
+  unsigned char* p_tnf = nullptr;
+  unsigned int index = 0;
+  bool result =
+      nfa_dm_ndef_find_next_handler((tNFA_DM_API_REG_NDEF_HDLR*)&reg_info1,
+                                    event, p_name, name_len, p_tnf, index);
+  EXPECT_FALSE(result);
+  result = nfa_dm_ndef_find_next_handler((tNFA_DM_API_REG_NDEF_HDLR*)&reg_info2,
+                                         event, p_name, name_len, p_tnf, index);
+  EXPECT_FALSE(result);
 }
 
 TEST_F(NfaDmTest, FindNextHandler_NoHandler) {
-    unsigned char event = 1;
-    unsigned char* p_name = nullptr;
-    unsigned char name_len = 0;
-    unsigned char* p_tnf = nullptr;
-    unsigned int index = 0;
-    tNFA_DM_API_REG_NDEF_HDLR* found_handler = nullptr;
-    bool result = nfa_dm_ndef_find_next_handler(nullptr, event, p_name, name_len, p_tnf, index);
-    EXPECT_FALSE(result);
+  nfa_dm_cb = nfa_dm_cb_mock;
+  unsigned char event = 1;
+  unsigned char* p_name = nullptr;
+  unsigned char name_len = 0;
+  unsigned char* p_tnf = nullptr;
+  unsigned int index = 0;
+  tNFA_DM_API_REG_NDEF_HDLR* found_handler = nullptr;
+  bool result = nfa_dm_ndef_find_next_handler(nullptr, event, p_name, name_len,
+                                              p_tnf, index);
+  EXPECT_FALSE(result);
 }
 
 TEST_F(NfaDmTest, FindNextHandler_NoMatch) {
-    tNFA_DM_API_REG_NDEF_HDLR reg_info1 = {};
-    reg_info1.p_ndef_cback = NDEFCallbackBridge;
-    reg_info1.tnf = NFA_TNF_DEFAULT;
-    reg_info1.name_len = 5;
-    uint8_t name1[] = "Test1";
-    memcpy(reg_info1.name, name1, reg_info1.name_len);
-    nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info1);
-    unsigned char event = 1;
-    unsigned char* p_name = (unsigned char*)"NonMatchingName";
-    unsigned char name_len = 15;
-    unsigned char* p_tnf = nullptr;
-    unsigned int index = 0;
-    tNFA_DM_API_REG_NDEF_HDLR* found_handler = nullptr;
-    bool result = nfa_dm_ndef_find_next_handler(
-            (tNFA_DM_API_REG_NDEF_HDLR*)&reg_info1, event, p_name, name_len, p_tnf, index);
-    EXPECT_FALSE(result);
+  nfa_dm_cb = nfa_dm_cb_mock;
+  tNFA_DM_API_REG_NDEF_HDLR reg_info1 = {};
+  reg_info1.p_ndef_cback = NDEFCallbackBridge;
+  reg_info1.tnf = NFA_TNF_DEFAULT;
+  reg_info1.name_len = 5;
+  uint8_t name1[] = "Test1";
+  memcpy(reg_info1.name, name1, reg_info1.name_len);
+  nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info1);
+  unsigned char event = 1;
+  unsigned char* p_name = (unsigned char*)"NonMatchingName";
+  unsigned char name_len = 15;
+  unsigned char* p_tnf = nullptr;
+  unsigned int index = 0;
+  tNFA_DM_API_REG_NDEF_HDLR* found_handler = nullptr;
+  bool result =
+      nfa_dm_ndef_find_next_handler((tNFA_DM_API_REG_NDEF_HDLR*)&reg_info1,
+                                    event, p_name, name_len, p_tnf, index);
+  EXPECT_FALSE(result);
 }
 
 TEST_F(NfaDmTest, FindNextHandler_InvalidEvent) {
-    tNFA_DM_API_REG_NDEF_HDLR reg_info1 = {};
-    reg_info1.p_ndef_cback = NDEFCallbackBridge;
-    reg_info1.tnf = NFA_TNF_DEFAULT;
-    reg_info1.name_len = 5;
-    uint8_t name1[] = "Test1";
-    memcpy(reg_info1.name, name1, reg_info1.name_len);
-    nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info1);
-    unsigned char invalid_event = 99;
-    unsigned char* p_name = nullptr;
-    unsigned char name_len = 0;
-    unsigned char* p_tnf = nullptr;
-    unsigned int index = 0;
-    tNFA_DM_API_REG_NDEF_HDLR* found_handler = nullptr;
-    bool result = nfa_dm_ndef_find_next_handler(
-            (tNFA_DM_API_REG_NDEF_HDLR*)&reg_info1, invalid_event, p_name, name_len, p_tnf, index);
-    EXPECT_FALSE(result);
+  nfa_dm_cb = nfa_dm_cb_mock;
+  tNFA_DM_API_REG_NDEF_HDLR reg_info1 = {};
+  reg_info1.p_ndef_cback = NDEFCallbackBridge;
+  reg_info1.tnf = NFA_TNF_DEFAULT;
+  reg_info1.name_len = 5;
+  uint8_t name1[] = "Test1";
+  memcpy(reg_info1.name, name1, reg_info1.name_len);
+  nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info1);
+  unsigned char invalid_event = 99;
+  unsigned char* p_name = nullptr;
+  unsigned char name_len = 0;
+  unsigned char* p_tnf = nullptr;
+  unsigned int index = 0;
+  tNFA_DM_API_REG_NDEF_HDLR* found_handler = nullptr;
+  bool result = nfa_dm_ndef_find_next_handler(
+      (tNFA_DM_API_REG_NDEF_HDLR*)&reg_info1, invalid_event, p_name, name_len,
+      p_tnf, index);
+  EXPECT_FALSE(result);
 }
 
 //nfa_dm_ndef_find_next_handler
 
 TEST_F(NfaDmTest, DeregisterHandle_Success) {
-    tNFA_DM_API_REG_NDEF_HDLR reg_info = {};
-    reg_info.p_ndef_cback = NDEFCallbackBridge;
-    reg_info.tnf = NFA_TNF_DEFAULT;
-    reg_info.name_len = 5;
-    uint8_t name[] = "Test";
-    memcpy(reg_info.name, name, reg_info.name_len);
-    bool result = nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info);
-    EXPECT_FALSE(result);
-    tNFA_HANDLE handler_handle = reg_info.ndef_type_handle;
-    nfa_dm_ndef_dereg_hdlr_by_handle(handler_handle);
-    tNFA_DM_API_REG_NDEF_HDLR* found_handler = nullptr;
-    result = nfa_dm_ndef_find_next_handler(
-            (tNFA_DM_API_REG_NDEF_HDLR*)&reg_info, 0, nullptr, 0, nullptr, 0);
-    EXPECT_FALSE(result);
+  nfa_dm_cb = nfa_dm_cb_mock;
+  tNFA_DM_API_REG_NDEF_HDLR reg_info = {};
+  reg_info.p_ndef_cback = NDEFCallbackBridge;
+  reg_info.tnf = NFA_TNF_DEFAULT;
+  reg_info.name_len = 5;
+  uint8_t name[] = "Test";
+  memcpy(reg_info.name, name, reg_info.name_len);
+  bool result = nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info);
+  EXPECT_FALSE(result);
+  tNFA_HANDLE handler_handle = reg_info.ndef_type_handle;
+  nfa_dm_ndef_dereg_hdlr_by_handle(handler_handle);
+  tNFA_DM_API_REG_NDEF_HDLR* found_handler = nullptr;
+  result = nfa_dm_ndef_find_next_handler((tNFA_DM_API_REG_NDEF_HDLR*)&reg_info,
+                                         0, nullptr, 0, nullptr, 0);
+  EXPECT_FALSE(result);
 }
 
 TEST_F(NfaDmTest, DeregisterHandler_Fail_InvalidHandle) {
-    tNFA_DM_API_REG_NDEF_HDLR reg_info = {};
-    reg_info.p_ndef_cback = NDEFCallbackBridge;
-    reg_info.tnf = NFA_TNF_DEFAULT;
-    reg_info.name_len = 5;
-    uint8_t name[] = "Test";
-    memcpy(reg_info.name, name, reg_info.name_len);
-    bool result = nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info);
-    EXPECT_FALSE(result);
-    tNFA_HANDLE invalid_handle = 0;
-    nfa_dm_ndef_dereg_hdlr_by_handle(invalid_handle);
-    tNFA_DM_API_REG_NDEF_HDLR* found_handler = nullptr;
-    result = nfa_dm_ndef_find_next_handler(
-            (tNFA_DM_API_REG_NDEF_HDLR*)&reg_info, 0, nullptr, 0, nullptr, 0);
-    EXPECT_FALSE(result);
+  nfa_dm_cb = nfa_dm_cb_mock;
+  tNFA_DM_API_REG_NDEF_HDLR reg_info = {};
+  reg_info.p_ndef_cback = NDEFCallbackBridge;
+  reg_info.tnf = NFA_TNF_DEFAULT;
+  reg_info.name_len = 5;
+  uint8_t name[] = "Test";
+  memcpy(reg_info.name, name, reg_info.name_len);
+  bool result = nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info);
+  EXPECT_FALSE(result);
+  tNFA_HANDLE invalid_handle = 0;
+  nfa_dm_ndef_dereg_hdlr_by_handle(invalid_handle);
+  tNFA_DM_API_REG_NDEF_HDLR* found_handler = nullptr;
+  result = nfa_dm_ndef_find_next_handler((tNFA_DM_API_REG_NDEF_HDLR*)&reg_info,
+                                         0, nullptr, 0, nullptr, 0);
+  EXPECT_FALSE(result);
 }
 
 TEST_F(NfaDmTest, DeregisterHandler_MultipleHandlers) {
-    tNFA_DM_API_REG_NDEF_HDLR reg_info1 = {};
-    reg_info1.p_ndef_cback = NDEFCallbackBridge;
-    reg_info1.tnf = NFA_TNF_DEFAULT;
-    reg_info1.name_len = 5;
-    uint8_t name1[] = "Test1";
-    memcpy(reg_info1.name, name1, reg_info1.name_len);
-    nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info1);
-    tNFA_DM_API_REG_NDEF_HDLR reg_info2 = {};
-    reg_info2.p_ndef_cback = NDEFCallbackBridge;
-    reg_info2.tnf = NFA_TNF_DEFAULT;
-    reg_info2.name_len = 5;
-    uint8_t name2[] = "Test2";
-    memcpy(reg_info2.name, name2, reg_info2.name_len);
-    nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info2);
-    tNFA_HANDLE handle1 = reg_info1.ndef_type_handle;
-    tNFA_HANDLE handle2 = reg_info2.ndef_type_handle;
-    nfa_dm_ndef_dereg_hdlr_by_handle(handle1);
-    tNFA_DM_API_REG_NDEF_HDLR* found_handler = nullptr;
-    bool result = nfa_dm_ndef_find_next_handler(
-            (tNFA_DM_API_REG_NDEF_HDLR*)&reg_info1, 0, nullptr, 0, nullptr, 0);
-    EXPECT_FALSE(result);
-    result = nfa_dm_ndef_find_next_handler(
-            (tNFA_DM_API_REG_NDEF_HDLR*)&reg_info2, 0, nullptr, 0, nullptr, 0);
-    EXPECT_FALSE(result);
+  nfa_dm_cb = nfa_dm_cb_mock;
+  tNFA_DM_API_REG_NDEF_HDLR reg_info1 = {};
+  reg_info1.p_ndef_cback = NDEFCallbackBridge;
+  reg_info1.tnf = NFA_TNF_DEFAULT;
+  reg_info1.name_len = 5;
+  uint8_t name1[] = "Test1";
+  memcpy(reg_info1.name, name1, reg_info1.name_len);
+  nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info1);
+  tNFA_DM_API_REG_NDEF_HDLR reg_info2 = {};
+  reg_info2.p_ndef_cback = NDEFCallbackBridge;
+  reg_info2.tnf = NFA_TNF_DEFAULT;
+  reg_info2.name_len = 5;
+  uint8_t name2[] = "Test2";
+  memcpy(reg_info2.name, name2, reg_info2.name_len);
+  nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info2);
+  tNFA_HANDLE handle1 = reg_info1.ndef_type_handle;
+  tNFA_HANDLE handle2 = reg_info2.ndef_type_handle;
+  nfa_dm_ndef_dereg_hdlr_by_handle(handle1);
+  tNFA_DM_API_REG_NDEF_HDLR* found_handler = nullptr;
+  bool result = nfa_dm_ndef_find_next_handler(
+      (tNFA_DM_API_REG_NDEF_HDLR*)&reg_info1, 0, nullptr, 0, nullptr, 0);
+  EXPECT_FALSE(result);
+  result = nfa_dm_ndef_find_next_handler((tNFA_DM_API_REG_NDEF_HDLR*)&reg_info2,
+                                         0, nullptr, 0, nullptr, 0);
+  EXPECT_FALSE(result);
 }
 
 // nfa_dm_ndef_clear_notified_flag
