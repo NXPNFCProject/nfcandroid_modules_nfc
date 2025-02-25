@@ -2645,6 +2645,7 @@ public class CardEmulationTest {
     public void testApduServiceInfoConstructor() {
         ResolveInfo ndefNfceeAppInfo = new ResolveInfo();
         List<String> ndefNfceeAid = new ArrayList<String>();
+        ndefNfceeAid.add("12345678ABCDEF#");
         AidGroup ndefNfceeAidGroup = new AidGroup(ndefNfceeAid, "other");
         ArrayList<AidGroup> ndefNfceeAidStaticGroups = new ArrayList<>();
         ndefNfceeAidStaticGroups.add(ndefNfceeAidGroup);
