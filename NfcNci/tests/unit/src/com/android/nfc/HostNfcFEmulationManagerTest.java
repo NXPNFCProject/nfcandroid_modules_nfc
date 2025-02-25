@@ -126,7 +126,7 @@ public class HostNfcFEmulationManagerTest {
         componentName = mock(ComponentName.class);
         when(nfcFServiceInfo.getComponent()).thenReturn(componentName);
         when(t3tIdentifiersCache.resolveNfcid2("6D2E616E64726F69")).thenReturn(nfcFServiceInfo);
-        Message message = mock(Message.class);
+        Message message = new Message();
         when(Message.obtain(null, HostNfcFService.MSG_COMMAND_PACKET)).thenReturn(message);
         when(Message.obtain(null, HostNfcFService.MSG_DEACTIVATED)).thenReturn(message);
         when(Message.obtain()).thenReturn(message);
@@ -211,4 +211,3 @@ public class HostNfcFEmulationManagerTest {
         Assert.assertNull(serviceName);
     }
 }
-
