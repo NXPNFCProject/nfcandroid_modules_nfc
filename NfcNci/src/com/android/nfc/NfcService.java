@@ -587,7 +587,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     @Override
     public void onRemoteEndpointDiscovered(TagEndpoint tag) {
       Log.d(TAG, "onRemoteEndpointDiscovered()");
-        sendMessage(NfcService.MSG_NDEF_TAG, tag);
+        sendMessage(MSG_NDEF_TAG, tag);
     }
 
     /**
@@ -687,10 +687,10 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         } catch (RemoteException e) {
             Log.e(TAG, "Failed to send onRemoteFieldActivated", e);
         }
-        if (Flags.coalesceRfEvents() && mHandler.hasMessages(NfcService.MSG_RF_FIELD_DEACTIVATED)) {
-            mHandler.removeMessages(NfcService.MSG_RF_FIELD_DEACTIVATED);
+        if (Flags.coalesceRfEvents() && mHandler.hasMessages(MSG_RF_FIELD_DEACTIVATED)) {
+            mHandler.removeMessages(MSG_RF_FIELD_DEACTIVATED);
         } else {
-            sendMessage(NfcService.MSG_RF_FIELD_ACTIVATED, null);
+            sendMessage(MSG_RF_FIELD_ACTIVATED, null);
         }
         if (mStatsdUtils != null) {
             mStatsdUtils.logFieldChanged(true, 0);
@@ -721,10 +721,10 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         }
         if (Flags.coalesceRfEvents()) {
             mHandler.sendMessageDelayed(
-                    mHandler.obtainMessage(NfcService.MSG_RF_FIELD_DEACTIVATED),
+                    mHandler.obtainMessage(MSG_RF_FIELD_DEACTIVATED),
                     RF_COALESCING_WINDOW);
         } else {
-            sendMessage(NfcService.MSG_RF_FIELD_DEACTIVATED, null);
+            sendMessage(MSG_RF_FIELD_DEACTIVATED, null);
         }
         if (mStatsdUtils != null) {
             mStatsdUtils.logFieldChanged(false, 0);
@@ -763,7 +763,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     @Override
     public void onNfcTransactionEvent(byte[] aid, byte[] data, String seName) {
         byte[][] dataObj = {aid, data, seName.getBytes()};
-        sendMessage(NfcService.MSG_TRANSACTION_EVENT, dataObj);
+        sendMessage(MSG_TRANSACTION_EVENT, dataObj);
     }
 
     @Override
@@ -868,7 +868,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
     @Override
     public void onSeSelected() {
-        sendMessage(NfcService.MSG_SE_SELECTED_EVENT, null);
+        sendMessage(MSG_SE_SELECTED_EVENT, null);
     }
 
     @Override
@@ -3019,11 +3019,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
             Map<Integer, Integer> techCodeToMask = new HashMap<Integer, Integer>();
 
-            techCodeToMask.put(TagTechnology.NFC_A, NfcService.NFC_POLL_A);
-            techCodeToMask.put(TagTechnology.NFC_B, NfcService.NFC_POLL_B);
-            techCodeToMask.put(TagTechnology.NFC_V, NfcService.NFC_POLL_V);
-            techCodeToMask.put(TagTechnology.NFC_F, NfcService.NFC_POLL_F);
-            techCodeToMask.put(TagTechnology.NFC_BARCODE, NfcService.NFC_POLL_KOVIO);
+            techCodeToMask.put(TagTechnology.NFC_A, NFC_POLL_A);
+            techCodeToMask.put(TagTechnology.NFC_B, NFC_POLL_B);
+            techCodeToMask.put(TagTechnology.NFC_V, NFC_POLL_V);
+            techCodeToMask.put(TagTechnology.NFC_F, NFC_POLL_F);
+            techCodeToMask.put(TagTechnology.NFC_BARCODE, NFC_POLL_KOVIO);
 
             int mask = 0;
 
@@ -4698,7 +4698,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             if (DBG) Log.d(TAG,
                   "sendScreenMessageAfterNfcCharging - applying postponed screen state "
                           + screenState);
-            NfcService.getInstance().sendMessage(NfcService.MSG_APPLY_SCREEN_STATE, screenState);
+            NfcService.getInstance().sendMessage(MSG_APPLY_SCREEN_STATE, screenState);
             mPendingPowerStateUpdate = false;
             return true;
         }
@@ -5835,7 +5835,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 new ApplyRoutingTask().execute(Integer.valueOf(screenState));
             }
             if (DBG) Log.d(TAG, "applyScreenState(): screenState != mScreenState=" + mScreenState );
-            sendMessage(NfcService.MSG_APPLY_SCREEN_STATE, screenState);
+            sendMessage(MSG_APPLY_SCREEN_STATE, screenState);
         }
     }
 
