@@ -57,10 +57,12 @@ import android.testing.AndroidTestingRunner;
 import android.testing.TestableLooper;
 
 import com.android.dx.mockito.inline.extended.ExtendedMockito;
+import com.android.nfc.DeviceConfigFacade;
 import com.android.nfc.NfcEventLog;
 import com.android.nfc.NfcInjector;
 import com.android.nfc.NfcService;
 import com.android.nfc.NfcStatsLog;
+import com.android.nfc.PerfettoTrigger;
 import com.android.nfc.cardemulation.util.StatsdUtils;
 
 import org.junit.After;
@@ -114,6 +116,7 @@ public class HostEmulationManagerTest {
     @Mock private NfcInjector mNfcInjector;
     @Mock private NfcEventLog mNfcEventLog;
     @Mock private StatsdUtils mStatsUtils;
+    @Mock private DeviceConfigFacade mDeviceConfigFacade;
     @Captor private ArgumentCaptor<Intent> mIntentArgumentCaptor;
     @Captor private ArgumentCaptor<ServiceConnection> mServiceConnectionArgumentCaptor;
     @Captor private ArgumentCaptor<List<ApduServiceInfo>> mServiceListArgumentCaptor;
@@ -127,12 +130,14 @@ public class HostEmulationManagerTest {
     public void setUp() {
         mStaticMockSession =
                 ExtendedMockito.mockitoSession()
+                        .mockStatic(android.nfc.Flags.class)
                         .mockStatic(com.android.nfc.flags.Flags.class)
                         .mockStatic(NfcStatsLog.class)
                         .mockStatic(UserHandle.class)
                         .mockStatic(NfcAdapter.class)
                         .mockStatic(NfcService.class)
                         .mockStatic(NfcInjector.class)
+                        .mockStatic(PerfettoTrigger.class)
                         .strictness(Strictness.LENIENT)
                         .startMocking();
         MockitoAnnotations.initMocks(this);
@@ -144,14 +149,17 @@ public class HostEmulationManagerTest {
         when(NfcInjector.getInstance()).thenReturn(mNfcInjector);
         when(mNfcInjector.getNfcEventLog()).thenReturn(mNfcEventLog);
         when(mNfcInjector.getNfcPackageName()).thenReturn(NFC_PACKAGE);
+        when(mNfcInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
         when(com.android.nfc.flags.Flags.statsdCeEventsFlag()).thenReturn(true);
         when(mContext.getSystemService(eq(PowerManager.class))).thenReturn(mPowerManager);
         when(mContext.getSystemService(eq(KeyguardManager.class))).thenReturn(mKeyguardManager);
         when(mRegisteredAidCache.getPreferredPaymentService())
                 .thenReturn(new ComponentNameAndUser(0, null));
+        when(mDeviceConfigFacade.getSlowTapThresholdMillis()).thenReturn(5);
         mHostEmulationManager =
                 new HostEmulationManager(
-                        mContext, mTestableLooper.getLooper(), mRegisteredAidCache, mStatsUtils);
+                        mContext, mTestableLooper.getLooper(), mRegisteredAidCache, mStatsUtils,
+                        mNfcInjector);
     }
 
     @After
@@ -1347,6 +1355,24 @@ public class HostEmulationManagerTest {
         assertEquals(HostEmulationManager.STATE_IDLE, mHostEmulationManager.mState);
         assertNull(mHostEmulationManager.mPollingFramesToSend);
         assertNull(mHostEmulationManager.mUnprocessedPollingFrames);
+    }
+
+    @Test
+    public void testSlowTapTrace() {
+        when(android.nfc.Flags.nfcHceLatencyEvents()).thenReturn(true);
+        mHostEmulationManager.onFieldChangeDetected(true);
+        mHostEmulationManager.onHostEmulationActivated();
+
+        assertTrue(mHostEmulationManager.mFieldOnTime
+                > mHostEmulationManager.mDeviceConfig.getSlowTapThresholdMillis());
+
+        mHostEmulationManager.mFieldOnTime -=
+                mHostEmulationManager.mDeviceConfig.getSlowTapThresholdMillis()- 1;
+
+        mHostEmulationManager.onHostEmulationDeactivated();
+
+        ExtendedMockito.verify(
+                () -> PerfettoTrigger.trigger(HostEmulationManager.TRIGGER_NAME_SLOW_TAP));
     }
 
     private void verifyTapAgainLaunched(ApduServiceInfo service, String category) {

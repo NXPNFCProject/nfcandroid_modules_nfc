@@ -45,6 +45,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.PowerManager;
 import android.os.RemoteException;
+import android.os.SystemClock;
 import android.os.Trace;
 import android.os.UserHandle;
 import android.sysprop.NfcProperties;
@@ -55,10 +56,12 @@ import android.util.proto.ProtoOutputStream;
 
 import androidx.annotation.VisibleForTesting;
 
+import com.android.nfc.DeviceConfigFacade;
 import com.android.nfc.ForegroundUtils;
 import com.android.nfc.NfcInjector;
 import com.android.nfc.NfcService;
 import com.android.nfc.NfcStatsLog;
+import com.android.nfc.PerfettoTrigger;
 import com.android.nfc.cardemulation.RegisteredAidCache.AidResolveInfo;
 import com.android.nfc.cardemulation.util.StatsdUtils;
 import com.android.nfc.flags.Flags;
@@ -121,6 +124,7 @@ public class HostEmulationManager {
     static final String EVENT_HCE_BIND_PAYMENT_SERVICE = "hce_bind_payment_service";
     static final String EVENT_HCE_BIND_SERVICE = "hce_bind_service";
     static final String EVENT_HCE_COMMAND_APDU = "hce_command_apdu";
+    static final String TRIGGER_NAME_SLOW_TAP = "android.nfc.slow-tap";
 
     final Context mContext;
     final RegisteredAidCache mAidCache;
@@ -129,12 +133,15 @@ public class HostEmulationManager {
     final Object mLock;
     final PowerManager mPowerManager;
     private final Looper mLooper;
+    final DeviceConfigFacade mDeviceConfig;
 
     private final StatsdUtils mStatsdUtils;
 
     private final Random mCookieRandom = new Random(System.currentTimeMillis());
 
     INfcOemExtensionCallback mNfcOemExtensionCallback;
+
+    long mFieldOnTime;
 
     // All variables below protected by mLock
 
@@ -282,13 +289,14 @@ public class HostEmulationManager {
         }
     };
 
-    public HostEmulationManager(Context context, Looper looper, RegisteredAidCache aidCache) {
-        this(context, looper, aidCache, new StatsdUtils(StatsdUtils.SE_NAME_HCE));
+    public HostEmulationManager(Context context, Looper looper, RegisteredAidCache aidCache,
+            NfcInjector nfcInjector) {
+        this(context, looper, aidCache, new StatsdUtils(StatsdUtils.SE_NAME_HCE), nfcInjector);
     }
 
     @VisibleForTesting
     HostEmulationManager(Context context, Looper looper, RegisteredAidCache aidCache,
-                         StatsdUtils statsdUtils) {
+                         StatsdUtils statsdUtils, NfcInjector nfcInjector) {
         mContext = context;
         mLooper = looper;
         mHandler = new Handler(looper);
@@ -301,6 +309,8 @@ public class HostEmulationManager {
         mStatsdUtils = Flags.statsdCeEventsFlag() ? statsdUtils : null;
         mPollingLoopFilters = new HashMap<Integer, Map<String, List<ApduServiceInfo>>>();
         mPollingLoopPatternFilters = new HashMap<Integer, Map<Pattern, List<ApduServiceInfo>>>();
+        mDeviceConfig = nfcInjector.getDeviceConfigFacade();
+
         if (isMultipleBindingSupported()) {
             mHandler.postDelayed(mUnbindInactiveServicesRunnable, UNBIND_SERVICES_DELAY_MS);
         }
@@ -691,6 +701,10 @@ public class HostEmulationManager {
             mHandler.postDelayed(mEnableObserveModeAfterTransactionRunnable,
                 RE_ENABLE_OBSERVE_MODE_DELAY_MS);
         }
+
+        if (fieldOn && nfcHceLatencyEvents()) {
+            mFieldOnTime = SystemClock.elapsedRealtime();
+        }
     }
 
     public void onHostEmulationActivated() {
@@ -971,6 +985,12 @@ public class HostEmulationManager {
 
             if (nfcHceLatencyEvents()) {
                 Trace.endAsyncSection(EVENT_HCE_ACTIVATED, 0);
+
+                long endTime = SystemClock.elapsedRealtime();
+                long tapDuration = endTime - mFieldOnTime;
+                if (tapDuration > mDeviceConfig.getSlowTapThresholdMillis()) {
+                    PerfettoTrigger.trigger(TRIGGER_NAME_SLOW_TAP);
+                }
             }
         }
     }
