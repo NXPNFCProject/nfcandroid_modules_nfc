@@ -257,6 +257,11 @@ public abstract class HostApduService extends Service {
     /**
      * @hide
      */
+    public static final int MSG_POLLING_LOOP_ACK = 7;
+
+    /**
+     * @hide
+     */
     public static final String KEY_DATA = "data";
 
     /**
@@ -298,7 +303,7 @@ public abstract class HostApduService extends Service {
                             Message ackMsg = Message.obtain(null, MSG_COMMAND_APDU_ACK);
                             ackMsg.arg1 = msg.arg1;
                             ackMsg.replyTo = mMessenger;
-                            mNfcService.send(ackMsg);
+                            msg.replyTo.send(ackMsg);
                         } catch (RemoteException e) {
                             Log.e(TAG, "Failed to acknowledge MSG_COMMAND_APDU", e);
                         }
@@ -377,6 +382,17 @@ public abstract class HostApduService extends Service {
                                 msg.getData().getParcelableArrayList(
                                     KEY_POLLING_LOOP_FRAMES_BUNDLE, PollingFrame.class);
                         processPollingFrames(pollingFrames);
+
+                        if (Flags.nfcHceLatencyEvents()) {
+                            try {
+                                Message ackMsg = Message.obtain(null, MSG_POLLING_LOOP_ACK);
+                                ackMsg.arg1 = msg.arg1;
+                                ackMsg.replyTo = mMessenger;
+                                msg.replyTo.send(ackMsg);
+                            } catch (RemoteException e) {
+                                Log.e(TAG, "Failed to acknowledge MSG_POLLING_LOOP", e);
+                            }
+                        }
                     }
                     break;
                 default:
