@@ -1034,6 +1034,13 @@ public final class NfcAdapter {
                         "could not retrieve NFC-F card emulation service during service recovery");
             }
         }
+        try {
+            sNdefNfceeService = service.getT4tNdefNfceeInterface();
+        } catch (RemoteException ee) {
+            sNdefNfceeService = null;
+            Log.e(TAG, "could not retrieve NDEF NFCEE service");
+            throw new UnsupportedOperationException();
+        }
     }
 
     private static boolean isCardEmulationEnabled() {
