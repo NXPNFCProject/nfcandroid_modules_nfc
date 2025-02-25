@@ -2317,13 +2317,19 @@ public final class NfcAdapter {
 
     }
 
-    void enforceResumed(Activity activity) {
+    /**
+     * @hide
+     */
+    public void enforceResumed(Activity activity) {
         if (!activity.isResumed()) {
             throw new IllegalStateException("API cannot be called while activity is paused");
         }
     }
 
-    int getSdkVersion() {
+    /**
+     * @hide
+     */
+    public int getSdkVersion() {
         if (mContext == null) {
             return android.os.Build.VERSION_CODES.GINGERBREAD; // best guess
         } else {
