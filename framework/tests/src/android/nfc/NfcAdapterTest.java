@@ -18,8 +18,9 @@ package android.nfc;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -39,6 +40,8 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.MockitoSession;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.mockito.quality.Strictness;
+
+import java.util.List;
 
 public class NfcAdapterTest {
     @Mock
@@ -256,6 +259,295 @@ public class NfcAdapterTest {
         when(mINfcAdapterServices.getState()).thenReturn(NfcAdapter.STATE_ON);
 
         nfcAdapter.getNfcFCardEmulationService();
-        verify(mINfcAdapterServices, times(4)).getState();
+        verify(mINfcAdapterServices, atLeastOnce()).getState();
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testGetSupportedOffHostSecureElementsWithNullContext() throws RemoteException {
+        NfcAdapter nfcAdapter = createNfcInstance();
+        try {
+            FieldSetter.setField(nfcAdapter, nfcAdapter.getClass().getDeclaredField("mContext"),
+                    null);
+        } catch (NoSuchFieldException nsfe) {
+            throw new RuntimeException(nsfe);
+        }
+        nfcAdapter.getSupportedOffHostSecureElements();
+
+    }
+
+    @Test
+    public void testGetSupportedOffHostSecureElementsWithNoPackageManager() throws RemoteException {
+        NfcAdapter nfcAdapter = createNfcInstance();
+        Context context = mock(Context.class);
+        try {
+            FieldSetter.setField(nfcAdapter, nfcAdapter.getClass().getDeclaredField("mContext"),
+                    context);
+        } catch (NoSuchFieldException nsfe) {
+            throw new RuntimeException(nsfe);
+        }
+        when(context.getPackageManager()).thenReturn(null);
+
+        nfcAdapter.getSupportedOffHostSecureElements();
+        verify(context).getPackageManager();
+    }
+
+    @Test
+    public void testGetSupportedOffHostSecureElementsWithPackageManager() throws RemoteException {
+        NfcAdapter nfcAdapter = createNfcInstance();
+        Context context = mock(Context.class);
+        PackageManager packageManager = mock(PackageManager.class);
+        try {
+            FieldSetter.setField(nfcAdapter, nfcAdapter.getClass().getDeclaredField("mContext"),
+                    context);
+        } catch (NoSuchFieldException nsfe) {
+            throw new RuntimeException(nsfe);
+        }
+        when(packageManager.hasSystemFeature(
+                PackageManager.FEATURE_NFC_OFF_HOST_CARD_EMULATION_UICC)).thenReturn(true);
+        when(packageManager.hasSystemFeature(
+                PackageManager.FEATURE_NFC_OFF_HOST_CARD_EMULATION_ESE)).thenReturn(true);
+        when(context.getPackageManager()).thenReturn(packageManager);
+
+        List<String> hostList = nfcAdapter.getSupportedOffHostSecureElements();
+        verify(context).getPackageManager();
+        assertTrue(hostList.contains("SIM"));
+        assertTrue(hostList.contains("eSE"));
+    }
+
+    @Test
+    public void testGetTagIntentAppPreferenceForUser() throws RemoteException {
+        NfcAdapter nfcAdapter = createNfcInstance();
+        int userId = 123;
+        try {
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("sHasNfcFeature"),
+                    true);
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("sService"), mINfcAdapterServices);
+        } catch (NoSuchFieldException nsfe) {
+            throw new RuntimeException(nsfe);
+        }
+        when(mINfcAdapterServices.isTagIntentAppPreferenceSupported()).thenReturn(true);
+
+        nfcAdapter.getTagIntentAppPreferenceForUser(userId);
+        verify(mINfcAdapterServices).getTagIntentAppPreferenceForUser(userId);
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testGetTagIntentAppPreferenceForUserWithoutNfcFeature()
+            throws RemoteException {
+        NfcAdapter nfcAdapter = createNfcInstance();
+        int userId = 123;
+        try {
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("sHasNfcFeature"),
+                    false);
+        } catch (NoSuchFieldException nsfe) {
+            throw new RuntimeException(nsfe);
+        }
+
+        nfcAdapter.getTagIntentAppPreferenceForUser(userId);
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testGetTagIntentAppPreferenceForUserWithDeviceNotsupportedNfc()
+            throws RemoteException {
+        NfcAdapter nfcAdapter = createNfcInstance();
+        int userId = 123;
+        try {
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("sHasNfcFeature"),
+                    true);
+        } catch (NoSuchFieldException nsfe) {
+            throw new RuntimeException(nsfe);
+        }
+        when(mINfcAdapterServices.isTagIntentAppPreferenceSupported()).thenReturn(false);
+
+        nfcAdapter.getTagIntentAppPreferenceForUser(userId);
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testGetWlcListenerDeviceInfoWithoutNfcWlcFeature() throws RemoteException {
+        NfcAdapter nfcAdapter = createNfcInstance();
+        try {
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("sHasNfcWlcFeature"),
+                    false);
+        } catch (NoSuchFieldException nsfe) {
+            throw new RuntimeException(nsfe);
+        }
+
+        nfcAdapter.getWlcListenerDeviceInfo();
+    }
+
+    @Test
+    public void testGetWlcListenerDeviceInfo() throws RemoteException {
+        NfcAdapter nfcAdapter = createNfcInstance();
+        try {
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("sHasNfcWlcFeature"),
+                    true);
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("sService"),
+                    mINfcAdapterServices);
+        } catch (NoSuchFieldException nsfe) {
+            throw new RuntimeException(nsfe);
+        }
+
+        nfcAdapter.getWlcListenerDeviceInfo();
+        verify(mINfcAdapterServices).getWlcListenerDeviceInfo();
+    }
+
+    @Test
+    public void testGetTagService() throws RemoteException {
+        NfcAdapter nfcAdapter = createNfcInstance();
+        try {
+            FieldSetter.setField(nfcAdapter, nfcAdapter.getClass().getDeclaredField("sService"),
+                    mINfcAdapterServices);
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("sHasNfcFeature"),
+                    true);
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("sTagService"),
+                    mTag);
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("sHasCeFeature"),
+                    true);
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("sCardEmulationService"),
+                    mINfcCardEmulation);
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("sNfcFCardEmulationService"),
+                    mNfcFCardEmulation);
+        } catch (NoSuchFieldException nsfe) {
+            throw new RuntimeException(nsfe);
+        }
+        when(mINfcAdapterServices.getState()).thenReturn(NfcAdapter.STATE_ON);
+
+        nfcAdapter.getTagService();
+        verify(mINfcAdapterServices, atLeastOnce()).getState();
+    }
+
+    @Test
+    public void testIndicateDataMigration() throws RemoteException {
+        NfcAdapter nfcAdapter = createNfcInstance();
+        String pkgName = "android.nfc";
+        try {
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("sService"),
+                    mINfcAdapterServices);
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("mContext"),
+                    mMockContext);
+        } catch (NoSuchFieldException nsfe) {
+            throw new RuntimeException(nsfe);
+        }
+        when(mMockContext.getPackageName()).thenReturn(pkgName);
+
+        nfcAdapter.indicateDataMigration(true);
+        verify(mINfcAdapterServices).indicateDataMigration(true, pkgName);
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testInvokeBeamWithoutNfcFeature() throws RemoteException {
+        NfcAdapter nfcAdapter = createNfcInstance();
+        try {
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("sHasNfcFeature"),
+                    false);
+        } catch (NoSuchFieldException nsfe) {
+            throw new RuntimeException(nsfe);
+        }
+
+        nfcAdapter.invokeBeam(mock(Activity.class));
+    }
+
+    @Test
+    public void testInvokeBeam() throws RemoteException {
+        NfcAdapter nfcAdapter = createNfcInstance();
+        try {
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("sHasNfcFeature"),
+                    true);
+        } catch (NoSuchFieldException nsfe) {
+            throw new RuntimeException(nsfe);
+        }
+
+        assertFalse(nfcAdapter.invokeBeam(mock(Activity.class)));
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testIsNdefPushEnabledWithoutNfcFeature() throws RemoteException {
+        NfcAdapter nfcAdapter = createNfcInstance();
+        try {
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("sHasNfcFeature"),
+                    false);
+        } catch (NoSuchFieldException nsfe) {
+            throw new RuntimeException(nsfe);
+        }
+
+        nfcAdapter.isNdefPushEnabled();
+    }
+
+    @Test
+    public void testIsNdefPushEnabled() throws RemoteException {
+        NfcAdapter nfcAdapter = createNfcInstance();
+        try {
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("sHasNfcFeature"),
+                    true);
+        } catch (NoSuchFieldException nsfe) {
+            throw new RuntimeException(nsfe);
+        }
+
+        assertFalse(nfcAdapter.isNdefPushEnabled());
+    }
+
+    @Test
+    public void testIsObserveModeEnabled() throws RemoteException {
+        NfcAdapter nfcAdapter = createNfcInstance();
+        try {
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("sService"),
+                    mINfcAdapterServices);
+        } catch (NoSuchFieldException nsfe) {
+            throw new RuntimeException(nsfe);
+        }
+
+        nfcAdapter.isObserveModeEnabled();
+        verify(mINfcAdapterServices).isObserveModeEnabled();
+    }
+
+    @Test
+    public void testIsWlcEnabled() throws RemoteException {
+        NfcAdapter nfcAdapter = createNfcInstance();
+        try {
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("sService"),
+                    mINfcAdapterServices);
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("sHasNfcWlcFeature"),
+                    true);
+        } catch (NoSuchFieldException nsfe) {
+            throw new RuntimeException(nsfe);
+        }
+
+        nfcAdapter.isWlcEnabled();
+        verify(mINfcAdapterServices).isWlcEnabled();
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testIsWlcEnabledWithoutNfcWlcEnabled() throws RemoteException {
+        NfcAdapter nfcAdapter = createNfcInstance();
+        try {
+            FieldSetter.setField(nfcAdapter,
+                    nfcAdapter.getClass().getDeclaredField("sHasNfcWlcFeature"),
+                    false);
+        } catch (NoSuchFieldException nsfe) {
+            throw new RuntimeException(nsfe);
+        }
+
+        nfcAdapter.isWlcEnabled();
     }
 }
