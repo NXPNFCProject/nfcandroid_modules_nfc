@@ -270,6 +270,10 @@ public interface DeviceHost {
 
     public boolean isFirmwareExitFramesSupported();
 
+    public int getNumberOfFirmwareExitFramesSupported();
+
+    public boolean setFirmwareExitFrameTable(ExitFrame[] exitFrames, byte[] timeoutMs);
+
     /**
     * Get the committed listen mode routing configuration
     */

@@ -371,7 +371,7 @@ public class RegisteredAidCache {
         }
     }
 
-    private boolean isDefaultOrAssociatedWalletService(ApduServiceInfo serviceInfo, int userId) {
+    boolean isDefaultOrAssociatedWalletService(ApduServiceInfo serviceInfo, int userId) {
         synchronized (mLock) {
             if (userId != mUserIdDefaultWalletHolder) {
                 return false;
@@ -394,7 +394,7 @@ public class RegisteredAidCache {
         }
     }
 
-    private boolean isDefaultOrAssociatedWalletPackage(String packageName, int userId) {
+    boolean isDefaultOrAssociatedWalletPackage(String packageName, int userId) {
         synchronized (mLock) {
             if (userId != mUserIdDefaultWalletHolder) {
                 return false;

@@ -30,6 +30,7 @@ import android.sysprop.NfcProperties;
 import android.util.Log;
 
 import com.android.nfc.DeviceHost;
+import com.android.nfc.ExitFrame;
 import com.android.nfc.NfcDiscoveryParameters;
 import com.android.nfc.NfcProprietaryCaps;
 import com.android.nfc.NfcService;
@@ -45,6 +46,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 /** Native interface to the NFC Manager functions */
@@ -249,7 +251,8 @@ public class NativeNfcManager implements DeviceHost {
             return false;
         }
         if (isProprietaryGetCapsSupported()) {
-            return mProprietaryCaps.isAutotransactPollingLoopFilterSupported()
+            return mProprietaryCaps != null
+                    && mProprietaryCaps.isAutotransactPollingLoopFilterSupported()
                     && mProprietaryCaps.getNumberOfExitFramesSupported() > 0;
         }
         return false;
@@ -260,6 +263,14 @@ public class NativeNfcManager implements DeviceHost {
 
     @Override
     public native boolean isObserveModeEnabled();
+
+    @Override
+    public int getNumberOfFirmwareExitFramesSupported() {
+        return mProprietaryCaps != null ? mProprietaryCaps.getNumberOfExitFramesSupported() : -1;
+    }
+
+    @Override
+    public native boolean setFirmwareExitFrameTable(ExitFrame[] exitFrames, byte[] timeoutMs);
 
     @Override
     public int   getT4TNfceePowerState() {
