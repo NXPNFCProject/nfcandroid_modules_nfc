@@ -28,6 +28,7 @@ import android.nfc.cardemulation.ApduServiceInfo;
 import android.nfc.cardemulation.CardEmulation;
 import android.os.Bundle;
 import android.os.UserHandle;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -37,6 +38,7 @@ import androidx.appcompat.widget.Toolbar;
 import com.android.nfc.cardemulation.util.AlertActivity;
 
 public class TapAgainDialog extends AlertActivity implements DialogInterface.OnClickListener {
+    private static final String TAG = "TapAgainDialog";
     public static final String ACTION_CLOSE =
             "com.android.nfc.cardemulation.action.CLOSE_TAP_DIALOG";
     public static final String EXTRA_APDU_SERVICE = "apdu_service";
@@ -63,8 +65,12 @@ public class TapAgainDialog extends AlertActivity implements DialogInterface.OnC
         final NfcAdapter adapter = NfcAdapter.getDefaultAdapter(this);
         mCardEmuManager = CardEmulation.getInstance(adapter);
         Intent intent = getIntent();
-        String category = intent.getStringExtra(EXTRA_CATEGORY);
         ApduServiceInfo serviceInfo = intent.getParcelableExtra(EXTRA_APDU_SERVICE);
+        if (serviceInfo == null) {
+            Log.e(TAG, "serviceInfo is null");
+            finish();
+            return;
+        }
         IntentFilter filter = new IntentFilter(ACTION_CLOSE);
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         registerReceiver(mReceiver, filter);
