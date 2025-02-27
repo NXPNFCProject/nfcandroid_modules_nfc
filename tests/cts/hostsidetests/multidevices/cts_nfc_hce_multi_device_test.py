@@ -987,6 +987,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
     #@CddTest(requirements = {"TODO"})
     @ApiTest(
             apis = {
+                "android.nfc.cardemulation.CardEmulation.NfcEventCallback#onAidNotRouted",
                 "android.nfc.cardemulation.CardEmulation.NfcEventCallback#onRemoteFieldChanged"
             })
     def test_event_listener(self):
