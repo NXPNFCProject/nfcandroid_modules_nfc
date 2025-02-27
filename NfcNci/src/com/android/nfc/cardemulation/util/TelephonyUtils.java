@@ -172,4 +172,10 @@ public class TelephonyUtils extends SubscriptionManager.OnSubscriptionsChangedLi
         }
         return port;
     }
+
+    public void setMepMode(int mepMode) {
+        mMepMode = mepMode;
+    }
+
+
 }

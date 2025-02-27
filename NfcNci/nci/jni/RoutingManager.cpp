@@ -60,7 +60,9 @@ const JNINativeMethod RoutingManager::sMethods[] = {
          com_android_nfc_cardemulation_doGetDefaultIsoDepRouteDestination},
     {"doGetDefaultScRouteDestination", "()I",
      (void*)RoutingManager::
-         com_android_nfc_cardemulation_doGetDefaultScRouteDestination}};
+         com_android_nfc_cardemulation_doGetDefaultScRouteDestination},
+    {"doGetEuiccMepMode", "()I",
+     (void*)RoutingManager::com_android_nfc_cardemulation_doGetEuiccMepMode}};
 
 static const int MAX_NUM_EE = 5;
 // SCBR from host works only when App is in foreground
@@ -149,6 +151,8 @@ RoutingManager::RoutingManager()
         "%s: NAME_NFCEE_EVENT_RF_DISCOVERY_OPTION not found : %d", fn,
         mIsRFDiscoveryOptimized);
   }
+
+  mEuiccMepMode= NfcConfig::getUnsigned(NAME_EUICC_MEP_MODE, 0x0);
 
   memset(&mEeInfo, 0, sizeof(mEeInfo));
   mReceivedEeInfo = false;
@@ -1777,6 +1781,20 @@ int RoutingManager::
 int RoutingManager::
     com_android_nfc_cardemulation_doGetDefaultFelicaRouteDestination(JNIEnv*) {
   return getInstance().mDefaultFelicaRoute;
+}
+
+/*******************************************************************************
+**
+** Function:        com_android_nfc_cardemulation_doGetEuiccMepMode
+**
+** Description:     retrieves mep mode of euicc
+**
+** Returns:         mep mode
+**
+*******************************************************************************/
+
+int RoutingManager::com_android_nfc_cardemulation_doGetEuiccMepMode(JNIEnv*) {
+  return getInstance().mEuiccMepMode;
 }
 
 /*******************************************************************************
