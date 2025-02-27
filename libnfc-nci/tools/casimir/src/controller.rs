@@ -14,6 +14,7 @@
 
 //! Implementation of the NFCC.
 
+use crate::crc;
 use crate::packets::{nci, rf};
 use anyhow::Result;
 use core::time::Duration;
@@ -1233,6 +1234,7 @@ impl<'a> Controller<'a> {
                     receiver: id,
                     protocol: rf_protocol,
                     technology: rf_technology,
+                    bitrate: rf::BitRate::BitRate106KbitS,
                     power_level: 255,
                     sender: self.id,
                     type_: cmd.get_deactivation_type().into(),
@@ -1473,6 +1475,7 @@ impl<'a> Controller<'a> {
                 self.send_rf(rf::DataBuilder {
                     receiver: id,
                     sender: self.id,
+                    bitrate: rf::BitRate::BitRate106KbitS,
                     power_level: 255,
                     protocol: rf::Protocol::IsoDep,
                     technology: rf_technology,
@@ -1646,7 +1649,7 @@ impl<'a> Controller<'a> {
         self.send_control(nci::AndroidPollingLoopNotificationBuilder {
             polling_frames: vec![nci::PollingFrame {
                 frame_type: nci::PollingFrameType::RemoteField,
-                flags: 0,
+                flags: nci::PollingFrameFlags { format: nci::PollingFrameFormat::Short },
                 timestamp: (self.state.start_time.elapsed().as_micros() as u32).to_be_bytes(),
                 gain: power_level,
                 payload: vec![field_status.into()],
@@ -1671,19 +1674,80 @@ impl<'a> Controller<'a> {
         // active or not. When Passive Observe Mode is active, the NFCC
         // should always send this notification before proceeding with the
         // transaction.
+
+        let data = cmd.get_payload();
+        let format = cmd.get_format();
+
+        let (crc_valid, data) = match technology {
+            // If frame longer than 2 bytes has valid CRC
+            // cut it (2 last bytes) out of result
+            rf::Technology::NfcA | rf::Technology::NfcB
+                if data.len() > 2
+                    && format == rf::PollingFrameFormat::Long
+                    && crc::verify_crc(technology, data).is_ok() =>
+            {
+                (true, data[0..data.len() - 2].to_vec())
+            }
+            // If length of data is less than 2 bytes,
+            // or the last byte does not contain 8 bits, there can be no CRC
+            // Frames without or with invalid CRC are returned in full
+            _ => (false, data.to_vec()),
+        };
+
         self.send_control(nci::AndroidPollingLoopNotificationBuilder {
             polling_frames: vec![nci::PollingFrame {
                 frame_type: match technology {
-                    rf::Technology::NfcA => nci::PollingFrameType::Reqa,
-                    rf::Technology::NfcB => nci::PollingFrameType::Reqb,
+                    rf::Technology::NfcA => {
+                        // WUPA/REQA
+                        // Musn't have CRC
+                        if !crc_valid
+                            // have short format (7 bits in last byte)
+                            && format == rf::PollingFrameFormat::Short
+                            // 1 byte long in total
+                            && data.len() == 1
+                            // start with 0x52 (WUPA) or 0x26 (REQA)
+                            && (data[0] == 0x52 || data[0] == 0x26)
+                        {
+                            nci::PollingFrameType::Reqa
+                        } else {
+                            // Other are considered as polling loop annotations
+                            nci::PollingFrameType::Unknown
+                        }
+                    }
+                    rf::Technology::NfcB => {
+                        // REQB/WUPB
+                        // Must have valid CRC
+                        if crc_valid
+                            // have long format (8 bits in last byte)
+                            && format == rf::PollingFrameFormat::Long
+                            // 3 bytes long (APf, AFI and PARAM)
+                            && data.len() == 3
+                            // start with 0x05 (APf)
+                            && data[0] == 0x05
+                        {
+                            nci::PollingFrameType::Reqb
+                        } else {
+                            // Other are considered as polling loop annotations
+                            nci::PollingFrameType::Unknown
+                        }
+                    }
+                    // Type F frames cannot serve as polling loop annotations
                     rf::Technology::NfcF => nci::PollingFrameType::Reqf,
+                    // Type V frames cannot serve as polling loop annotations
                     rf::Technology::NfcV => nci::PollingFrameType::Reqv,
                     rf::Technology::Raw => nci::PollingFrameType::Unknown,
                 },
-                flags: 0,
+                // NCI_ANDROID_POLLING_FRAME_NTF Flags
+                // b0: 0 - short frame; 1 - long frame
+                flags: nci::PollingFrameFlags {
+                    format: match format {
+                        rf::PollingFrameFormat::Long => nci::PollingFrameFormat::Long,
+                        rf::PollingFrameFormat::Short => nci::PollingFrameFormat::Short,
+                    },
+                },
                 timestamp: (self.state.start_time.elapsed().as_micros() as u32).to_be_bytes(),
                 gain: cmd.get_power_level(),
-                payload: cmd.get_payload().to_vec(),
+                payload: data,
             }],
         })
         .await?;
@@ -1716,6 +1780,7 @@ impl<'a> Controller<'a> {
                         protocol: rf::Protocol::Undetermined,
                         receiver: cmd.get_sender(),
                         sender: self.id,
+                        bitrate: rf::BitRate::BitRate106KbitS,
                         power_level: 255,
                         nfcid1: self.state.nfcid1(),
                         int_protocol: self.state.config_parameters.la_sel_info >> 5,
@@ -1725,7 +1790,7 @@ impl<'a> Controller<'a> {
                 }
                 // TODO(b/346715736) implement support for NFC-B technology
                 rf::Technology::NfcB => (),
-                rf::Technology::NfcF => todo!(),
+                rf::Technology::NfcF => (),
                 _ => (),
             }
         }
@@ -1812,6 +1877,7 @@ impl<'a> Controller<'a> {
         self.send_rf(rf::T4ATSelectResponseBuilder {
             receiver: cmd.get_sender(),
             sender: self.id,
+            bitrate: rf::BitRate::BitRate106KbitS,
             power_level: 255,
             rats_response,
         })
@@ -2045,6 +2111,7 @@ impl<'a> Controller<'a> {
                     sender: self.id,
                     receiver: self.state.rf_poll_responses[rf_discovery_id].id,
                     technology: rf::Technology::NfcA,
+                    bitrate: rf::BitRate::BitRate106KbitS,
                     power_level: 255,
                     protocol: rf::Protocol::T2t,
                 })
@@ -2054,6 +2121,7 @@ impl<'a> Controller<'a> {
                 self.send_rf(rf::T4ATSelectCommandBuilder {
                     sender: self.id,
                     receiver: self.state.rf_poll_responses[rf_discovery_id].id,
+                    bitrate: rf::BitRate::BitRate106KbitS,
                     power_level: 255,
                     // [DIGITAL] 14.6.1.6 The FSD supported by the
                     // Reader/Writer SHALL be FSD T4AT,MIN
@@ -2066,6 +2134,7 @@ impl<'a> Controller<'a> {
                 self.send_rf(rf::NfcDepSelectCommandBuilder {
                     sender: self.id,
                     receiver: self.state.rf_poll_responses[rf_discovery_id].id,
+                    bitrate: rf::BitRate::BitRate106KbitS,
                     power_level: 255,
                     technology: rf::Technology::NfcA,
                     lr: 0,
@@ -2152,6 +2221,15 @@ impl<'a> Controller<'a> {
                     nci::RfTechnologyAndMode::NfcFPassivePollMode => rf::Technology::NfcF,
                     nci::RfTechnologyAndMode::NfcVPassivePollMode => rf::Technology::NfcV,
                     _ => continue,
+                },
+                format: match configuration.technology_and_mode {
+                    nci::RfTechnologyAndMode::NfcAPassivePollMode => rf::PollingFrameFormat::Short,
+                    _ => rf::PollingFrameFormat::Long,
+                },
+                bitrate: match configuration.technology_and_mode {
+                    nci::RfTechnologyAndMode::NfcFPassivePollMode => rf::BitRate::BitRate212KbitS,
+                    nci::RfTechnologyAndMode::NfcVPassivePollMode => rf::BitRate::BitRate26KbitS,
+                    _ => rf::BitRate::BitRate106KbitS,
                 },
                 power_level: 255,
                 payload: Some(bytes::Bytes::new()),

@@ -16,6 +16,8 @@
 
 # String transformations
 
+import math
+
 from .other import classproperty
 
 
@@ -43,9 +45,14 @@ def us_to_ms(t):
     return round(t / 1000)
 
 
-def s_to_us(t):
+def s_to_us(t, *, method=None):
     """Converts seconds (10^0) to microseconds (10^−6)"""
-    return round(t * 1000000)
+    return math.ceil(t * 1000000) if method == "ceil" else round(t * 1000000)
+
+
+def s_to_ms(t, *, method=None):
+    """Converts seconds (10^0) to milliseconds (10^−3)"""
+    return math.ceil(t * 1000) if method == "ceil" else round(t * 1000)
 
 
 class ByteStruct(int):
