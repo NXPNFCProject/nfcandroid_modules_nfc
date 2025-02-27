@@ -79,6 +79,12 @@ public abstract class NfcSnippet implements Snippet {
         mDevice.pressMenu();
     }
 
+    /** Press device home button. */
+    @Rpc(description = "Press home button")
+    public void pressHome() {
+        mDevice.pressHome();
+    }
+
     @Rpc(description = "Log info level message to device logcat")
     public void logInfo(String message) {
         Log.i(TAG, message);
