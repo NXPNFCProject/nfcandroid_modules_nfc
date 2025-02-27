@@ -60,6 +60,7 @@ public class RoutingOptionManagerTest {
     private static final byte[] OFF_HOST_UICC = new byte[] {5, 6};
     private static final byte[] OFF_HOST_ESE = new byte[] {3, 4};
     private static final int AID_MATCHING_MODE = 3;
+    private static final int DEFAULT_EUICC_MEP_MODE = 0;
 
     private static class TestRoutingOptionManager extends RoutingOptionManager {
         @Override
@@ -100,6 +101,11 @@ public class RoutingOptionManagerTest {
         @Override
         int doGetAidMatchingMode() {
             return AID_MATCHING_MODE;
+        }
+
+        @Override
+        int doGetEuiccMepMode() {
+            return DEFAULT_EUICC_MEP_MODE;
         }
     }
 

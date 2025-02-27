@@ -108,6 +108,7 @@ class RoutingManager {
   static int com_android_nfc_cardemulation_doGetAidMatchingMode(JNIEnv* e);
   static int com_android_nfc_cardemulation_doGetDefaultIsoDepRouteDestination(
       JNIEnv* e);
+  static int com_android_nfc_cardemulation_doGetEuiccMepMode(JNIEnv* e);
 
   std::vector<uint8_t> mRxDataBuffer;
   map<int, uint16_t> mMapScbrHandle;
@@ -123,6 +124,7 @@ class RoutingManager {
   int mDefaultIsoDepRoute;
   int mAidMatchingMode;
   int mNfcFOnDhHandle;
+  int mEuiccMepMode;
   bool mIsScbrSupported;
   uint16_t mDefaultSysCode;
   uint16_t mDefaultSysCodeRoute;

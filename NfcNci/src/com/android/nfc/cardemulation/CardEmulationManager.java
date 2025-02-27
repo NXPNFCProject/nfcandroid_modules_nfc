@@ -156,6 +156,7 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
     private final NfcEventLog mNfcEventLog;
     private final int mVendorApiLevel;
     private PreferredSubscriptionService mPreferredSubscriptionService = null;
+    private TelephonyUtils mTelephonyUtils = null;
 
     // TODO: Move this object instantiation and dependencies to NfcInjector.
     public CardEmulationManager(Context context, NfcInjector nfcInjector,
@@ -172,6 +173,9 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         mOffHostRouteEse = mRoutingOptionManager.getOffHostRouteEse();
         mOffHostRouteUicc = mRoutingOptionManager.getOffHostRouteUicc();
         mRoutingOptionManager.readRoutingOptionsFromPrefs(mContext, deviceConfigFacade);
+
+        mTelephonyUtils = TelephonyUtils.getInstance(mContext);
+        mTelephonyUtils.setMepMode(mRoutingOptionManager.getMepMode());
 
         mAidCache = new RegisteredAidCache(context, mWalletRoleObserver);
         mT3tIdentifiersCache = new RegisteredT3tIdentifiersCache(context);
@@ -1579,8 +1583,8 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         if (DBG) Log.d(TAG, "Assign SWP for eSIM before NFC turned on");
 
         int preferredSubscriptionId = mPreferredSubscriptionService.getPreferredSubscriptionId();
-        String response = TelephonyUtils.getInstance(mContext)
-                .updateSwpStatusForEuicc(getSimTypeById(preferredSubscriptionId));
+        String response =
+                mTelephonyUtils.updateSwpStatusForEuicc(getSimTypeById(preferredSubscriptionId));
         Log.d(TAG, "response: " + response);
         if(response.length() >= 4) {
             String statusWord = response.substring(response.length() - 4);
@@ -1593,8 +1597,8 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
     }
 
     private int getSimTypeById(int subscriptionId) {
-        Optional<SubscriptionInfo> optionalInfo  =
-                TelephonyUtils.getInstance(mContext).getActiveSubscriptionInfoById(subscriptionId);
+        Optional<SubscriptionInfo> optionalInfo =
+                mTelephonyUtils.getActiveSubscriptionInfoById(subscriptionId);
         if (optionalInfo.isPresent()) {
             SubscriptionInfo info = optionalInfo.get();
             if (info.isEmbedded()) {
