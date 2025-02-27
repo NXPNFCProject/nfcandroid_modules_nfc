@@ -227,6 +227,7 @@ pub struct State {
     pub rf_activation_parameters: Vec<u8>,
     pub passive_observe_mode: u8,
     pub start_time: std::time::Instant,
+    pub remote_field_status: rf::FieldStatus,
 }
 
 /// State of an NFCC instance.
@@ -732,6 +733,7 @@ impl<'a> Controller<'a> {
                 rf_activation_parameters: vec![],
                 passive_observe_mode: nci::PassiveObserveMode::Disable.into(),
                 start_time: Instant::now(),
+                remote_field_status: rf::FieldStatus::FieldOff,
             },
         }
     }
@@ -1637,25 +1639,28 @@ impl<'a> Controller<'a> {
     }
 
     async fn field_info(&mut self, field_status: rf::FieldStatus, power_level: u8) -> Result<()> {
-        if self.state.config_parameters.rf_field_info != 0 {
-            self.send_control(nci::RfFieldInfoNotificationBuilder {
-                rf_field_status: match field_status {
-                    rf::FieldStatus::FieldOn => nci::RfFieldStatus::FieldDetected,
-                    rf::FieldStatus::FieldOff => nci::RfFieldStatus::NoFieldDetected,
-                },
+        if self.state.remote_field_status != field_status {
+            if self.state.config_parameters.rf_field_info != 0 {
+                self.send_control(nci::RfFieldInfoNotificationBuilder {
+                    rf_field_status: match field_status {
+                        rf::FieldStatus::FieldOn => nci::RfFieldStatus::FieldDetected,
+                        rf::FieldStatus::FieldOff => nci::RfFieldStatus::NoFieldDetected,
+                    },
+                })
+                .await?;
+            }
+            self.send_control(nci::AndroidPollingLoopNotificationBuilder {
+                polling_frames: vec![nci::PollingFrame {
+                    frame_type: nci::PollingFrameType::RemoteField,
+                    flags: nci::PollingFrameFlags { format: nci::PollingFrameFormat::Short },
+                    timestamp: (self.state.start_time.elapsed().as_micros() as u32).to_be_bytes(),
+                    gain: power_level,
+                    payload: vec![field_status.into()],
+                }],
             })
             .await?;
+            self.state.remote_field_status = field_status;
         }
-        self.send_control(nci::AndroidPollingLoopNotificationBuilder {
-            polling_frames: vec![nci::PollingFrame {
-                frame_type: nci::PollingFrameType::RemoteField,
-                flags: nci::PollingFrameFlags { format: nci::PollingFrameFormat::Short },
-                timestamp: (self.state.start_time.elapsed().as_micros() as u32).to_be_bytes(),
-                gain: power_level,
-                payload: vec![field_status.into()],
-            }],
-        })
-        .await?;
         Ok(())
     }
 
