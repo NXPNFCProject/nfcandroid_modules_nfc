@@ -61,6 +61,27 @@ rust_binary_host {
     visibility: ["//device/google/cuttlefish:__subpackages__"],
 }
 
+rust_test_host {
+    name: "casimir_tests",
+    crate_name: "casimir_tests",
+    srcs: [
+        "src/main.rs",
+        ":casimir_nci_packets_rust_gen",
+        ":casimir_rf_packets_rust_gen",
+    ],
+    rustlibs: [
+        "libanyhow",
+        "libargh",
+        "libbytes",
+        "libenv_logger",
+        "libfutures",
+        "liblog_rust",
+        "libpdl_runtime",
+        "librustutils",
+        "libtokio",
+    ],
+}
+
 genrule {
     name: "casimir_rf_packets_cxx_gen",
     tools: [
