@@ -700,7 +700,7 @@ void NfcAdaptation::Finalize() {
 
   NfcConfig::clear();
 
-  if (mAidlHal != nullptr) {
+  if (mAidlHal != nullptr && AIBinder_isAlive(mAidlHal->asBinder().get())) {
     if (sVndExtnsPresent) {
       sNfcVendorExtn->finalize();
     }
@@ -727,7 +727,7 @@ void NfcAdaptation::FactoryReset() {
 }
 
 void NfcAdaptation::DeviceShutdown() {
-  if (mAidlHal != nullptr) {
+  if (mAidlHal != nullptr && AIBinder_isAlive(mAidlHal->asBinder().get())) {
     mAidlHal->close(NfcCloseType::HOST_SWITCHED_OFF);
     AIBinder_unlinkToDeath(mAidlHal->asBinder().get(), mDeathRecipient.get(),
                            nullptr);
