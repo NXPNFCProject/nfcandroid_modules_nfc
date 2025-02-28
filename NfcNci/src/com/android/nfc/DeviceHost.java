@@ -222,6 +222,12 @@ public interface DeviceHost {
      */
     boolean isNdefNfceeEmulationSupported();
 
+    /**
+     * This API will tell whether T4T_NFCEE_ENABLE is declared in the HAL configuration file.
+     * @return "True" when declare, else "False"
+     */
+    boolean isNdefNfceefeatureEnabled();
+
     public void registerT3tIdentifier(byte[] t3tIdentifier);
 
     public void deregisterT3tIdentifier(byte[] t3tIdentifier);

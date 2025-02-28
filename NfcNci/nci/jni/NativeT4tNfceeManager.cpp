@@ -138,6 +138,27 @@ jint t4tNfceeManager_getNdefNfceeRouteId() {
 jint t4tNfceeManager_getT4TNfceePowerState(JNIEnv* e, jobject o) {
   return NfcConfig::getUnsigned(NAME_DEFAULT_T4TNFCEE_AID_POWER_STATE, 0x01);
 }
+
+/*******************************************************************************
+**
+** Function:        t4tNfceeManager_isNdefNfceefeatureEnabled
+**
+** Description:     Check if T4T_NFCEE_ENABLE is declared in HAL configuration
+**                  e: JVM environment.
+**                  o: Java object.
+**
+** Returns:         true is set to 1, false otherwise
+**
+*******************************************************************************/
+jboolean t4tNfceeManager_isNdefNfceefeatureEnabled(JNIEnv* e, jobject o) {
+  if (NfcConfig::hasKey(NAME_T4T_NFCEE_ENABLE)) {
+    if (NfcConfig::getUnsigned(NAME_T4T_NFCEE_ENABLE)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /*****************************************************************************
  **
  ** Description:     JNI functions
@@ -154,6 +175,8 @@ static JNINativeMethod gMethods[] = {
     {"getT4TNfceePowerState", "()I",
      (void*)t4tNfceeManager_getT4TNfceePowerState},
     {"getNdefNfceeRouteId", "()I", (void*)t4tNfceeManager_getNdefNfceeRouteId},
+    {"isNdefNfceefeatureEnabled", "()Z",
+     (void*)t4tNfceeManager_isNdefNfceefeatureEnabled},
 };
 
 /*******************************************************************************
