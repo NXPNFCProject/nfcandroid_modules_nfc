@@ -57,7 +57,9 @@ import androidx.annotation.VisibleForTesting;
 
 import com.android.internal.annotations.GuardedBy;
 import com.android.internal.util.FastXmlSerializer;
+import com.android.nfc.NfcService;
 import com.android.nfc.NfcInjector;
+import com.android.nfc.R;
 import com.android.nfc.Utils;
 import com.android.nfc.cardemulation.util.NfcFileUtils;
 
@@ -511,32 +513,34 @@ public class RegisteredServicesCache {
                     "getInstalledServices() - Adding service for routing of NDEF-NFCEE AID");
         }
 
-        // Add NDEF-NFCEE AID
-        ResolveInfo ndefNfceeAppInfo = new ResolveInfo();
-        ndefNfceeAppInfo.resolvePackageName = "NdefNfceeAidRoute";
-        ndefNfceeAppInfo.serviceInfo = new ServiceInfo();
-        ndefNfceeAppInfo.serviceInfo.packageName = "com.android.nfc.ndef_nfcee";
-        ndefNfceeAppInfo.serviceInfo.name = "com.android.nfc.ndef_nfcee.NdefNfceeService";
-        ndefNfceeAppInfo.serviceInfo.applicationInfo = new ApplicationInfo();
-        List<String> ndefNfceeAid = new ArrayList<String>();
-        ndefNfceeAid.add(DEFAULT_T4T_NFCEE_AID);
-        AidGroup ndefNfceeAidGroup = new AidGroup(ndefNfceeAid, CATEGORY_OTHER);
-        ArrayList<AidGroup> ndefNfceeAidStaticGroups = new ArrayList<>();
-        ndefNfceeAidStaticGroups.add(ndefNfceeAidGroup);
-        ArrayList<AidGroup> ndefNfceeAidDynamicGroups = new ArrayList<>();
-        ApduServiceInfo ndefNfceeAidService = new ApduServiceInfo(
-                ndefNfceeAppInfo,
-                false,
-                "Ndef-Nfcee service",
-                ndefNfceeAidStaticGroups,
-                ndefNfceeAidDynamicGroups,
-                false,
-                0,
-                userId,
-                "NDEF-NFCEE service",
-                RoutingOptionManager.SE_NDEF_NFCEE,
-                RoutingOptionManager.SE_NDEF_NFCEE);
-        validServices.add(ndefNfceeAidService);
+        // Add NDEF-NFCEE AID - Only if NDEF-NFCEE feature supported
+        // And only for user 0 to avoid adding several times (if multiple profiles)
+        if (userId == UserHandle.SYSTEM.getIdentifier()
+                && NfcService.getInstance().isNdefNfceefeatureEnabled()) {
+            ResolveInfo ndefNfceeAppInfo = new ResolveInfo();
+            ndefNfceeAppInfo.resolvePackageName = "NdefNfceeAidRoute";
+            ndefNfceeAppInfo.serviceInfo = new ServiceInfo();
+            ndefNfceeAppInfo.serviceInfo.packageName = "com.android.nfc.ndef_nfcee";
+            ndefNfceeAppInfo.serviceInfo.name = "com.android.nfc.ndef_nfcee.NdefNfceeService";
+            List<String> ndefNfceeAid = new ArrayList<String>();
+            ndefNfceeAid.add(DEFAULT_T4T_NFCEE_AID);
+            AidGroup ndefNfceeAidGroup = new AidGroup(ndefNfceeAid, "other");
+            ArrayList<AidGroup> ndefNfceeAidStaticGroups = new ArrayList<>();
+            ndefNfceeAidStaticGroups.add(ndefNfceeAidGroup);
+            ArrayList<AidGroup> ndefNfceeAidDynamicGroups = new ArrayList<>();
+            ApduServiceInfo ndefNfceeAidService = new ApduServiceInfo(
+                    ndefNfceeAppInfo,
+                    false,
+                    mContext.getResources().getString(R.string.device_ndef_nfcee_service_name),
+                    ndefNfceeAidStaticGroups,
+                    ndefNfceeAidDynamicGroups,
+                    false,
+                    0,
+                    userId,
+                    mContext.getResources().getString(R.string.device_ndef_nfcee_service_name),
+                    RoutingOptionManager.SE_NDEF_NFCEE,
+                    RoutingOptionManager.SE_NDEF_NFCEE)
+            validServices.add(ndefNfceeAidService);
 
         return validServices;
     }

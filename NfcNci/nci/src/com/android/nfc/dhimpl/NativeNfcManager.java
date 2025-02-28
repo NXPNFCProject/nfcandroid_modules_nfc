@@ -283,6 +283,11 @@ public class NativeNfcManager implements DeviceHost {
     }
 
     @Override
+    public boolean isNdefNfceefeatureEnabled() {
+        return mT4tNfceeMgr.isNdefNfceefeatureEnabled();
+    }
+
+    @Override
     public int doWriteData(byte[] fileId, byte[] data) {
         return mT4tNfceeMgr.doWriteData(fileId, data);
     }

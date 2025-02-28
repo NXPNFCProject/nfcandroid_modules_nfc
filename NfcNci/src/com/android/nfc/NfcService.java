@@ -4677,6 +4677,15 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         return powerState;
     }
 
+    /**
+     * get info on NDEF-NFCEE feature from HAL config file
+     */
+    public boolean isNdefNfceefeatureEnabled() {
+        boolean status = mDeviceHost.isNdefNfceefeatureEnabled();
+        if (DBG) Log.d(TAG, "isNdefNfceefeatureEnabled() - status:" + status);
+        return status;
+    }
+
     public boolean sendData(byte[] data) {
         notifyOemLogEvent(new OemLogItems.Builder(OemLogItems.LOG_ACTION_HCE_DATA)
                 .setApduResponse(data).build());

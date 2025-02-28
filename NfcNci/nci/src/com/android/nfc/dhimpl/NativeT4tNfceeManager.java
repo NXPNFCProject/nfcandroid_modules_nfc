@@ -32,5 +32,6 @@ public class NativeT4tNfceeManager {
 
   public native int getT4TNfceePowerState();
 
+  public native boolean isNdefNfceefeatureEnabled();
 }
 

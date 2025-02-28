@@ -120,4 +120,6 @@
     <string name="title_package_enabling_nfc">Allow <xliff:g id="pkg">%1$s</xliff:g> to enable NFC?</string>
     <string name="enable_nfc_yes">Yes</string>
     <string name="enable_nfc_no">No</string>
+    <!-- String referring to the device ndef-nfcee service -->
+    <string name="device_ndef_nfcee_service_name">Embedded tag</string>
 </resources>
