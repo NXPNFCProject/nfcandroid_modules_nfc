@@ -522,6 +522,7 @@ public class RegisteredServicesCache {
             ndefNfceeAppInfo.serviceInfo = new ServiceInfo();
             ndefNfceeAppInfo.serviceInfo.packageName = "com.android.nfc.ndef_nfcee";
             ndefNfceeAppInfo.serviceInfo.name = "com.android.nfc.ndef_nfcee.NdefNfceeService";
+            ndefNfceeAppInfo.serviceInfo.applicationInfo = new ApplicationInfo();
             List<String> ndefNfceeAid = new ArrayList<String>();
             ndefNfceeAid.add(DEFAULT_T4T_NFCEE_AID);
             AidGroup ndefNfceeAidGroup = new AidGroup(ndefNfceeAid, "other");
