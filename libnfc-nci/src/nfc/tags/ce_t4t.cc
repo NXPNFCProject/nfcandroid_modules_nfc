@@ -564,8 +564,6 @@ static void ce_t4t_data_cback(uint8_t conn_id, tNFC_CONN_EVT event,
 
   LOG(VERBOSE) << StringPrintf("conn_id = 0x%02X", conn_id);
 
-  p_cmd = (uint8_t*)(p_c_apdu + 1) + p_c_apdu->offset;
-
   if (p_c_apdu->len == 0) {
     LOG(ERROR) << StringPrintf("Wrong length in ce_t4t_data_cback");
     android_errorWriteLog(0x534e4554, "115635871");
@@ -573,7 +571,7 @@ static void ce_t4t_data_cback(uint8_t conn_id, tNFC_CONN_EVT event,
     GKI_freebuf(p_c_apdu);
     return;
   }
-
+  p_cmd = (uint8_t*)(p_c_apdu + 1) + p_c_apdu->offset;
   /* Class Byte */
   BE_STREAM_TO_UINT8(cla, p_cmd);
 
