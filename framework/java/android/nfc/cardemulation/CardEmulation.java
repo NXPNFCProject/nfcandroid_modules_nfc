@@ -1487,9 +1487,7 @@ public final class CardEmulation {
         }
         synchronized (mNfcEventCallbacks) {
             mNfcEventCallbacks.put(listener, executor);
-            if (mNfcEventCallbacks.size() == 1) {
-                callService(() -> sService.registerNfcEventCallback(mINfcEventCallback));
-            }
+            callService(() -> sService.registerNfcEventCallback(mINfcEventCallback));
         }
     }
 
