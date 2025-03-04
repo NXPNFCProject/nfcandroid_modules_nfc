@@ -16,6 +16,8 @@
 
 package com.android.nfc.cardemulation;
 
+import static android.nfc.Flags.nfcHceLatencyEvents;
+
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
@@ -23,6 +25,9 @@ import android.annotation.TargetApi;
 import android.annotation.UserIdInt;
 import android.app.ActivityManager;
 import android.app.KeyguardManager;
+import android.app.compat.CompatChanges;
+import android.compat.annotation.ChangeId;
+import android.compat.annotation.EnabledSince;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -82,8 +87,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static android.nfc.Flags.nfcHceLatencyEvents;
-
 public class HostEmulationManager {
     static final String TAG = "HostEmulationManager";
     static final boolean DBG = NfcProperties.debug_enabled().orElse(true);
@@ -139,6 +142,10 @@ public class HostEmulationManager {
     private final StatsdUtils mStatsdUtils;
 
     private final Random mCookieRandom = new Random(System.currentTimeMillis());
+
+    @ChangeId
+    @EnabledSince(targetSdkVersion = 36 /*Build.VERSION_CODES.BAKLAVA*/)
+    static final long DONT_IMMEDIATELY_UNBIND_SERVICES = 365533082L;
 
     INfcOemExtensionCallback mNfcOemExtensionCallback;
 
@@ -1277,7 +1284,17 @@ public class HostEmulationManager {
 
     void unbindServiceIfNeededLocked() {
         if (isMultipleBindingSupported()) {
-            return;
+            if (mServiceName == null
+                    || CompatChanges.isChangeEnabled(
+                        DONT_IMMEDIATELY_UNBIND_SERVICES,
+                        mServiceName.getPackageName(),
+                        UserHandle.of(mServiceUserId))) {
+                return;
+            }
+            if (mServiceName != null) {
+                mComponentNameToConnectionsMap.remove(
+                        new ComponentNameAndUser(mServiceUserId, mServiceName));
+            }
         }
 
         if (mServiceBound) {

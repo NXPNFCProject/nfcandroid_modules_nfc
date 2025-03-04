@@ -36,6 +36,7 @@ java_defaults {
         "android.se.omapi-V1-java",
         "androidx.annotation_annotation",
         "androidx.appcompat_appcompat",
+        "app-compat-annotations",
         "bluetooth-protos-nfc-enums-java-gen",
         "com.google.android.material_material",
         "modules-utils-fastxmlserializer",
