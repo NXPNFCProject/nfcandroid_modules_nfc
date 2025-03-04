@@ -21,8 +21,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
@@ -51,6 +51,7 @@ public class HostNfcFServiceTest {
     private Message mMockMessage;
     @Mock
     private Bundle mMockBundle;
+    private HostNfcFService mNfcFService;
 
     @Before
     public void setUp() {
@@ -59,6 +60,18 @@ public class HostNfcFServiceTest {
             Looper.prepare();
         }
         mhandler = new HostNfcFServiceMsgHandler(mHostNfcFService);
+
+        mNfcFService = new HostNfcFService() {
+            @Override
+            public byte[] processNfcFPacket(byte[] commandPacket, Bundle extras) {
+                return new byte[0];
+            }
+
+            @Override
+            public void onDeactivated(int reason) {
+
+            }
+        };
     }
 
     @Test
@@ -85,6 +98,23 @@ public class HostNfcFServiceTest {
     }
 
     @Test
+    public void testHandleMessageCommandPacketNoNfcService() throws RemoteException {
+        byte[] requestData = new byte[] {0x01, 0x02, 0x03};
+        byte[] responseData = new byte[] {0x04, 0x05, 0x06};
+        mMockMessage.what = HostNfcFService.MSG_COMMAND_PACKET;
+        mMockMessage.replyTo = mMockNfcService;
+        when(mMockMessage.getData()).thenReturn(mMockBundle);
+        when(mMockBundle.getByteArray(HostNfcFService.KEY_DATA)).thenReturn(requestData);
+        when(mHostNfcFService.getNfcService()).thenReturn(null);
+        when(mHostNfcFService.getMessenger()).thenReturn(mMockReplyMessenger);
+        when(mHostNfcFService.processNfcFPacket(eq(requestData), any())).thenReturn(
+                responseData);
+
+        mhandler.handleMessage(mMockMessage);
+        verify(mHostNfcFService).setNfcService(mMockNfcService);
+    }
+
+    @Test
     public void testHandleMessageCommandPacketWithoutData() {
         mMockMessage.what = HostNfcFService.MSG_COMMAND_PACKET;
         when(mMockMessage.getData()).thenReturn(null);
@@ -102,6 +132,17 @@ public class HostNfcFServiceTest {
         mhandler.handleMessage(mMockMessage);
         verify(mMockNfcService).send(mMockMessage);
         assertEquals(mMockReplyMessenger, mMockMessage.replyTo);
+    }
+
+    @Test
+    public void testHandleMessageResponsePacketWithServiceDeactivated() throws RemoteException {
+        Messenger nfcService = mock(Messenger.class);
+        mMockMessage.what = HostNfcFService.MSG_RESPONSE_PACKET;
+        when(mHostNfcFService.getNfcService()).thenReturn(null);
+        when(mHostNfcFService.getMessenger()).thenReturn(mMockReplyMessenger);
+
+        mhandler.handleMessage(mMockMessage);
+        verify(nfcService, never()).send(mMockMessage);
     }
 
     @Test
@@ -127,5 +168,18 @@ public class HostNfcFServiceTest {
 
         mhandler.handleMessage(mMockMessage);
         verify(mHostNfcFService, never()).getMessenger();
+    }
+
+    @Test
+    public void testGetMessenger() {
+        assertNotNull(mNfcFService.getMessenger());
+    }
+
+    @Test
+    public void testNfcService() {
+        Messenger nfcService = mock(Messenger.class);
+        mNfcFService.setNfcService(nfcService);
+
+        assertEquals(nfcService, mNfcFService.getNfcService());
     }
 }
