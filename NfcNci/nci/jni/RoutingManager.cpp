@@ -1023,11 +1023,6 @@ tNFA_TECHNOLOGY_MASK RoutingManager::updateEeTechRouteSetting() {
       if (nfaStat != NFA_STATUS_OK)
         LOG(ERROR) << fn << ": Failed to configure UICC listen technologies.";
 
-      // clear previous before setting new power state
-      nfaStat = NFA_EeClearDefaultTechRouting(eeHandle, seTechMask);
-      if (nfaStat != NFA_STATUS_OK)
-        LOG(ERROR) << fn << "Failed to clear EE technology routing.";
-
       nfaStat = NFA_EeSetDefaultTechRouting(
           eeHandle, seTechMask, mSecureNfcEnabled ? 0 : seTechMask, 0,
           mSecureNfcEnabled ? 0 : seTechMask,
