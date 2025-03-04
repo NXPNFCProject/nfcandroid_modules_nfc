@@ -16,14 +16,21 @@
 
 package com.android.nfc.cardemulation;
 
+// import static com.android.permission.flags.Flags.crossUserRoleEnabled;
+
+import android.app.ActivityManager;
 import android.app.role.OnRoleHoldersChangedListener;
 import android.app.role.RoleManager;
 import android.content.Context;
+import android.nfc.ComponentNameAndUser;
+import android.nfc.PackageAndUser;
 import android.os.Binder;
 import android.os.UserHandle;
+import android.os.UserManager;
 import android.permission.flags.Flags;
 import android.util.Log;
 import android.sysprop.NfcProperties;
+import android.util.Pair;
 
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.nfc.NfcEventLog;
@@ -31,6 +38,7 @@ import com.android.nfc.NfcInjector;
 import com.android.nfc.proto.NfcEventProto;
 
 import java.util.List;
+import java.util.Objects;
 
 public class WalletRoleObserver {
     static final boolean DBG = NfcProperties.debug_enabled().orElse(true);
@@ -45,6 +53,7 @@ public class WalletRoleObserver {
     @VisibleForTesting
     final OnRoleHoldersChangedListener mOnRoleHoldersChangedListener;
     private Callback mCallback;
+    private int mCurrentUser;
 
     public WalletRoleObserver(Context context, RoleManager roleManager,
             Callback callback, NfcInjector nfcInjector) {
@@ -52,10 +61,33 @@ public class WalletRoleObserver {
         this.mRoleManager = roleManager;
         this.mCallback = callback;
         this.mNfcEventLog = nfcInjector.getNfcEventLog();
+        this.mCurrentUser = ActivityManager.getCurrentUser();
         this.mOnRoleHoldersChangedListener = (roleName, user) -> {
             if (!roleName.equals(RoleManager.ROLE_WALLET)) {
                 return;
             }
+
+            Context userContext = mContext.createContextAsUser(
+                    UserHandle.of(mCurrentUser), 0);
+            RoleManager userRoleManager = userContext.getSystemService(RoleManager.class);
+            if (userRoleManager == null) {
+                return;
+            }
+
+//            if (Flags.walletRoleCrossUserEnabled()) {
+//                if (!Objects.equals(user,
+//                        userRoleManager.getActiveUserForRole(RoleManager.ROLE_WALLET))) {
+//                    return;
+//                }
+//
+//                UserManager userManager = mContext.getSystemService(UserManager.class);
+//                if (!Objects.equals(user, UserHandle.of(mCurrentUser)) &&
+//                        !Objects.equals(userManager.getProfileParent(user),
+//                                UserHandle.of(mCurrentUser))) {
+//                    return;
+//                }
+//            }
+
             List<String> roleHolders = roleManager.getRoleHoldersAsUser(RoleManager.ROLE_WALLET,
                     user);
             String roleHolder = roleHolders.isEmpty() ? null : roleHolders.get(0);
@@ -74,15 +106,36 @@ public class WalletRoleObserver {
                 mOnRoleHoldersChangedListener, UserHandle.ALL);
     }
 
-    public String getDefaultWalletRoleHolder(int userId) {
+    public PackageAndUser getDefaultWalletRoleHolder(int userId) {
         final long token = Binder.clearCallingIdentity();
+        final PackageAndUser noRoleHolderResult = new PackageAndUser(userId, null);
         try {
-            if (!mRoleManager.isRoleAvailable(RoleManager.ROLE_WALLET)) {
-                return null;
+            UserHandle roleUserHandle = UserHandle.of(userId);
+            Context userContext = mContext.createContextAsUser(UserHandle.of(userId), 0);
+            RoleManager userRoleManager = userContext.getSystemService(RoleManager.class);
+            if (userRoleManager == null) {
+                return noRoleHolderResult;
             }
+
+//            if (Flags.walletRoleCrossUserEnabled() && crossUserRoleEnabled()) {
+//                roleUserHandle = userRoleManager.getActiveUserForRole(
+//                        RoleManager.ROLE_WALLET);
+//
+//                if (roleUserHandle == null) {
+//                    Log.d(TAG, "No active user for role");
+//                    return noRoleHolderResult;
+//                }
+            if (!userRoleManager.isRoleAvailable(RoleManager.ROLE_WALLET)) {
+                return noRoleHolderResult;
+            }
+
             List<String> roleHolders = mRoleManager.getRoleHoldersAsUser(RoleManager.ROLE_WALLET,
-                    UserHandle.of(userId));
-            return roleHolders.isEmpty() ? null : roleHolders.get(0);
+                    roleUserHandle);
+            if (roleHolders.isEmpty()) {
+                return new PackageAndUser(roleUserHandle.getIdentifier(), null);
+            }
+
+            return new PackageAndUser(roleUserHandle.getIdentifier(), roleHolders.get(0));
         } finally {
             Binder.restoreCallingIdentity(token);
         }
@@ -98,8 +151,10 @@ public class WalletRoleObserver {
     }
 
     public void onUserSwitched(int userId) {
-        String roleHolder = getDefaultWalletRoleHolder(userId);
-        if (DBG) Log.i(TAG, "Wallet role for user " + userId + ": " + roleHolder);
-        mCallback.onWalletRoleHolderChanged(roleHolder, userId);
+        mCurrentUser = userId;
+        PackageAndUser roleHolder = getDefaultWalletRoleHolder(userId);
+        if (DBG) Log.i(TAG, "Wallet role for user " + userId + ": " + roleHolder.getUserId() +
+                " (" + roleHolder.getPackage() + ")");
+        mCallback.onWalletRoleHolderChanged(roleHolder.getPackage(), roleHolder.getUserId());
     }
 }
