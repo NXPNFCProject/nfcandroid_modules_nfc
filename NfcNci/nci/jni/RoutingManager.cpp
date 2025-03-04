@@ -270,7 +270,7 @@ bool RoutingManager::isTypeATypeBTechSupportedInEe(tNFA_HANDLE eeHandle) {
     }
   }
   LOG(WARNING) << StringPrintf(
-      "%s; Route does not support A/B, using default: ", fn);
+      "%s; Route does not support A/B, using DH as default", fn);
   return false;
 }
 
@@ -287,8 +287,17 @@ bool RoutingManager::isTypeATypeBTechSupportedInEe(tNFA_HANDLE eeHandle) {
 bool RoutingManager::addAidRouting(const uint8_t* aid, uint8_t aidLen,
                                    int route, int aidInfo, int power) {
   static const char fn[] = "RoutingManager::addAidRouting";
-  LOG(DEBUG) << fn << ": enter";
   uint8_t powerState = 0x01;
+
+  LOG(DEBUG) << StringPrintf(
+      "%s; enter, aidLen=%d, route=%02x, aidInfo=%02x, power=%02x", fn, aidLen,
+      route, aidInfo, power);
+
+  if (route != NFC_DH_ID &&
+      !isTypeATypeBTechSupportedInEe(route | NFA_HANDLE_GROUP_EE)) {
+    route = NFC_DH_ID;
+  }
+
   if (!mSecureNfcEnabled) {
     if (power == 0x00) {
       powerState = (route != 0x00) ? mOffHostAidRoutingPowerState : 0x11;
@@ -297,6 +306,7 @@ bool RoutingManager::addAidRouting(const uint8_t* aid, uint8_t aidLen,
           (route != 0x00) ? mOffHostAidRoutingPowerState & power : power;
     }
   }
+
   SyncEventGuard guard(mAidAddRemoveEvent);
   mAidRoutingConfigured = false;
   tNFA_STATUS nfaStat =
@@ -305,7 +315,6 @@ bool RoutingManager::addAidRouting(const uint8_t* aid, uint8_t aidLen,
     mAidAddRemoveEvent.wait();
   }
   if (mAidRoutingConfigured) {
-    LOG(DEBUG) << fn << ": routed AID";
     return true;
   } else {
     LOG(ERROR) << fn << ": failed to route AID";
@@ -342,7 +351,6 @@ bool RoutingManager::removeAidRouting(const uint8_t* aid, uint8_t aidLen) {
     mAidAddRemoveEvent.wait();
   }
   if (mAidRoutingConfigured) {
-    LOG(DEBUG) << fn << ": removed AID";
     return true;
   } else {
     LOG(WARNING) << fn << ": failed to remove AID";
@@ -876,6 +884,8 @@ void RoutingManager::updateDefaultProtocolRoute() {
 *******************************************************************************/
 void RoutingManager::updateDefaultRoute() {
   static const char fn[] = "RoutingManager::updateDefaultRoute";
+  int defaultAidRoute = mDefaultEe;
+
   if (NFC_GetNCIVersion() != NCI_VERSION_2_0) return;
 
   LOG(DEBUG) << StringPrintf("%s; Default SC route: 0x%x", fn,
@@ -898,20 +908,21 @@ void RoutingManager::updateDefaultRoute() {
     mIsScbrSupported = true;
   }
 
-  LOG(DEBUG) << StringPrintf("%s; Default AID route: 0x%x", fn, mDefaultEe);
+  if (defaultAidRoute != mDefaultIsoDepRoute) {
+    LOG(DEBUG) << StringPrintf("%s; Default AID route: 0x%x", fn,
+                               defaultAidRoute);
 
-  // Register zero lengthy Aid for default Aid Routing
-  if (mDefaultEe != mDefaultIsoDepRoute) {
-    if ((mDefaultEe != NFC_DH_ID) &&
-        (!isTypeATypeBTechSupportedInEe(mDefaultEe | NFA_HANDLE_GROUP_EE))) {
-      LOG(WARNING)
-          << fn << ": mDefaultEE Doesn't support either Tech A/B. Returning...";
-      return;
+    // Register zero lengthy Aid for default Aid Routing
+    if ((defaultAidRoute != NFC_DH_ID) &&
+        (!isTypeATypeBTechSupportedInEe(defaultAidRoute |
+                                        NFA_HANDLE_GROUP_EE))) {
+      defaultAidRoute = NFC_DH_ID;
     }
     uint8_t powerState = 0x01;
     if (!mSecureNfcEnabled)
-      powerState = (mDefaultEe != 0x00) ? mOffHostAidRoutingPowerState : 0x11;
-    nfaStat = NFA_EeAddAidRouting(mDefaultEe, 0, NULL, powerState,
+      powerState =
+          (defaultAidRoute != 0x00) ? mOffHostAidRoutingPowerState : 0x11;
+    nfaStat = NFA_EeAddAidRouting(defaultAidRoute, 0, NULL, powerState,
                                   AID_ROUTE_QUAL_PREFIX);
     if (nfaStat != NFA_STATUS_OK)
       LOG(ERROR) << fn << ": failed to register zero length AID";
@@ -981,18 +992,22 @@ tNFA_TECHNOLOGY_MASK RoutingManager::updateEeTechRouteSetting() {
     if ((mDefaultOffHostRoute != NFC_DH_ID) &&
         (eeHandle == (mDefaultOffHostRoute | NFA_HANDLE_GROUP_EE))) {
       offHostRouteFound = true;
-      if (mEeInfo.ee_disc_info[i].la_protocol != 0)
+      if (mEeInfo.ee_disc_info[i].la_protocol != 0) {
         seTechMask |= NFA_TECHNOLOGY_MASK_A;
-      if (mEeInfo.ee_disc_info[i].lb_protocol != 0)
+      }
+      if (mEeInfo.ee_disc_info[i].lb_protocol != 0) {
         seTechMask |= NFA_TECHNOLOGY_MASK_B;
+      }
     }
-    if ((mDefaultFelicaRoute != 0) &&
+
+    if ((mDefaultFelicaRoute != NFC_DH_ID) &&
         (eeHandle == (mDefaultFelicaRoute | NFA_HANDLE_GROUP_EE))) {
       felicaRouteFound = true;
-      if (mEeInfo.ee_disc_info[i].lf_protocol != 0)
+      if (mEeInfo.ee_disc_info[i].lf_protocol != 0) {
         seTechMask |= NFA_TECHNOLOGY_MASK_F;
-      else
+      } else {
         defaultFelicaRoute = NFC_DH_ID;
+      }
     }
 
     // If OFFHOST_LISTEN_TECH_MASK exists,
