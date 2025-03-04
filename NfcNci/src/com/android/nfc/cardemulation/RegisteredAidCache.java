@@ -980,8 +980,13 @@ public class RegisteredAidCache {
                             // host, so we can ask the user which service is preferred.
                             // Since these are all "children" of the prefix, they don't need
                             // to be routed, since the prefix will already get routed to the host
-                            childResolveInfo.mustRoute = false;
-                            aidCache.put(entry.getKey(),childResolveInfo);
+                            resolveInfo.mustRoute = false;
+                            ArrayList<ApduServiceInfo> list = new ArrayList<>();
+                            for (int i = 0; i < entry.getValue().size(); i++) {
+                                list.add(entry.getValue().get(i).service);
+                            }
+                            resolveInfo.services.addAll(list);
+                            aidCache.put(aidToResolve, resolveInfo);
                             resolvedAids.add(entry.getKey());
                             foundChildService |= !childResolveInfo.services.isEmpty();
                         }
@@ -1068,8 +1073,13 @@ public class RegisteredAidCache {
                             // host, so we can ask the user which service is preferred.
                             // Since these are all "children" of the subset, they don't need
                             // to be routed, since the subset will already get routed to the host
-                            childResolveInfo.mustRoute = false;
-                            mAidCache.put(entry.getKey(),childResolveInfo);
+                            resolveInfo.mustRoute = false;
+                            ArrayList<ApduServiceInfo> list = new ArrayList<>();
+                            for (int i = 0; i < entry.getValue().size(); i++) {
+                                list.add(entry.getValue().get(i).service);
+                            }
+                            resolveInfo.services.addAll(list);
+                            aidCache.put(aidToResolve, resolveInfo);
                             resolvedAids.add(entry.getKey());
                             foundChildService |= !childResolveInfo.services.isEmpty();
                         }
