@@ -32,6 +32,7 @@
 #include "nfa_rw_api.h"
 #include "nfa_rw_int.h"
 #include "nfa_wlc_int.h"
+#include "nfa_hci_int.h"
 
 #if (NFC_NFCEE_INCLUDED == TRUE)
 #include "nfa_ee_int.h"
@@ -1130,7 +1131,8 @@ bool nfa_dm_act_start_rf_discovery(__attribute__((unused))
 
   LOG(VERBOSE) << __func__;
 
-  if (nfa_dm_cb.disc_cb.disc_flags & NFA_DM_DISC_FLAGS_ENABLED) {
+  if ((nfa_dm_cb.disc_cb.disc_flags & NFA_DM_DISC_FLAGS_ENABLED) ||
+    (nfa_hci_cb.hci_state == NFA_HCI_STATE_EE_RECOVERY)) {
     evt_data.status = NFA_STATUS_OK;
     nfa_dm_conn_cback_event_notify(NFA_RF_DISCOVERY_STARTED_EVT, &evt_data);
   } else if (nfa_dm_cb.disc_cb.disc_state != NFA_DM_RFST_IDLE) {
