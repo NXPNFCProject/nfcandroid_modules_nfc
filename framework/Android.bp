@@ -17,7 +17,6 @@ filegroup {
     ],
     visibility: [
         "//frameworks/base:__subpackages__",
-        "//packages/apps/Nfc:__subpackages__",
         "//packages/modules/Nfc:__subpackages__",
     ],
 }
@@ -57,7 +56,6 @@ java_sdk_library {
     impl_library_visibility: [
         "//frameworks/base:__subpackages__",
         "//cts:__subpackages__",
-        "//packages/apps/Nfc:__subpackages__",
         "//packages/modules/Nfc:__subpackages__",
     ],
     jarjar_rules: ":nfc-jarjar-rules",
