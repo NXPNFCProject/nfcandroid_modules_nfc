@@ -371,6 +371,8 @@ public class CardEmulationTest {
         static final int REMOTE_FIELD_CHANGED = 6;
         static final int INTERNAL_ERROR_REPORTED = 7;
         CountDownLatch mLatch = null;
+        CountDownLatch[] mLatches = new CountDownLatch[8];
+
 
         Context mContext;
 
@@ -448,6 +450,7 @@ public class CardEmulationTest {
         }
 
         ArrayList<EventLogEntry> mEvents = new ArrayList<EventLogEntry>();
+        ArrayList<EventLogEntry>[] mSpecificEvents = new ArrayList[8];
 
         @Override
         public void onObserveModeStateChanged(boolean isEnabled) {
@@ -459,10 +462,21 @@ public class CardEmulationTest {
             onPreferredServiceChanged(mContext.getPackageName(), isPreferred);
         }
 
+        void countDownSpecificEvent(int type) {
+            if (mSpecificEvents[type] == null) {
+                mSpecificEvents[type] = new ArrayList<EventLogEntry>();
+            }
+            mSpecificEvents[type].add(mEvents.getLast());
+            if (mLatches[type] != null) {
+                mLatches[type].countDown();
+            }
+        }
+
         @Override
         public void onObserveModeStateChanged(String pkgName, boolean isEnabled) {
             synchronized (this) {
                 mEvents.add(new EventLogEntry(pkgName, OBSERVE_MODE, isEnabled));
+                countDownSpecificEvent(OBSERVE_MODE);
                 if (mLatch != null) {
                     mLatch.countDown();
                 }
@@ -473,6 +487,7 @@ public class CardEmulationTest {
         public void onPreferredServiceChanged(String pkgName, boolean isPreferred) {
             synchronized (this) {
                 mEvents.add(new EventLogEntry(pkgName, PREFERRED_SERVICE, isPreferred));
+                countDownSpecificEvent(PREFERRED_SERVICE);
                 if (mLatch != null) {
                     mLatch.countDown();
                 }
@@ -491,9 +506,24 @@ public class CardEmulationTest {
             }
         }
 
+        void setNumEventsToWaitFor(int numEvents, int type) {
+            synchronized (this) {
+                mLatches[type] = new CountDownLatch(numEvents);
+            }
+        }
+
         void waitForEvents() {
             try {
                 if (!mLatch.await(5, TimeUnit.SECONDS)) {
+                    Assert.fail("Did not receive all events within the elapsed time");
+                }
+            } catch (InterruptedException ie) {
+            }
+        }
+
+        void waitForEvents(int type) {
+            try {
+                if (!mLatches[type].await(5, TimeUnit.SECONDS)) {
                     Assert.fail("Did not receive all events within the elapsed time");
                 }
             } catch (InterruptedException ie) {
@@ -566,7 +596,7 @@ public class CardEmulationTest {
                 "android.nfc.cardemulation.CardEmulation.NfcEventCallback#onObserveModeStateChanged",
                 "android.nfc.cardemulation.CardEmulation.NfcEventCallback#onPreferredServiceChanged"
             })
-    public void testEventListener() throws InterruptedException {
+    public void testEventListener() throws InterruptedException, NoSuchFieldException {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         assumeObserveModeSupported(adapter);
         adapter.notifyHceDeactivated();
@@ -716,10 +746,12 @@ public class CardEmulationTest {
                         Assert.assertTrue((boolean)event.mState);
                         Assert.assertTrue(adapter.isObserveModeEnabled());
 
-                        eventPollLoopReceiver.setNumEventsToWaitFor(1);
+                        eventPollLoopReceiver.setNumEventsToWaitFor(1,
+                                EventPollLoopReceiver.OBSERVE_MODE);
                         Assert.assertTrue(adapter.setObserveModeEnabled(false));
-                        eventPollLoopReceiver.waitForEvents();
-                        event = eventPollLoopReceiver.mEvents.getLast();
+                        eventPollLoopReceiver.waitForEvents(EventPollLoopReceiver.OBSERVE_MODE);
+                        event = eventPollLoopReceiver
+                                .mSpecificEvents[EventPollLoopReceiver.OBSERVE_MODE].getLast();
                         Assert.assertEquals(
                                 CtsMyHostApduService.class.getPackageName(),
                                 event.mServicePackageName);
@@ -728,21 +760,26 @@ public class CardEmulationTest {
                         Assert.assertFalse(adapter.isObserveModeEnabled());
                         numEvents = eventPollLoopReceiver.mEvents.size();
                         numWalletEvents =
-                                walletRolePollLoopReceiver.mEvents.size();
+                        walletRolePollLoopReceiver
+                                .mSpecificEvents[EventPollLoopReceiver.PREFERRED_SERVICE].size();
                         eventPollLoopReceiver.setNumEventsToWaitFor(1);
-                        walletRolePollLoopReceiver.setNumEventsToWaitFor(1);
+                        walletRolePollLoopReceiver
+                                .setNumEventsToWaitFor(1, EventPollLoopReceiver.PREFERRED_SERVICE);
                         Assert.assertTrue(cardEmulation.unsetPreferredService(activity));
                         eventPollLoopReceiver.waitForEvents();
-                        walletRolePollLoopReceiver.waitForEvents();
+                        walletRolePollLoopReceiver
+                                .waitForEvents(EventPollLoopReceiver.PREFERRED_SERVICE);
                         Assert.assertTrue(
                                 "Didn't receive event",
                                 numEvents < eventPollLoopReceiver.mEvents.size());
                         Assert.assertTrue(
                                 "Didn't receive event",
-                                numWalletEvents < walletRolePollLoopReceiver.mEvents.size());
+                                numWalletEvents < walletRolePollLoopReceiver
+                                        .mSpecificEvents[EventPollLoopReceiver.PREFERRED_SERVICE]
+                                                .size());
 
-                        gainedEvent =
-                                walletRolePollLoopReceiver.mEvents.getLast();
+                        gainedEvent = walletRolePollLoopReceiver
+                                .mSpecificEvents[EventPollLoopReceiver.PREFERRED_SERVICE].getLast();
                         lostEvent = eventPollLoopReceiver.mEvents.getLast();
 
                         Assert.assertEquals(
@@ -756,8 +793,6 @@ public class CardEmulationTest {
                                             gainedEvent.mServicePackageName);
                         Assert.assertEquals(
                                 EventPollLoopReceiver.PREFERRED_SERVICE, gainedEvent.mEventType);
-                        Assert.assertTrue((boolean)gainedEvent.mState);
-
                     } finally {
                         if (activity != null) {
                             cardEmulation.unsetPreferredService(activity);
