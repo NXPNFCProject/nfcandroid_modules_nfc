@@ -130,7 +130,7 @@ public class HostEmulationManagerTest {
     public void setUp() {
         mStaticMockSession =
                 ExtendedMockito.mockitoSession()
-                        .mockStatic(android.nfc.Flags.class)
+                        .mockStatic(com.android.nfc.module.flags.Flags.class)
                         .mockStatic(com.android.nfc.flags.Flags.class)
                         .mockStatic(NfcStatsLog.class)
                         .mockStatic(UserHandle.class)
@@ -1359,7 +1359,7 @@ public class HostEmulationManagerTest {
 
     @Test
     public void testSlowTapTrace() {
-        when(android.nfc.Flags.nfcHceLatencyEvents()).thenReturn(true);
+        when(com.android.nfc.module.flags.Flags.nfcHceLatencyEvents()).thenReturn(true);
         mHostEmulationManager.onFieldChangeDetected(true);
         mHostEmulationManager.onHostEmulationActivated();
 
