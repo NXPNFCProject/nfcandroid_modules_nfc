@@ -42,6 +42,9 @@ public final class NfcVendorNciCallbackListener extends INfcVendorNciCallback.St
             mDeathRecipient = new IBinder.DeathRecipient() {
                 @Override
                 public void binderDied() {
+                    synchronized (this) {
+                        mDeathRecipient = null;
+                    }
                     Handler handler = new Handler(Looper.getMainLooper());
                     handler.postDelayed(new Runnable() {
                         public void run() {
