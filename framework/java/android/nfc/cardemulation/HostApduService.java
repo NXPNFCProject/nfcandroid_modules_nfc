@@ -16,7 +16,6 @@
 
 package android.nfc.cardemulation;
 
-import static com.android.nfc.module.flags.Flags.nfcHceLatencyEvents;
 
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
@@ -26,7 +25,6 @@ import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.nfc.Flags;
 import android.nfc.NfcAdapter;
 import android.os.Bundle;
 import android.os.Handler;
@@ -36,6 +34,8 @@ import android.os.Messenger;
 import android.os.RemoteException;
 import android.os.Trace;
 import android.util.Log;
+
+import com.android.nfc.module.flags.Flags;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
