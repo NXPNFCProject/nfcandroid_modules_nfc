@@ -73,9 +73,11 @@ import java.util.regex.Pattern;
  * on the device.
  */
 public final class CardEmulation {
+    // TODO(b/395959119) Get this from ApduServiceInfo so we don't have to maintain it in two code
+    // locations.
     private static final Pattern AID_PATTERN = Pattern.compile("[0-9A-Fa-f]{10,32}\\*?\\#?");
-    private static final Pattern PLPF_PATTERN = Pattern.compile("[0-9A-Fa-f,\\?,\\*\\.]*");
-
+    private static final Pattern PLPF_PATTERN =
+            Pattern.compile("[0-9A-Fa-f]{2,}[0-9A-Fa-f,\\?,\\*\\.]*");
     static final String TAG = "CardEmulation";
 
     /**
@@ -493,11 +495,13 @@ public final class CardEmulation {
     /**
      * Register a polling loop pattern filter (PLPF) for a HostApduService and indicate whether it
      * should auto-transact or not. The pattern may include the characters 0-9 and A-F as well as
-     * the regular expression operators `.`, `?` and `*`. When the beginning of anon-standard
+     * the regular expression operators `.`, `?` and `*` after the first byte. When the beginning of
+     * a non-standard
      * polling loop frame matches this sequence exactly, it may be delivered to
      * {@link HostApduService#processPollingFrames(List)}. If auto-transact is set to true and this
      * service is currently preferred or there are no other services registered for this filter
      * then observe mode will also be disabled.
+     *
      * @param service The HostApduService to register the filter for
      * @param pollingLoopPatternFilter The pattern filter to register, must to be compatible with
      *         {@link java.util.regex.Pattern#compile(String)} and only contain hexadecimal numbers
@@ -505,7 +509,7 @@ public final class CardEmulation {
      * @param autoTransact true to have the NFC stack automatically disable observe mode and allow
      *         transactions to proceed when this filter matches, false otherwise
      * @return true if the filter was registered, false otherwise
-     * @throws IllegalArgumentException if the filter containst elements other than hexadecimal
+     * @throws IllegalArgumentException if the filter contains elements other than hexadecimal
      *         numbers and `.`, `?` and `*` operators
      * @throws java.util.regex.PatternSyntaxException if the regex syntax is invalid
      */
