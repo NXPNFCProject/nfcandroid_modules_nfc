@@ -525,7 +525,7 @@ public class RegisteredServicesCache {
             ndefNfceeAppInfo.serviceInfo.applicationInfo = new ApplicationInfo();
             List<String> ndefNfceeAid = new ArrayList<String>();
             ndefNfceeAid.add(DEFAULT_T4T_NFCEE_AID);
-            AidGroup ndefNfceeAidGroup = new AidGroup(ndefNfceeAid, "other");
+            AidGroup ndefNfceeAidGroup = new AidGroup(ndefNfceeAid, CATEGORY_OTHER);
             ArrayList<AidGroup> ndefNfceeAidStaticGroups = new ArrayList<>();
             ndefNfceeAidStaticGroups.add(ndefNfceeAidGroup);
             ArrayList<AidGroup> ndefNfceeAidDynamicGroups = new ArrayList<>();
@@ -540,7 +540,7 @@ public class RegisteredServicesCache {
                     userId,
                     mContext.getResources().getString(R.string.device_ndef_nfcee_service_name),
                     RoutingOptionManager.SE_NDEF_NFCEE,
-                    RoutingOptionManager.SE_NDEF_NFCEE)
+                    RoutingOptionManager.SE_NDEF_NFCEE);
             validServices.add(ndefNfceeAidService);
 
         return validServices;
