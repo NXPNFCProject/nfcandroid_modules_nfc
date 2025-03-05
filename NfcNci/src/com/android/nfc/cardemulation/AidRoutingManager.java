@@ -446,8 +446,9 @@ public class AidRoutingManager {
                             entry.isOnHost = false;
                             default_route_power_state = RegisteredAidCache.POWER_STATE_ALL;
                         }
-                        if (mPowerEmptyAid != default_route_power_state)
+                        if (mPowerEmptyAid != default_route_power_state) {
                             isPowerStateUpdated = true;
+                        }
                         mPowerEmptyAid = default_route_power_state;
                         entry.aidInfo = RegisteredAidCache.AID_ROUTE_QUAL_PREFIX;
                         entry.power = default_route_power_state;
