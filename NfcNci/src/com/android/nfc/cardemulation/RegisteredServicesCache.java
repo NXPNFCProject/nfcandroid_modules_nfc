@@ -542,6 +542,7 @@ public class RegisteredServicesCache {
                     RoutingOptionManager.SE_NDEF_NFCEE,
                     RoutingOptionManager.SE_NDEF_NFCEE);
             validServices.add(ndefNfceeAidService);
+        }
 
         return validServices;
     }
