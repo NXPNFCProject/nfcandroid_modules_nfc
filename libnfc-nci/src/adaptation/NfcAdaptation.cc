@@ -1265,6 +1265,7 @@ ThreadMutex::ThreadMutex() {
   pthread_mutexattr_t mutexAttr;
 
   pthread_mutexattr_init(&mutexAttr);
+  pthread_mutexattr_settype(&mutexAttr, PTHREAD_MUTEX_RECURSIVE);
   pthread_mutex_init(&mMutex, &mutexAttr);
   pthread_mutexattr_destroy(&mutexAttr);
 }
