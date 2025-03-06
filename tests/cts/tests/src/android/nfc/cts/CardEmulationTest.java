@@ -937,6 +937,18 @@ public class CardEmulationTest {
                     // A timeout error indicates that we will crash the NFC service and restart it.
                     // Give the adapter state a chance to bubble up.
                     Thread.currentThread().sleep(300);
+                    // Wait for the NFC service to come back up...
+                    for (int i = 0; i < 20; i++) {
+                        try {
+                            adapter.getAdapterState();
+                            // Alright, we're back in business.
+                            break;
+                        } catch (RuntimeException e) {
+                            // Wait a little longer and try again.
+                            Thread.currentThread().sleep(100);
+                        }
+                    }
+
                     if (adapter.getAdapterState() != NfcAdapter.STATE_ON) {
                         adapterStateLatch.await(20, TimeUnit.SECONDS);
                         Assert.assertEquals(adapter.getAdapterState(), NfcAdapter.STATE_ON);
@@ -959,8 +971,13 @@ public class CardEmulationTest {
         } finally {
             mContext.unregisterReceiver(receiver);
             activity.finish();
-            adapter.notifyHceDeactivated();
-            cardEmulation.unregisterNfcEventCallback(callback);
+            try {
+                adapter.notifyHceDeactivated();
+                cardEmulation.unregisterNfcEventCallback(callback);
+            } catch (RuntimeException e) {
+                // This test kills the NFC service on some devices, so we expect a runtime exception
+                // for these calls.
+            }
         }
     }
 
