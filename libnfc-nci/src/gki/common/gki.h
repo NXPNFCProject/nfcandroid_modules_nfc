@@ -448,4 +448,63 @@ extern uint32_t GKI_get_os_tick_count(void);
 /* Exception handling */
 extern void GKI_exception(uint16_t, std::string);
 
+class GkiUtilsInterface {
+ public:
+  virtual ~GkiUtilsInterface() = default;
+  virtual void remove_from_timer_list(TIMER_LIST_Q* p_timer_listq,
+                                      TIMER_LIST_ENT* p_tle) = 0;
+  virtual void stop_timer(uint8_t tnum) = 0;
+  virtual bool timer_list_empty(TIMER_LIST_Q* p_list) = 0;
+  virtual void start_timer(uint8_t timer_id, uint32_t ticks, bool periodic) = 0;
+  virtual uint8_t get_taskid() = 0;
+  virtual void* getbuf(uint16_t size) = 0;
+  virtual void send_msg(uint8_t task_id, uint8_t mailbox_id, void* p_msg) = 0;
+  virtual void add_to_timer_list(TIMER_LIST_Q* p_list,
+                                 TIMER_LIST_ENT* p_tle) = 0;
+  virtual uint16_t update_timer_list(TIMER_LIST_Q* p_timer_listq,
+                                     int32_t num_units_since_last_update) = 0;
+  virtual TIMER_LIST_ENT* timer_list_first(TIMER_LIST_Q* p_timer_listq) = 0;
+};
+
+class GkiUtils : public GkiUtilsInterface {
+ public:
+  void remove_from_timer_list(TIMER_LIST_Q* p_timer_listq,
+                              TIMER_LIST_ENT* p_tle) override {
+    GKI_remove_from_timer_list(p_timer_listq, p_tle);
+  }
+
+  void stop_timer(uint8_t tnum) override { GKI_stop_timer(tnum); }
+
+  bool timer_list_empty(TIMER_LIST_Q* p_list) override {
+    return GKI_timer_list_empty(p_list);
+  }
+
+  void start_timer(uint8_t timer_id, uint32_t ticks, bool periodic) override {
+    GKI_start_timer(timer_id, ticks, periodic);
+  }
+
+  uint8_t get_taskid() override { return GKI_get_taskid(); }
+
+  void* getbuf(uint16_t size) override { return GKI_getbuf(size); }
+
+  void send_msg(uint8_t task_id, uint8_t mailbox_id, void* p_msg) override {
+    GKI_send_msg(task_id, mailbox_id, p_msg);
+  }
+
+  void add_to_timer_list(TIMER_LIST_Q* p_list, TIMER_LIST_ENT* p_tle) override {
+    GKI_add_to_timer_list(p_list, p_tle);
+  }
+
+  uint16_t update_timer_list(TIMER_LIST_Q* p_timer_listq,
+                             int32_t num_units_since_last_update) override {
+    return GKI_update_timer_list(p_timer_listq, num_units_since_last_update);
+  };
+
+  TIMER_LIST_ENT* timer_list_first(TIMER_LIST_Q* p_timer_listq) override {
+    return GKI_timer_list_first(p_timer_listq);
+  };
+};
+
+extern GkiUtilsInterface* gki_utils;
+
 #endif
