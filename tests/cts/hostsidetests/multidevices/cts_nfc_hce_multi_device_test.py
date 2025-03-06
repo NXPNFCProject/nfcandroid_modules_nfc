@@ -27,9 +27,8 @@
 # Lint as: python3
 """CTS Tests that verify NFC HCE features.
 
-These tests require one phone and one PN532 board (or two phones), one acting as
-a card emulator and the other acting as an NFC reader. The devices should be
-placed back to back.
+These tests require one phone and one PN532 board. The phone acts as a card emulator, and the PN532
+acts as an NFC reader. The devices should be placed back to back.
 """
 
 from http.client import HTTPSConnection
@@ -37,7 +36,6 @@ import json
 import logging
 import ssl
 import sys
-import time
 
 from android.platform.test.annotations import CddTest
 from android.platform.test.annotations import ApiTest
@@ -46,8 +44,6 @@ from mobly import base_test
 from mobly import test_runner
 from mobly import utils
 from mobly.controllers import android_device
-from mobly.controllers import android_device_lib
-from mobly.snippet import errors
 
 
 _LOG = logging.getLogger(__name__)
@@ -169,34 +165,19 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
                 raise Exception("Must define payment_default_service for payment tests.")
             self.emulator.nfc_emulator.waitForService(payment_default_service)
 
-    def _set_up_reader_and_assert_transaction(self, start_reader_fun=None, expected_service=None,
-                                              is_offhost=False):
+    def _set_up_reader_and_assert_transaction(self, expected_service=None):
         """
-        Sets up reader device, and asserts successful APDU transaction
-        :param start_reader_fun: function
-                Function to start reader activity on reader phone if PN532 is not enabled.
+        Sets up reader, and asserts successful APDU transaction
         :param expected_service: string
                 Class name of the service expected to handle the APDUs on the emulator device.
-        :param is_offhost: bool
-                Whether service to handle APDUs is offhost or not.
         :return:
         """
-        if self.pn532:
-            if expected_service is None:
-                raise Exception('expected_service must be defined.')
-            command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator, expected_service)
-            tag_detected, transacted = poll_and_transact(self.pn532, command_apdus, response_apdus)
-            asserts.assert_true(tag_detected, _FAILED_TAG_MSG)
-            asserts.assert_true(transacted, _FAILED_TRANSACTION_MSG)
-        else:
-            handler_snippet = self.reader.nfc_reader if is_offhost else (
-                self.emulator.nfc_emulator)
-
-            test_pass_handler = handler_snippet.asyncWaitForTestPass('ApduSuccess')
-            if start_reader_fun is None:
-                raise Exception('start_reader_fun must be defined.')
-            start_reader_fun()
-            test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+        if expected_service is None:
+            raise Exception('expected_service must be defined.')
+        command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator, expected_service)
+        tag_detected, transacted = poll_and_transact(self.pn532, command_apdus, response_apdus)
+        asserts.assert_true(tag_detected, _FAILED_TAG_MSG)
+        asserts.assert_true(transacted, _FAILED_TRANSACTION_MSG)
 
     def _is_cuttlefish_device(self, ad: android_device.AndroidDevice) -> bool:
         product_name = ad.adb.getprop("ro.product.name")
@@ -234,11 +215,8 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         self._setup_failure_should_block_tests = True
 
         try:
-            devices = self.register_controller(android_device)[:2]
-            if len(devices) == 1:
-                self.emulator = devices[0]
-            else:
-                self.emulator, self.reader = devices
+            devices = self.register_controller(android_device)[:1]
+            self.emulator = devices[0]
 
             self._setup_failure_reason = (
                 'Cannot load emulator snippet. Is NfcEmulatorTestApp.apk '
@@ -267,34 +245,22 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
 
             casimir_id = None
             if self._is_cuttlefish_device(self.emulator):
-                self._setup_failure_reason = 'Failed to set up casimir connection for Cuttlefish device'
+                self._setup_failure_reason = ('Failed to set up casimir connection for Cuttlefish '
+                                              'device')
                 casimir_id = self._get_casimir_id_for_device()
 
             if casimir_id is not None and len(casimir_id) > 0:
                 self._setup_failure_reason = 'Failed to connect to casimir'
                 _LOG.info("casimir_id = " + casimir_id)
                 self.pn532 = pn532.Casimir(casimir_id)
-            elif len(pn532_serial_path) > 0:
+            elif len(pn532_serial_path) == 0:
+                self._setup_failure_reason = 'No serial port is provided for PN532.'
+                return
+            else:
                 self._setup_failure_reason = 'Failed to connect to PN532 board.'
                 self.pn532 = pn532.PN532(pn532_serial_path)
                 self.pn532.mute()
-            else:
-                self._setup_failure_reason = 'Two devices are not present.'
-                _LOG.info("No value provided for pn532_serial_path. Defaulting to two-device " +
-                          "configuration.")
-                if len(devices) < 2:
-                    return
-                self._setup_failure_reason = (
-                    'Cannot load reader snippet. Is NfcReaderTestApp.apk '
-                    'installed on the reader?'
-                )
-                self.reader.load_snippet('nfc_reader', 'com.android.nfc.reader')
-                self.reader.adb.shell(['svc', 'nfc', 'enable'])
-                self.reader.debug_tag = 'reader'
-                if not self.reader.nfc_reader.isNfcSupported():
-                    self._setup_failure_reason = f'NFC is not supported on {self.reader}'
-                    self._setup_failure_should_block_tests = False
-                    return
+
         except Exception as e:
             _LOG.warning('setup_class failed with error %s', e)
             return
@@ -302,8 +268,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
 
     def setup_test(self):
         """
-        Turns emulator/reader screen on and unlocks between tests as some tests will
-        turn the screen off.
+        Turns emulator screen on and unlocks between tests as some tests will turn the screen off.
         """
         if self._setup_failure_should_block_tests:
             asserts.assert_true(
@@ -318,9 +283,6 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
                                            " ***")
         self.emulator.nfc_emulator.turnScreenOn()
         self.emulator.nfc_emulator.pressMenu()
-        if not self.pn532:
-            self.reader.nfc_reader.turnScreenOn()
-            self.reader.nfc_reader.pressMenu()
 
     def on_fail(self, record):
         if self.user_params.get('take_bug_report_on_fail', False):
@@ -328,11 +290,6 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             if hasattr(self, 'emulator') and hasattr(self.emulator, 'nfc_emulator'):
                 self.emulator.take_bug_report(
                     test_name=self.emulator.debug_tag + "_" + test_name,
-                    destination=self.current_test_info.output_path,
-                )
-            if hasattr(self, 'reader') and hasattr(self.reader, 'nfc_reader'):
-                self.reader.take_bug_report(
-                    test_name=self.reader.debug_tag + "_" + test_name,
                     destination=self.current_test_info.output_path,
                 )
 
@@ -345,24 +302,17 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         1. Start emulator activity and set up non-payment HCE Service.
         2. Set callback handler on emulator for when a TestPass event is
         received.
-        3. Start reader activity, which should trigger APDU exchange between
-        reader and emulator.
+        3. Set up PN532, which should trigger APDU exchange.
 
         Verifies:
-        1. Verifies a successful APDU exchange between the emulator and
-        Transport Service after
-        _NFC_TIMEOUT_SEC.
+        1. Verifies a successful APDU exchange.
         """
         self._set_up_emulator(
             service_list=[_TRANSPORT_SERVICE_1],
             expected_service=_TRANSPORT_SERVICE_1
         )
 
-        self._set_up_reader_and_assert_transaction(
-            expected_service=_TRANSPORT_SERVICE_1,
-            start_reader_fun=self.reader.nfc_reader.startSingleNonPaymentReaderActivity if not
-            self.pn532 else None
-        )
+        self._set_up_reader_and_assert_transaction(expected_service=_TRANSPORT_SERVICE_1)
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"])
     def test_single_payment_service(self):
@@ -372,17 +322,14 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         Test Steps:
         1. Set callback handler on emulator for when the instrumentation app is
         set to default wallet app.
-        2. Start emulator activity and wait for the role to be set.
-        2. Set callback handler on emulator for when a TestPass event is
-        received.
-        3. Start reader activity, which should trigger APDU exchange between
+        2. Start emulator activity and wait for the app to hold the wallet role.
+        3. Start PN532 reader, which should trigger APDU exchange between
         reader and emulator.
 
         Verifies:
         1. Verifies emulator device sets the instrumentation emulator app to the
         default wallet app.
-        2. Verifies a successful APDU exchange between the emulator and
-        Transport Service after _NFC_TIMEOUT_SEC.
+        2. Verifies a successful APDU exchange.
         """
         self._set_up_emulator(
             service_list=[_PAYMENT_SERVICE_1],
@@ -391,10 +338,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             payment_default_service=_PAYMENT_SERVICE_1
         )
 
-        self._set_up_reader_and_assert_transaction(
-            expected_service=_PAYMENT_SERVICE_1,
-            start_reader_fun=self.reader.nfc_reader.startSinglePaymentReaderActivity if not
-            self.pn532 else None)
+        self._set_up_reader_and_assert_transaction(expected_service=_PAYMENT_SERVICE_1)
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"])
     def test_single_payment_service_with_background_app(self):
@@ -402,20 +346,16 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         reader.
 
         Test Steps:
-        1. Set callback handler on emulator for when the instrumentation app is
-        set to default wallet app.
-        2. Start emulator activity and wait for the role to be set.
-        3. Set callback handler on emulator for when a TestPass event is
+        1. Start emulator activity and wait for the app to hold the wallet role.
+        2. Set callback handler on emulator for when a TestPass event is
         received.
-        4. Move emulator activity to the background by sending a Home key event.
-        5. Start reader activity, which should trigger APDU exchange between
-        reader and emulator.
+        3. Move emulator activity to the background by sending a Home key event.
+        4. Start PN532, which should trigger APDU exchange with the emulator.
 
         Verifies:
         1. Verifies emulator device sets the instrumentation emulator app to the
         default wallet app.
-        2. Verifies a successful APDU exchange between the emulator and
-        Transport Service after _NFC_TIMEOUT_SEC.
+        2. Verifies a successful APDU exchange.
         """
         self._set_up_emulator(
             service_list=[_PAYMENT_SERVICE_1],
@@ -426,10 +366,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
 
         self.emulator.nfc_emulator.pressHome()
 
-        self._set_up_reader_and_assert_transaction(
-            expected_service=_PAYMENT_SERVICE_1,
-            start_reader_fun=self.reader.nfc_reader.startSinglePaymentReaderActivity if not
-            self.pn532 else None)
+        self._set_up_reader_and_assert_transaction(expected_service=_PAYMENT_SERVICE_1)
 
     def test_single_payment_service_crashes(self):
         """Tests successful APDU exchange between payment service and
@@ -441,14 +378,12 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         2. Start emulator activity and wait for the role to be set.
         2. Set callback handler on emulator for when a TestPass event is
         received.
-        3. Start reader activity, which should trigger APDU exchange between
-        reader and emulator.
+        3. Start PN532, which should trigger APDU exchange with the emulator.
 
         Verifies:
         1. Verifies emulator device sets the instrumentation emulator app to the
         default wallet app.
-        2. Verifies a successful APDU exchange between the emulator and
-        Transport Service after _NFC_TIMEOUT_SEC.
+        2. Verifies a successful APDU exchange.
         """
         self._set_up_emulator(
             service_list=[_PAYMENT_SERVICE_1],
@@ -457,14 +392,12 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             payment_default_service=_PAYMENT_SERVICE_1
         )
 
-        ps = self.emulator.adb.shell(["ps", "|", "grep", "com.android.nfc.emulator.payment"]).decode("utf-8")
+        ps = (self.emulator.adb.shell(["ps", "|", "grep", "com.android.nfc.emulator.payment"])
+              .decode("utf-8"))
         pid = ps.split()[1]
         self.emulator.adb.shell(["kill", "-9", pid])
 
-        self._set_up_reader_and_assert_transaction(
-            expected_service=_PAYMENT_SERVICE_1,
-            start_reader_fun=self.reader.nfc_reader.startSinglePaymentReaderActivity if not
-            self.pn532 else None)
+        self._set_up_reader_and_assert_transaction(expected_service=_PAYMENT_SERVICE_1)
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"])
     def test_dual_payment_service(self):
@@ -472,17 +405,14 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         reader when two payment services are set up on the emulator.
 
         Test Steps:
-        1. Set callback handler on emulator for when the instrumentation app is
-        set to default wallet app.
-        2. Start emulator activity and wait for the role to be set.
+        1. Start emulator activity and wait for the role to be set.
         2. Set callback handler on emulator for when a TestPass event is
         received.
         3. Start reader activity, which should trigger APDU exchange between
         reader and emulator.
 
         Verifies:
-        1. Verifies a successful APDU exchange between the emulator and the
-        payment service.
+        1. Verifies a successful APDU exchange.
         """
         self._set_up_emulator(
             service_list=[_PAYMENT_SERVICE_1,_PAYMENT_SERVICE_2],
@@ -491,10 +421,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             payment_default_service=_PAYMENT_SERVICE_1
         )
 
-        self._set_up_reader_and_assert_transaction(
-            expected_service=_PAYMENT_SERVICE_1,
-            start_reader_fun=self.reader.nfc_reader.startDualPaymentReaderActivity
-            if not self.pn532 else None)
+        self._set_up_reader_and_assert_transaction(expected_service=_PAYMENT_SERVICE_1)
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"])
     def test_foreground_payment_emulator(self):
@@ -503,17 +430,14 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         service.
 
         Test Steps:
-        1. Set callback handler on emulator for when the instrumentation app is
-        set to default wallet app.
-        2. Start emulator activity and wait for the role to be set.
+        1. Start emulator activity and wait for the role to be set.
         2. Set callback handler on emulator for when a TestPass event is
         received.
         3. Start reader activity, which should trigger APDU exchange between
         reader and emulator.
 
         Verifies:
-        1. Verifies a successful APDU exchange between the emulator and the
-        preferred service.
+        1. Verifies a successful APDU exchange.
         """
         self._set_up_emulator(
             service_list=[_PAYMENT_SERVICE_1, _PAYMENT_SERVICE_2],
@@ -523,10 +447,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             payment_default_service=_PAYMENT_SERVICE_2
         )
 
-        self._set_up_reader_and_assert_transaction(
-            expected_service=_PAYMENT_SERVICE_2, start_reader_fun=
-            self.reader.nfc_reader.startForegroundPaymentReaderActivity
-            if not self.pn532 else None)
+        self._set_up_reader_and_assert_transaction(expected_service=_PAYMENT_SERVICE_2)
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_dynamic_aid_emulator(self):
@@ -534,27 +455,21 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         when the payment service has registered dynamic AIDs.
 
         Test Steps:
-        1. Set callback handler on emulator for when the instrumentation app is
-        set to default wallet app.
-        2. Start emulator activity and wait for the role to be set.
+        1. Start emulator activity and wait for the role to be set.
         2. Set callback handler on emulator for when a TestPass event is
         received.
         3. Start reader activity, which should trigger APDU exchange between
         reader and emulator.
 
         Verifies:
-        1. Verifies a successful APDU exchange between the emulator and the
-        payment service with dynamic AIDs.
+        1. Verifies a successful APDU exchange.
         """
         self._set_up_emulator(
             start_emulator_fun=self.emulator.nfc_emulator.startDynamicAidEmulatorActivity,
             payment_default_service=_PAYMENT_SERVICE_DYNAMIC_AIDS
         )
 
-        self._set_up_reader_and_assert_transaction(
-            expected_service=_PAYMENT_SERVICE_DYNAMIC_AIDS, start_reader_fun=
-            self.reader.nfc_reader.startDynamicAidReaderActivity if not self.pn532 else
-            None)
+        self._set_up_reader_and_assert_transaction(expected_service=_PAYMENT_SERVICE_DYNAMIC_AIDS)
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"])
     def test_payment_prefix_emulator(self):
@@ -562,17 +477,14 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         when the payment service has statically registered prefix AIDs.
 
         Test Steps:
-        1. Set callback handler on emulator for when the instrumentation app is
-        set to default wallet app.
-        2. Start emulator activity and wait for the role to be set.
+        1. Start emulator activity and wait for the role to be set.
         2. Set callback handler on emulator for when a TestPass event is
         received.
         3. Start reader activity, which should trigger APDU exchange between
         reader and emulator.
 
         Verifies:
-        1. Verifies a successful APDU exchange between the emulator and the
-        payment service with prefix AIDs.
+        1. Verifies a successful APDU exchange.
         """
         asserts.skip_if(not self.emulator.nfc_emulator.isAidPrefixRegistrationSupported(),
             "Prefix registration is not supported on device")
@@ -582,11 +494,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             is_payment=True
         )
 
-        self._set_up_reader_and_assert_transaction(
-            expected_service=_PREFIX_PAYMENT_SERVICE_1,
-            start_reader_fun=self.reader.nfc_reader.startPrefixPaymentReaderActivity if not
-            self.pn532 else None
-        )
+        self._set_up_reader_and_assert_transaction(expected_service=_PREFIX_PAYMENT_SERVICE_1)
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"])
     def test_prefix_payment_emulator_2(self):
@@ -596,17 +504,14 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         first in the emulator activity.
 
         Test Steps:
-        1. Set callback handler on emulator for when the instrumentation app is
-        set to default wallet app.
-        2. Start emulator activity and wait for the role to be set.
+        1. Start emulator activity and wait for the role to be set.
         2. Set callback handler on emulator for when a TestPass event is
         received.
         3. Start reader activity, which should trigger APDU exchange between
         reader and emulator.
 
         Verifies:
-        1. Verifies a successful APDU exchange between the emulator and the
-        payment service with prefix AIDs.
+        1. Verifies a successful APDU exchange.
         """
         asserts.skip_if(not self.emulator.nfc_emulator.isAidPrefixRegistrationSupported(),
             "Prefix registration is not supported on device")
@@ -616,11 +521,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             is_payment=True
         )
 
-        self._set_up_reader_and_assert_transaction(
-            expected_service=_PREFIX_PAYMENT_SERVICE_1,
-            start_reader_fun=self.reader.nfc_reader.startPrefixPaymentReader2Activity if not
-            self.pn532 else None
-        )
+        self._set_up_reader_and_assert_transaction(expected_service=_PREFIX_PAYMENT_SERVICE_1)
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_other_prefix(self):
@@ -643,11 +544,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         self._set_up_emulator(
             start_emulator_fun=self.emulator.nfc_emulator.startDualNonPaymentPrefixEmulatorActivity)
 
-        self._set_up_reader_and_assert_transaction(
-            expected_service=_PREFIX_ACCESS_SERVICE,
-            start_reader_fun=self.reader.nfc_reader.startDualNonPaymentPrefixReaderActivity if not
-            self.pn532 else None
-        )
+        self._set_up_reader_and_assert_transaction(expected_service=_PREFIX_ACCESS_SERVICE)
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_offhost_service(self):
@@ -660,17 +557,12 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         reader and emulator.
 
         Verifies:
-        1. Verifies a successful APDU exchange inside the reader.
-        We cannot verify the APDUs in the emulator since we don't have access to the secure element.
+        1. Verifies a successful APDU exchange.
         """
         self._set_up_emulator(
             False, start_emulator_fun=self.emulator.nfc_emulator.startOffHostEmulatorActivity)
 
-        self._set_up_reader_and_assert_transaction(
-            expected_service=_OFFHOST_SERVICE,
-            is_offhost=True,
-            start_reader_fun=self.reader.nfc_reader.startOffHostReaderActivity
-            if not self.pn532 else None)
+        self._set_up_reader_and_assert_transaction(expected_service=_OFFHOST_SERVICE)
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_on_and_offhost_service(self):
@@ -684,17 +576,12 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         reader and emulator.
 
         Verifies:
-        1. Verifies a successful APDU exchange inside the reader.
-        We cannot verify the APDUs in the emulator since we don't have access to the secure element.
+        1. Verifies a successful APDU exchange.
         """
         self._set_up_emulator(
             start_emulator_fun=self.emulator.nfc_emulator.startOnAndOffHostEmulatorActivity)
 
-        self._set_up_reader_and_assert_transaction(
-            expected_service=_TRANSPORT_SERVICE_1,
-            is_offhost=True,
-            start_reader_fun=self.reader.nfc_reader.startOnAndOffHostReaderActivity
-            if not self.pn532 else None)
+        self._set_up_reader_and_assert_transaction(expected_service=_TRANSPORT_SERVICE_1)
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_dual_non_payment(self):
@@ -704,14 +591,11 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         Test Steps:
         1. Start emulator activity which sets up TransportService2 and
         AccessService.
-        2. Set callback handler on emulator for when a TestPass event is
-        received.
-        3. Start reader activity, which should trigger APDU exchange between
+        2. Start PN532, which should trigger APDU exchange between
         reader and emulator.
 
         Verifies:
-        1. Verifies a successful APDU exchange between the emulator and the
-        transport service.
+        1. Verifies a successful APDU exchange.
         """
         self._set_up_emulator(
             service_list=[_TRANSPORT_SERVICE_2, _ACCESS_SERVICE],
@@ -719,10 +603,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             is_payment=False
         )
 
-        self._set_up_reader_and_assert_transaction(
-            expected_service = _TRANSPORT_SERVICE_2,
-            start_reader_fun=self.reader.nfc_reader.startDualNonPaymentReaderActivity if not
-            self.pn532 else None)
+        self._set_up_reader_and_assert_transaction(expected_service = _TRANSPORT_SERVICE_2)
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_foreground_non_payment(self):
@@ -733,14 +614,11 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
           Test Steps:
           1. Start emulator activity which sets up TransportService1 and
           TransportService2
-          2. Set callback handler on emulator for when a TestPass event is
-          received.
-          3. Start reader activity, which should trigger APDU exchange between
+          2. Start PN532, which should trigger APDU exchange between
           reader and non-default service.
 
           Verifies:
-          1. Verifies a successful APDU exchange between the emulator and the
-          transport service.
+          1. Verifies a successful APDU exchange.
           """
         self._set_up_emulator(
             service_list=[_TRANSPORT_SERVICE_1, _TRANSPORT_SERVICE_2],
@@ -750,9 +628,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         )
 
         self._set_up_reader_and_assert_transaction(
-            expected_service=_TRANSPORT_SERVICE_2, start_reader_fun=
-            self.reader.nfc_reader.startForegroundNonPaymentReaderActivity
-            if not self.pn532 else None)
+            expected_service=_TRANSPORT_SERVICE_2)
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_throughput(self):
@@ -775,12 +651,10 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         self.emulator.nfc_emulator.startThroughputEmulatorActivity()
         test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
             'ApduUnderThreshold')
-        if self.pn532:
-            command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator,
-                                                      _THROUGHPUT_SERVICE)
-            poll_and_transact(self.pn532, command_apdus, response_apdus)
-        else:
-            self.reader.nfc_reader.startThroughputReaderActivity()
+        command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator,
+                                                  _THROUGHPUT_SERVICE)
+        poll_and_transact(self.pn532, command_apdus, response_apdus)
+
         test_pass_handler.waitAndGet('ApduUnderThreshold', _NFC_TIMEOUT_SEC)
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
@@ -792,7 +666,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
          2. Perform the following sequence 50 times:
             a. Set callback handler on emulator for when a TestPass event is
             received.
-            b. Start reader activity.
+            b. Start PN532.
             c. Wait for successful APDU exchange.
             d. Close reader activity.
 
@@ -804,24 +678,15 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             expected_service=_TRANSPORT_SERVICE_1
         )
 
-        if self.pn532:
-            command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator,
-                                                      _TRANSPORT_SERVICE_1)
+        command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator,
+                                                  _TRANSPORT_SERVICE_1)
         for i in range(50):
-            if self.pn532:
-                tag_detected, transacted = poll_and_transact(self.pn532, command_apdus,
-                                                             response_apdus)
-                asserts.assert_true(
-                    tag_detected, _FAILED_TAG_MSG
-                )
-                asserts.assert_true(transacted, _FAILED_TRANSACTION_MSG)
-            else:
-                test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
-                    'ApduSuccess'
-                )
-                self.reader.nfc_reader.startTapTestReaderActivity()
-                test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
-                self.reader.nfc_reader.closeActivity()
+            tag_detected, transacted = poll_and_transact(self.pn532, command_apdus,
+                                                         response_apdus)
+            asserts.assert_true(
+                tag_detected, _FAILED_TAG_MSG
+            )
+            asserts.assert_true(transacted, _FAILED_TRANSACTION_MSG)
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_large_num_aids(self):
@@ -842,25 +707,16 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             start_emulator_fun=self.emulator.nfc_emulator.startLargeNumAidsEmulatorActivity
         )
 
-        self._set_up_reader_and_assert_transaction(
-            expected_service=_LARGE_NUM_AIDS_SERVICE, start_reader_fun=
-            self.reader.nfc_reader.startLargeNumAidsReaderActivity
-            if not self.pn532 else None)
+        self._set_up_reader_and_assert_transaction(expected_service=_LARGE_NUM_AIDS_SERVICE)
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_screen_off_payment(self):
         """Tests that APDU exchange occurs when device screen is off.
 
         Test Steps:
-        1. Set callback handler on emulator for when the instrumentation app is
-        set to default wallet app.
-        2. Start emulator activity and wait for the role to be set.
-        3. Set callback handler for when screen is off.
-        4. Turn emulator screen off and wait for event.
-        5. Set callback handler on emulator for when a TestPass event is
-         received.
-        6. Start reader activity, which should trigger successful APDU exchange.
-        7. Wait for successful APDU exchange.
+        1. Start emulator activity and wait for the role to be set.
+        2. Turn emulator screen off.
+        3. Start PN532, which should trigger successful APDU exchange.
 
         Verifies:
         1. Verifies default wallet app is set.
@@ -878,11 +734,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         self.emulator.nfc_emulator.turnScreenOff()
         screen_off_handler.waitAndGet('ScreenOff', _NFC_TIMEOUT_SEC)
 
-        self._set_up_reader_and_assert_transaction(
-            expected_service=_SCREEN_OFF_PAYMENT_SERVICE,
-            start_reader_fun=self.reader.nfc_reader.startScreenOffPaymentReaderActivity if not
-            self.pn532 else None
-        )
+        self._set_up_reader_and_assert_transaction(expected_service=_SCREEN_OFF_PAYMENT_SERVICE)
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_conflicting_non_payment(self):
@@ -892,12 +744,11 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
 
         Test Steps:
         1. Start emulator.
-        2. Start reader.
+        2. Start PN532 reader, which should trigger a popup screen of NFC services to select from.
         3. Select a service on the emulator device from the list of services.
-        4. Disable polling on the reader.
-        5. Set a callback handler on the emulator for a successful APDU
+        4. Set a callback handler on the emulator for a successful APDU
         exchange.
-        6. Re-enable polling on the reader, which should trigger the APDU
+        6. Set up reader for transaction, which should trigger the APDU
         exchange with the selected service.
 
         Verifies:
@@ -906,26 +757,17 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         """
         self._set_up_emulator(service_list=[_TRANSPORT_SERVICE_1,_TRANSPORT_SERVICE_2],
                               expected_service=_TRANSPORT_SERVICE_2, is_payment=False)
-        if self.pn532:
-            command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator, _TRANSPORT_SERVICE_2)
-            poll_and_transact(self.pn532, command_apdus[:1], response_apdus[:1])
-        else:
-            self.reader.nfc_reader.startConflictingNonPaymentReaderActivity()
+        command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator, _TRANSPORT_SERVICE_2)
+        poll_and_transact(self.pn532, command_apdus[:1], response_apdus[:1])
+
         self.emulator.nfc_emulator.selectItem()
 
-        if self.pn532:
-            tag_detected, transacted = poll_and_transact(self.pn532, command_apdus, response_apdus)
-            asserts.assert_true(
-                tag_detected, _FAILED_TAG_MSG
-            )
-            asserts.assert_true(transacted, _FAILED_TRANSACTION_MSG)
-        else:
-            self.reader.nfc_reader.setPollTech(_NFC_TECH_A_POLLING_OFF)
-            test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
-                'ApduSuccess'
-            )
-            self.reader.nfc_reader.setPollTech(_NFC_TECH_A_POLLING_ON)
-            test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+        tag_detected, transacted = poll_and_transact(self.pn532, command_apdus, response_apdus)
+        asserts.assert_true(
+            tag_detected, _FAILED_TAG_MSG
+        )
+        asserts.assert_true(transacted, _FAILED_TRANSACTION_MSG)
+
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
 
@@ -940,12 +782,10 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
 
         Test Steps:
         1. Start emulator.
-        2. Start reader.
+        2. Start PN532.
         3. Select a service on the emulator device from the list of services.
         4. Disable polling on the reader.
-        5. Set a callback handler on the emulator for a successful APDU
-        exchange.
-        6. Re-enable polling on the reader, which should trigger the APDU
+        5. Re-enable polling on the reader, which should trigger the APDU
         exchange with the selected service.
 
         Verifies:
@@ -959,28 +799,17 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
                 self.emulator.nfc_emulator.startConflictingNonPaymentPrefixEmulatorActivity,
             is_payment=False
         )
-        if self.pn532:
-            command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator,
-                                                      _PREFIX_TRANSPORT_SERVICE_2)
-            test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
-                'ApduSuccess'
-            )
-            poll_and_transact(self.pn532, command_apdus[:1], response_apdus[:1])
-        else:
-            self.reader.nfc_reader.startConflictingNonPaymentPrefixReaderActivity()
+        command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator,
+                                                  _PREFIX_TRANSPORT_SERVICE_2)
+        test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
+            'ApduSuccess'
+        )
+        poll_and_transact(self.pn532, command_apdus[:1], response_apdus[:1])
 
         self.emulator.nfc_emulator.selectItem()
-
-        if self.pn532:
-            tag_detected, transacted = poll_and_transact(self.pn532, command_apdus, response_apdus)
-            asserts.assert_true(tag_detected, _FAILED_TAG_MSG)
-            asserts.assert_true(transacted, _FAILED_TRANSACTION_MSG)
-        else:
-            self.reader.nfc_reader.setPollTech(_NFC_TECH_A_POLLING_OFF)
-            test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
-                'ApduSuccess'
-            )
-            self.reader.nfc_reader.setPollTech(_NFC_TECH_A_POLLING_ON)
+        tag_detected, transacted = poll_and_transact(self.pn532, command_apdus, response_apdus)
+        asserts.assert_true(tag_detected, _FAILED_TAG_MSG)
+        asserts.assert_true(transacted, _FAILED_TRANSACTION_MSG)
 
         test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
 
@@ -997,7 +826,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
 
         Test Steps:
         1. Start the emulator.
-        2. Start the reader.
+        2. Start PN532.
         3. Select an unrouted AID on the emulator.
         4. Select a routed AID on the emulator.
 
@@ -1009,9 +838,6 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             start_emulator_fun=self.emulator.nfc_emulator.startEventListenerActivity,
             is_payment=False
         )
-
-        if not self.pn532:
-            asserts.skip('PN532 is required for this test.')
 
         # unrouted AID
         command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator,
@@ -1039,9 +865,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
 
         Test Steps:
         1. Start emulator.
-        2. Start callback handler on reader for when a TestPass event is
-        received.
-        3. Start reader.
+        2. Start PN532.
         4. Wait for success event to be sent.
 
         Verifies:
@@ -1052,32 +876,28 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             service_list=[],
             expected_service=""
         )
-        if self.pn532:
-            for i in range(_NUM_POLLING_LOOPS):
-                tag = self.pn532.poll_a()
-                msg = None
-                if tag is not None:
-                    success, msg = parse_protocol_params(tag.sel_res, tag.ats)
-                    self.pn532.mute()
-                    break
+
+        for i in range(_NUM_POLLING_LOOPS):
+            tag = self.pn532.poll_a()
+            msg = None
+            if tag is not None:
+                success, msg = parse_protocol_params(tag.sel_res, tag.ats)
                 self.pn532.mute()
-            asserts.assert_true(success, msg if msg is not None else _FAILED_TAG_MSG)
-        else:
-            test_pass_handler = self.reader.nfc_reader.asyncWaitForTestPass(
-                'TestPass')
-            self.reader.nfc_reader.startProtocolParamsReaderActivity()
-            test_pass_handler.waitAndGet('TestPass', _NFC_TIMEOUT_SEC)
+                break
+            self.pn532.mute()
+        asserts.assert_true(success, msg if msg is not None else _FAILED_TAG_MSG)
+
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_screen_on_only_off_host_service(self):
         """
         Test Steps:
-        1. Start emulator and turn screen off.
-        2. Start callback handler on reader for when a TestPass event is
-        received.
-        3. Start reader activity, which should trigger callback handler.
-        4. Ensure expected APDU is received.
-        5. Close reader and turn screen off on the emulator.
+        1. Start emulator.
+        2. Turn screen off.
+        3. Start PN532, and ensure expected APDU exchange occurs.
+        4. Turn screen off.
+        5. Start PN532, and ensure expected APDU exchange occurs.
+
 
         Verifies:
         1. Verifies correct APDU response when screen is off.
@@ -1092,20 +912,11 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         screen_off_handler = self.emulator.nfc_emulator.asyncWaitForScreenOff(
             'ScreenOff')
         screen_off_handler.waitAndGet('ScreenOff', _NFC_TIMEOUT_SEC)
-        if not self.pn532:
-            self.reader.nfc_reader.closeActivity()
 
         self._set_up_reader_and_assert_transaction(
-            expected_service=_SCREEN_ON_ONLY_OFF_HOST_SERVICE,
-            is_offhost=True,
-            start_reader_fun=self.reader.nfc_reader.startScreenOnOnlyOffHostReaderActivity if not
-            self.pn532 else None
-        )
+            expected_service=_SCREEN_ON_ONLY_OFF_HOST_SERVICE)
 
-        if self.pn532:
-            self.pn532.mute()
-        else:
-            self.reader.nfc_reader.closeActivity()
+        self.pn532.mute()
 
         #Tests APDU exchange with screen on.
         screen_on_handler = self.emulator.nfc_emulator.asyncWaitForScreenOn(
@@ -1113,32 +924,25 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         self.emulator.nfc_emulator.pressMenu()
         screen_on_handler.waitAndGet('ScreenOn', _NFC_TIMEOUT_SEC)
 
-        self._set_up_reader_and_assert_transaction(
-            expected_service=_SCREEN_ON_ONLY_OFF_HOST_SERVICE,
-            is_offhost=True,
-            start_reader_fun=self.reader.nfc_reader.startScreenOnOnlyOffHostReaderActivity if
-            not self.pn532 else None
-        )
+        self._set_up_reader_and_assert_transaction(expected_service=
+                                                   _SCREEN_ON_ONLY_OFF_HOST_SERVICE)
 
     def test_single_payment_service_toggle_nfc_off_on(self):
         """Tests successful APDU exchange between payment service and
         reader.
 
         Test Steps:
-        1. Set callback handler on emulator for when the instrumentation app is
-        set to default wallet app.
-        2. Start emulator activity and wait for the role to be set.
-        3. Toggle NFC off and back on the emulator.
-        4. Set callback handler on emulator for when a TestPass event is
+        1. Start emulator activity and wait for the role to be set.
+        2. Toggle NFC off and back on the emulator.
+        3. Set callback handler on emulator for when a TestPass event is
         received.
-        5. Start reader activity, which should trigger APDU exchange between
+        4. Start reader activity, which should trigger APDU exchange between
         reader and emulator.
 
         Verifies:
         1. Verifies emulator device sets the instrumentation emulator app to the
         default wallet app.
-        2. Verifies a successful APDU exchange between the emulator and
-        Transport Service after _NFC_TIMEOUT_SEC after toggling NFC off and on.
+        2. Verifies a successful APDU exchange after toggling NFC off and on.
         """
         # Wait for instrumentation app to hold onto wallet role before starting
         # reader
@@ -1152,10 +956,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         self.emulator.nfc_emulator.setNfcState(False)
         self.emulator.nfc_emulator.setNfcState(True)
 
-        self._set_up_reader_and_assert_transaction(
-            expected_service=_PAYMENT_SERVICE_1,
-            start_reader_fun=self.reader.nfc_reader.startSinglePaymentReaderActivity if not
-            self.pn532 else None)
+        self._set_up_reader_and_assert_transaction(expected_service=_PAYMENT_SERVICE_1)
 
     @CddTest(requirements = ["7.4.4/C-1-13"])
     def test_polling_frame_timestamp(self):
@@ -1181,8 +982,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
 
         # 1. Mute the field before starting the emulator
         # in order to be able to trigger ON event when the test starts
-        if self.pn532:
-            self.pn532.mute()
+        self.pn532.mute()
 
         # 2. Start emulator activity
         self._set_up_emulator(
@@ -1308,8 +1108,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         asserts.skip_if(not self.emulator.nfc_emulator.isObserveModeSupported(),
                     "Skipping polling frame gain test, observe mode not supported")
 
-        if self.pn532:
-            self.pn532.mute()
+        self.pn532.mute()
         emulator = self.emulator.nfc_emulator
 
         self._set_up_emulator(
@@ -1391,8 +1190,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         """
         asserts.skip_if(not self.emulator.nfc_emulator.isObserveModeSupported(),
                     "Skipping polling frame type test, observe mode not supported")
-        if self.pn532:
-            self.pn532.mute()
+        self.pn532.mute()
         emulator = self.emulator.nfc_emulator
 
         self._set_up_emulator(
@@ -1444,8 +1242,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         """
         asserts.skip_if(not self.emulator.nfc_emulator.isObserveModeSupported(),
                     "Skipping polling frame data test, observe mode not supported")
-        if self.pn532:
-            self.pn532.mute()
+        self.pn532.mute()
         emulator = self.emulator.nfc_emulator
 
         self._set_up_emulator(
@@ -1493,16 +1290,9 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.emulator.nfc_emulator.closeActivity()
             self.emulator.nfc_emulator.logInfo(
                 "*** TEST END: " + self.current_test_info.name + " ***")
-        param_list = []
-        if self.pn532:
-            self.pn532.reset_buffers()
-            self.pn532.mute()
-            param_list = [[self.emulator]]
-        elif hasattr(self, 'reader') and hasattr(self.reader, 'nfc_reader'):
-            self.reader.nfc_reader.closeActivity()
-            self.reader.nfc_reader.logInfo(
-                "*** TEST END: " + self.current_test_info.name + " ***")
-            param_list = [[self.emulator], [self.reader]]
+        self.pn532.reset_buffers()
+        self.pn532.mute()
+        param_list = [[self.emulator]]
         utils.concurrent_exec(lambda d: d.services.create_output_excerpts_all(
             self.current_test_info),
                               param_list=param_list,
@@ -1516,16 +1306,13 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         Test Steps:
         1. Start emulator activity and set up non-payment HCE Service.
         2. Set listen tech to disabled on the emulator.
-        3. Set callback handler on emulator for when a TestPass event is
-        received.
-        4. Start reader activity and verify transaction does not proceed.
+        3. Start PN532 and verify transaction does not proceed.
         5. Set listen tech to Type-A on the emulator.
-        6. This should trigger APDU exchange between reader and emulator.
+        6. Start PN532 and verify APDU exchange between reader and emulator.
 
         Verifies:
         1. Verifies that no APDU exchange occurs when the listen tech is disabled.
-        2. Verifies a successful APDU exchange between the emulator and
-        Transport Service after _NFC_TIMEOUT_SEC.
+        2. Verifies a successful APDU exchange after re-enabling.
         """
         self._set_up_emulator(service_list=[_TRANSPORT_SERVICE_1],
                               expected_service=_TRANSPORT_SERVICE_1, is_payment=False)
@@ -1534,27 +1321,18 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
             'ApduSuccess')
 
-        if self.pn532:
-            command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator, _TRANSPORT_SERVICE_1)
-            tag_detected, transacted = poll_and_transact(self.pn532, command_apdus[:1], response_apdus[:1])
-            asserts.assert_false(tag_detected, "Tag is detected unexpectedly!")
-            asserts.assert_false(transacted, "Transaction is completed unexpectedly!")
-        else:
-            self.reader.nfc_reader.startSingleNonPaymentReaderActivity()
-            with asserts.assert_raises(
-                    errors.CallbackHandlerTimeoutError,
-                    "Transaction completed when listen tech is disabled",
-            ):
-                test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+        command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator, _TRANSPORT_SERVICE_1)
+        tag_detected, transacted = poll_and_transact(self.pn532, command_apdus[:1],
+                                                     response_apdus[:1])
+        asserts.assert_false(tag_detected, "Tag is detected unexpectedly!")
+        asserts.assert_false(transacted, "Transaction is completed unexpectedly!")
 
         # Set listen on
         self.emulator.nfc_emulator.setListenTech(_NFC_TECH_A_LISTEN_ON)
-        if self.pn532:
-            tag_detected, transacted = poll_and_transact(self.pn532, command_apdus[:1], response_apdus[:1])
-            asserts.assert_true(tag_detected, _FAILED_TAG_MSG)
-            asserts.assert_true(transacted, _FAILED_TRANSACTION_MSG)
-        else:
-            test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+        tag_detected, transacted = poll_and_transact(self.pn532, command_apdus[:1],
+                                                     response_apdus[:1])
+        asserts.assert_true(tag_detected, _FAILED_TAG_MSG)
+        asserts.assert_true(transacted, _FAILED_TRANSACTION_MSG)
 
 
     #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
@@ -1565,45 +1343,30 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         Test Steps:
         1. Start emulator activity and set up non-payment HCE Service.
         2. Set listen tech to Type-F on the emulator.
-        3. Set callback handler on emulator for when a TestPass event is
-        received.
-        4. Start reader activity and verify transaction does not proceed.
-        5. Set listen tech to Type-A on the emulator.
-        6. This should trigger APDU exchange between reader and emulator.
+        3. Start PN532 and verify transaction does not proceed.
+        4. Set listen tech to Type-A on the emulator.
+        6. Start PN532 and verify APDU exchange between reader and emulator.
 
         Verifies:
         1. Verifies that no APDU exchange occurs when the listen tech mismatches with poll tech.
-        2. Verifies a successful APDU exchange between the emulator and
-        Transport Service after _NFC_TIMEOUT_SEC.
+        2. Verifies a successful APDU exchange when no longer mismatched.
         """
         self._set_up_emulator(service_list=[_TRANSPORT_SERVICE_1],
                               expected_service=_TRANSPORT_SERVICE_1, is_payment=False)
         # Set listen to Type-F
         self.emulator.nfc_emulator.setListenTech(_NFC_TECH_F_LISTEN_ON)
 
-        test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
-            'ApduSuccess')
-        if self.pn532:
-            command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator, _TRANSPORT_SERVICE_1)
-            tag_detected, transacted = poll_and_transact(self.pn532, command_apdus[:1], response_apdus[:1])
-            asserts.assert_false(tag_detected, "Tag is detected unexpectedly!")
-            asserts.assert_false(transacted, "Transaction is completed unexpectedly!")
-        else:
-            self.reader.nfc_reader.startSingleNonPaymentReaderActivity()
-            with asserts.assert_raises(
-                    errors.CallbackHandlerTimeoutError,
-                    "Transaction completed when listen tech is mismatching",
-            ):
-                test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+        command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator, _TRANSPORT_SERVICE_1)
+        tag_detected, transacted = poll_and_transact(self.pn532, command_apdus[:1],
+                                                     response_apdus[:1])
+        asserts.assert_false(tag_detected, "Tag is detected unexpectedly!")
+        asserts.assert_false(transacted, "Transaction is completed unexpectedly!")
 
         # Set listen to Type-A
         self.emulator.nfc_emulator.setListenTech(_NFC_TECH_A_LISTEN_ON)
-        if self.pn532:
-            tag_detected, transacted = poll_and_transact(self.pn532, command_apdus[:1], response_apdus[:1])
-            asserts.assert_true(tag_detected, _FAILED_TAG_MSG)
-            asserts.assert_true(transacted, _FAILED_TRANSACTION_MSG)
-        else:
-            test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+        tag_detected, transacted = poll_and_transact(self.pn532, command_apdus[:1], response_apdus[:1])
+        asserts.assert_true(tag_detected, _FAILED_TAG_MSG)
+        asserts.assert_true(transacted, _FAILED_TRANSACTION_MSG)
 
 if __name__ == '__main__':
     # Take test args
