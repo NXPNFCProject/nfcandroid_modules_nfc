@@ -82,7 +82,6 @@ extern void delete_stack_non_volatile_store(bool forceDelete);
 NfcAdaptation* NfcAdaptation::mpInstance = nullptr;
 ThreadMutex NfcAdaptation::sLock;
 ThreadCondVar NfcAdaptation::mHalOpenCompletedEvent;
-ThreadCondVar NfcAdaptation::mHalCloseCompletedEvent;
 sp<INfc> NfcAdaptation::mHal;
 sp<INfcV1_1> NfcAdaptation::mHal_1_1;
 sp<INfcV1_2> NfcAdaptation::mHal_1_2;
