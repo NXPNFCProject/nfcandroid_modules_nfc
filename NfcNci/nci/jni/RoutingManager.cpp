@@ -225,6 +225,7 @@ bool RoutingManager::initialize(nfc_jni_native_data* native) {
 
   // Trigger RT update
   mEeInfoChanged = true;
+  mDefaultAidRouteAdded = false;
 
   return true;
 }
@@ -289,10 +290,6 @@ bool RoutingManager::addAidRouting(const uint8_t* aid, uint8_t aidLen,
   static const char fn[] = "RoutingManager::addAidRouting";
   uint8_t powerState = 0x01;
 
-  LOG(DEBUG) << StringPrintf(
-      "%s; enter, aidLen=%d, route=%02x, aidInfo=%02x, power=%02x", fn, aidLen,
-      route, aidInfo, power);
-
   if (route != NFC_DH_ID &&
       !isTypeATypeBTechSupportedInEe(route | NFA_HANDLE_GROUP_EE)) {
     route = NFC_DH_ID;
@@ -305,6 +302,17 @@ bool RoutingManager::addAidRouting(const uint8_t* aid, uint8_t aidLen,
       powerState =
           (route != 0x00) ? mOffHostAidRoutingPowerState & power : power;
     }
+  }
+
+  if (aidLen == 0) {
+    LOG(DEBUG) << StringPrintf(
+        "%s; default AID on route=%02x, aidInfo=%02x, power=%02x", fn, route,
+        aidInfo, power);
+    mDefaultAidRouteAdded = true;
+  } else {
+    LOG(DEBUG) << StringPrintf(
+        "%s; aidLen =%02X, route=%02x, aidInfo=%02x, power=%02x", fn, aidLen,
+        route, aidInfo, power);
   }
 
   SyncEventGuard guard(mAidAddRemoveEvent);
@@ -908,7 +916,8 @@ void RoutingManager::updateDefaultRoute() {
     mIsScbrSupported = true;
   }
 
-  if (defaultAidRoute != mDefaultIsoDepRoute) {
+  // Check if default AID was already added or not
+  if (!mDefaultAidRouteAdded) {
     LOG(DEBUG) << StringPrintf("%s; Default AID route: 0x%x", fn,
                                defaultAidRoute);
 
@@ -918,14 +927,22 @@ void RoutingManager::updateDefaultRoute() {
                                         NFA_HANDLE_GROUP_EE))) {
       defaultAidRoute = NFC_DH_ID;
     }
-    uint8_t powerState = 0x01;
-    if (!mSecureNfcEnabled)
-      powerState =
-          (defaultAidRoute != 0x00) ? mOffHostAidRoutingPowerState : 0x11;
-    nfaStat = NFA_EeAddAidRouting(defaultAidRoute, 0, NULL, powerState,
-                                  AID_ROUTE_QUAL_PREFIX);
-    if (nfaStat != NFA_STATUS_OK)
-      LOG(ERROR) << fn << ": failed to register zero length AID";
+
+    // Default AID route should be added only if different from ISO-DEP route
+    if ((defaultAidRoute != mDefaultIsoDepRoute) ||
+        (mDefaultIsoDepRoute == NFC_DH_ID)) {
+      removeAidRouting(nullptr, 0);
+      uint8_t powerState = 0x01;
+      if (!mSecureNfcEnabled)
+        powerState =
+            (defaultAidRoute != 0x00) ? mOffHostAidRoutingPowerState : 0x11;
+      nfaStat = NFA_EeAddAidRouting(defaultAidRoute, 0, NULL, powerState,
+                                    AID_ROUTE_QUAL_PREFIX);
+      if (nfaStat != NFA_STATUS_OK)
+        LOG(ERROR) << fn << ": failed to register zero length AID";
+      else
+        mDefaultAidRouteAdded = true;
+    }
   }
 }
 
@@ -1516,6 +1533,7 @@ void RoutingManager::clearRoutingEntry(int clearFlags) {
     LOG(DEBUG) << StringPrintf("%s; clear all of aid based routing", fn);
     RoutingManager::getInstance().removeAidRouting((uint8_t*)NFA_REMOVE_ALL_AID,
                                                    NFA_REMOVE_ALL_AID_LEN);
+    mDefaultAidRouteAdded = false;
   }
 
   if (clearFlags & CLEAR_PROTOCOL_ENTRIES) {
