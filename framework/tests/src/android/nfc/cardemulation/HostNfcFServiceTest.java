@@ -136,13 +136,12 @@ public class HostNfcFServiceTest {
 
     @Test
     public void testHandleMessageResponsePacketWithServiceDeactivated() throws RemoteException {
-        Messenger nfcService = mock(Messenger.class);
         mMockMessage.what = HostNfcFService.MSG_RESPONSE_PACKET;
         when(mHostNfcFService.getNfcService()).thenReturn(null);
         when(mHostNfcFService.getMessenger()).thenReturn(mMockReplyMessenger);
 
         mhandler.handleMessage(mMockMessage);
-        verify(nfcService, never()).send(mMockMessage);
+        verify(mMockNfcService, never()).send(mMockMessage);
     }
 
     @Test
