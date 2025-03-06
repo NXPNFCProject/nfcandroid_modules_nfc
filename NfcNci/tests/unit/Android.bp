@@ -24,6 +24,7 @@ android_test {
         "androidx.test.espresso.intents-nodeps",
         "androidx.test.ext.junit",
         "com.android.nfc.flags-aconfig-java",
+        "com.android.nfc.module.flags-aconfig-java",
         "mockito-target-extended-minus-junit4",
         "frameworks-base-testutils",
         "truth",

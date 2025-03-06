@@ -16,6 +16,8 @@
 
 package android.nfc.cardemulation;
 
+import static com.android.nfc.module.flags.Flags.nfcHceLatencyEvents;
+
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
 import android.annotation.SdkConstant;
