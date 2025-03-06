@@ -1202,7 +1202,9 @@ public class HostEmulationManager {
             mState = STATE_POLLING_LOOP;
         }
         if (nfcHceLatencyEvents()) {
-            Trace.beginAsyncSection(EVENT_POLLING_FRAMES, generateApduAckCookie());
+            int cookie = generateApduAckCookie();
+            msg.arg1 = cookie;
+            Trace.beginAsyncSection(EVENT_POLLING_FRAMES, cookie);
         }
         try {
             mActiveService.send(msg);
