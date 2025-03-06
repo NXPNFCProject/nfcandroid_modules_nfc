@@ -17,8 +17,6 @@ cc_aconfig_library {
     ],
     visibility: [
         "//hardware/interfaces/nfc/aidl/vts/functional:__subpackages__",
-        "//packages/apps/Nfc:__subpackages__",
         "//packages/modules/Nfc:__subpackages__",
-        "//packages/modules/Nfc/libnfc-nci:__subpackages__",
     ],
 }
