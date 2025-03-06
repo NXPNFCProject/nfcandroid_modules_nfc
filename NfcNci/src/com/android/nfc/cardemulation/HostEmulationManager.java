@@ -69,6 +69,7 @@ import com.android.nfc.NfcStatsLog;
 import com.android.nfc.PerfettoTrigger;
 import com.android.nfc.cardemulation.RegisteredAidCache.AidResolveInfo;
 import com.android.nfc.cardemulation.util.StatsdUtils;
+import com.android.nfc.cardemulation.util.StatsdUtilsContext;
 import com.android.nfc.flags.Flags;
 import com.android.nfc.proto.NfcEventProto;
 
@@ -139,6 +140,7 @@ public class HostEmulationManager {
     private final Looper mLooper;
     final DeviceConfigFacade mDeviceConfig;
 
+    @Nullable
     private final StatsdUtils mStatsdUtils;
 
     private final Random mCookieRandom = new Random(System.currentTimeMillis());
@@ -299,7 +301,9 @@ public class HostEmulationManager {
 
     public HostEmulationManager(Context context, Looper looper, RegisteredAidCache aidCache,
             NfcInjector nfcInjector) {
-        this(context, looper, aidCache, new StatsdUtils(StatsdUtils.SE_NAME_HCE), nfcInjector);
+        this(context, looper, aidCache, nfcInjector.getStatsdUtilsContext() != null ?
+            new StatsdUtils(StatsdUtils.SE_NAME_HCE, nfcInjector.getStatsdUtilsContext()) : null,
+            nfcInjector);
     }
 
     @VisibleForTesting
@@ -587,6 +591,10 @@ public class HostEmulationManager {
                             }
                         }
                         if (serviceInfo.getShouldAutoTransact(dataStr)) {
+                            if (mStatsdUtils != null) {
+                                mStatsdUtils.setNextObserveModeTriggerSource(
+                                    StatsdUtils.TRIGGER_SOURCE_AUTO_TRANSACT);
+                            }
                             allowOneTransaction();
                             pollingFrame.setTriggeredAutoTransact(true);
                         }
