@@ -39,4 +39,5 @@
     <option name="mobly_pkg" key="file" value="CtsNfcHceMultiDeviceTestCases" />
     <option name="build_apk" key="file" value="NfcReaderTestApp.apk" />
     <option name="build_apk" key="file" value="NfcEmulatorTestApp.apk" />
+    <option name="build_apk" key="file" value="NfcEmulatorApduApp.apk" />
 </configuration>
