@@ -889,8 +889,8 @@ public class CardEmulationTest {
 
         ExecutorService pool = Executors.newFixedThreadPool(2);
         class InternalErrorCallback implements CardEmulation.NfcEventCallback {
-            CountDownLatch mErrorLatch = new CountDownLatch(1);
-            CountDownLatch mStateOnLatch = new CountDownLatch(1);
+            final CountDownLatch mErrorLatch = new CountDownLatch(1);
+            final CountDownLatch mStateOnLatch = new CountDownLatch(1);
             int mErrorType = -1;
 
             @Override
@@ -904,9 +904,7 @@ public class CardEmulationTest {
             public void onInternalErrorReported(@CardEmulation.NfcInternalErrorType int errorType) {
                 synchronized (this) {
                     mErrorType = errorType;
-                    if (mErrorLatch != null) {
-                        mErrorLatch.countDown();
-                    }
+                    mErrorLatch.countDown();
                 }
             }
         }
@@ -926,15 +924,14 @@ public class CardEmulationTest {
                     }
                 }
             };
-        mContext.registerReceiver(receiver,filter);
+        mContext.registerReceiver(receiver, filter);
         try {
-            /* nfc_ncif_proc_proprietary_rsp() marks the data response for this gid
-             * and oid as not a vs response, so this will cause a hardware error */
+            /* nfc_ncif_proc_proprietary_rsp() marks the data response for this GID
+             * and OID as not a VS response, so this will cause a hardware error */
             adapter.sendVendorNciMessage(0x00, 0x03, 0x00, new byte[0]);
             if (!callback.mErrorLatch.await(5, TimeUnit.SECONDS)) {
                 Assert.fail("Did not receive internal error event within the elapsed time");
             }
-            Assert.assertNotEquals(-1, callback.mErrorType);
             // ToDo: can we query the recovery_option from the NfcConfig to make sure
             // the error matches the config?
             switch (callback.mErrorType) {
@@ -943,22 +940,13 @@ public class CardEmulationTest {
                     // A timeout error indicates that we will crash the NFC service and restart it.
                     // Give the adapter state a chance to bubble up.
                     Thread.currentThread().sleep(300);
-                    // Wait for the NFC service to come back up...
-                    for (int i = 0; i < 20; i++) {
-                        try {
-                            adapter.getAdapterState();
-                            // Alright, we're back in business.
-                            break;
-                        } catch (RuntimeException e) {
-                            // Wait a little longer and try again.
-                            Thread.currentThread().sleep(100);
-                        }
+
+                    // The NFC service has died, so we should wait for it to come back up.
+                    if (!adapterStateLatch.await(20, TimeUnit.SECONDS)) {
+                        Assert.fail("NFC service did not come back up within the elapsed time");
                     }
 
-                    if (adapter.getAdapterState() != NfcAdapter.STATE_ON) {
-                        adapterStateLatch.await(20, TimeUnit.SECONDS);
-                        Assert.assertEquals(adapter.getAdapterState(), NfcAdapter.STATE_ON);
-                    }
+                    Assert.assertEquals(adapter.getAdapterState(), NfcAdapter.STATE_ON);
                     Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
                     Assert.assertTrue(
                             cardEmulation.setPreferredService(
@@ -968,7 +956,11 @@ public class CardEmulationTest {
                 break;
                 case CardEmulation.NFC_INTERNAL_ERROR_NFC_HARDWARE_ERROR:
                     // If the recovery option config is set to 1, we will reset the NFC service and
-                    // send a hardware error. We should be good to go at this point.
+                    // send a hardware error. Wait for the adapter to come back up to prevent
+                    // other tests from failing.
+                    if (!adapterStateLatch.await(20, TimeUnit.SECONDS)) {
+                        Assert.fail("NFC service did not come back up within the elapsed time");
+                    }
                     break;
                 default:
                     Assert.fail("Expected a hardware error or timeout error but got: "
@@ -977,13 +969,8 @@ public class CardEmulationTest {
         } finally {
             mContext.unregisterReceiver(receiver);
             activity.finish();
-            try {
-                adapter.notifyHceDeactivated();
-                cardEmulation.unregisterNfcEventCallback(callback);
-            } catch (RuntimeException e) {
-                // This test kills the NFC service on some devices, so we expect a runtime exception
-                // for these calls.
-            }
+            adapter.notifyHceDeactivated();
+            cardEmulation.unregisterNfcEventCallback(callback);
         }
     }
 
