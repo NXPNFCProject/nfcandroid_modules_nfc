@@ -568,6 +568,9 @@ void NfcAdaptation::GetVendorConfigs(
 *******************************************************************************/
 void NfcAdaptation::Initialize() {
   const char* func = "NfcAdaptation::Initialize";
+  if (sVndExtnsPresent) {
+    sNfcVendorExtn->processEvent(HANDLE_NFC_ADAPTATION_INIT, 0x00);
+  }
   // Init log tag
   android::base::InitLogging(nullptr);
   android::base::SetDefaultTag("libnfc_nci");
@@ -1065,6 +1068,9 @@ void NfcAdaptation::HalCoreInitialized(uint16_t data_len,
 bool NfcAdaptation::HalPrediscover() {
   const char* func = "NfcAdaptation::HalPrediscover";
   LOG(VERBOSE) << StringPrintf("%s", func);
+  if (sVndExtnsPresent) {
+    sNfcVendorExtn->processEvent(HANDLE_NFC_PRE_DISCOVER, 0x00);
+  }
   if (mAidlHal != nullptr) {
     Status status = mAidlHal->preDiscover();
     if (status.isOk()) {
