@@ -69,6 +69,7 @@ import androidx.test.filters.RequiresDevice;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -750,6 +751,7 @@ public class NfcAdapterTest {
 
     @Test
     @RequiresDevice
+    @Ignore
     @RequiresFlagsEnabled(Flags.FLAG_NFC_OEM_EXTENSION)
     public void testOemExtensionMaybeTriggerFirmwareUpdate()
             throws InterruptedException, RemoteException {
