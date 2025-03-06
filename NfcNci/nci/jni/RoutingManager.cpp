@@ -1023,11 +1023,6 @@ tNFA_TECHNOLOGY_MASK RoutingManager::updateEeTechRouteSetting() {
       if (nfaStat != NFA_STATUS_OK)
         LOG(ERROR) << fn << ": Failed to configure UICC listen technologies.";
 
-      // clear previous before setting new power state
-      nfaStat = NFA_EeClearDefaultTechRouting(eeHandle, seTechMask);
-      if (nfaStat != NFA_STATUS_OK)
-        LOG(ERROR) << fn << "Failed to clear EE technology routing.";
-
       nfaStat = NFA_EeSetDefaultTechRouting(
           eeHandle, seTechMask, mSecureNfcEnabled ? 0 : seTechMask, 0,
           mSecureNfcEnabled ? 0 : seTechMask,
@@ -1145,29 +1140,25 @@ void RoutingManager::nfaEeCallback(tNFA_EE_EVT event,
     case NFA_EE_SET_TECH_CFG_EVT: {
       LOG(DEBUG) << StringPrintf("%s: NFA_EE_SET_TECH_CFG_EVT; status=0x%X", fn,
                                  eventData->status);
-      SyncEventGuard guard(routingManager.mRoutingEvent);
-      routingManager.mRoutingEvent.notifyOne();
     } break;
 
     case NFA_EE_CLEAR_TECH_CFG_EVT: {
       LOG(DEBUG) << StringPrintf("%s: NFA_EE_CLEAR_TECH_CFG_EVT; status=0x%X",
                                  fn, eventData->status);
-      SyncEventGuard guard(routingManager.mRoutingEvent);
-      routingManager.mRoutingEvent.notifyOne();
     } break;
 
     case NFA_EE_SET_PROTO_CFG_EVT: {
       LOG(DEBUG) << StringPrintf("%s: NFA_EE_SET_PROTO_CFG_EVT; status=0x%X",
                                  fn, eventData->status);
-      SyncEventGuard guard(routingManager.mRoutingEvent);
-      routingManager.mRoutingEvent.notifyOne();
+      if (!routingManager.mIsScbrSupported) {
+        SyncEventGuard guard(routingManager.mRoutingEvent);
+        routingManager.mRoutingEvent.notifyOne();
+      }
     } break;
 
     case NFA_EE_CLEAR_PROTO_CFG_EVT: {
       LOG(DEBUG) << StringPrintf("%s: NFA_EE_CLEAR_PROTO_CFG_EVT; status=0x%X",
                                  fn, eventData->status);
-      SyncEventGuard guard(routingManager.mRoutingEvent);
-      routingManager.mRoutingEvent.notifyOne();
     } break;
 
     case NFA_EE_ACTION_EVT: {
