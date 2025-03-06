@@ -114,7 +114,7 @@ extern bool nfa_poll_bail_out_mode;
 // ETSI TS 102 622, section 6.1.3.1
 static std::vector<uint8_t> host_allowlist;
 
-static int get_vsr_api_level() {
+[[maybe_unused]] static int get_vsr_api_level() {
   int vendor_api_level =
       ::android::base::GetIntProperty("ro.vendor.api_level", -1);
   if (vendor_api_level != -1) {
@@ -872,7 +872,9 @@ void NfcAdaptation::InitializeHalDeviceContext() {
       mAidlHal->getInterfaceVersion(&mAidlHalVer);
       LOG(INFO) << StringPrintf("%s: INfcAidl::fromBinder returned ver(%d)",
                                 func, mAidlHalVer);
-      if (get_vsr_api_level() <= __ANDROID_API_V__) {
+      // TODO: Enforce VSR API level check later
+      // if (get_vsr_api_level() <= __ANDROID_API_V__) {
+      if (mAidlHalVer <= 1) {
         sVndExtnsPresent = sNfcVendorExtn->Initialize(nullptr, mAidlHal);
       }
     }
