@@ -520,7 +520,7 @@ static void nfa_dm_set_rf_listen_mode_raw_config(
 
     UINT8_TO_STREAM(p, NFC_PMID_LB_SFGI);
     UINT8_TO_STREAM(p, 1);
-    UINT8_TO_STREAM(p, p_cfg->lb_adc_fo);
+    UINT8_TO_STREAM(p, p_cfg->lb_sfgi);
 
     UINT8_TO_STREAM(p, NFC_PMID_LB_ADC_FO);
     UINT8_TO_STREAM(p, NCI_PARAM_LEN_LB_ADC_FO);
