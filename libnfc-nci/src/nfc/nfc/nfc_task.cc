@@ -39,6 +39,8 @@ using android::base::StringPrintf;
 extern bool nfc_nci_reset_keep_cfg_enabled;
 extern uint8_t nfc_nci_reset_type;
 
+GkiUtilsInterface* gki_utils = nullptr;
+
 /*******************************************************************************
 **
 ** Function         nfc_start_timer
@@ -52,29 +54,32 @@ extern uint8_t nfc_nci_reset_type;
 *******************************************************************************/
 void nfc_start_timer(TIMER_LIST_ENT* p_tle, uint16_t type, uint32_t timeout) {
   NFC_HDR* p_msg;
+  if (gki_utils == nullptr) {
+    gki_utils = new GkiUtils();
+  }
 
   /* if timer list is currently empty, start periodic GKI timer */
-  if (GKI_timer_list_empty(&nfc_cb.timer_queue)) {
+  if (gki_utils->timer_list_empty(&nfc_cb.timer_queue)) {
     /* if timer starts on other than NFC task (scritp wrapper) */
-    if (GKI_get_taskid() != NFC_TASK) {
+    if (gki_utils->get_taskid() != NFC_TASK) {
       /* post event to start timer in NFC task */
-      p_msg = (NFC_HDR*)GKI_getbuf(NFC_HDR_SIZE);
+      p_msg = (NFC_HDR*)gki_utils->getbuf(NFC_HDR_SIZE);
       if (p_msg != nullptr) {
         p_msg->event = BT_EVT_TO_START_TIMER;
-        GKI_send_msg(NFC_TASK, NFC_MBOX_ID, p_msg);
+        gki_utils->send_msg(NFC_TASK, NFC_MBOX_ID, p_msg);
       }
     } else {
       /* Start nfc_task 1-sec resolution timer */
-      GKI_start_timer(NFC_TIMER_ID, GKI_SECS_TO_TICKS(1), true);
+      gki_utils->start_timer(NFC_TIMER_ID, GKI_SECS_TO_TICKS(1), true);
     }
   }
 
-  GKI_remove_from_timer_list(&nfc_cb.timer_queue, p_tle);
+  gki_utils->remove_from_timer_list(&nfc_cb.timer_queue, p_tle);
 
   p_tle->event = type;
   p_tle->ticks = timeout; /* Save the number of seconds for the timer */
 
-  GKI_add_to_timer_list(&nfc_cb.timer_queue, p_tle);
+  gki_utils->add_to_timer_list(&nfc_cb.timer_queue, p_tle);
 }
 
 /*******************************************************************************
@@ -170,31 +175,34 @@ void nfc_stop_timer(TIMER_LIST_ENT* p_tle) {
 void nfc_start_quick_timer(TIMER_LIST_ENT* p_tle, uint16_t type,
                            uint32_t timeout) {
   NFC_HDR* p_msg;
+  if (gki_utils == nullptr) {
+    gki_utils = new GkiUtils();
+  }
 
   /* if timer list is currently empty, start periodic GKI timer */
-  if (GKI_timer_list_empty(&nfc_cb.quick_timer_queue)) {
+  if (gki_utils->timer_list_empty(&nfc_cb.quick_timer_queue)) {
     /* if timer starts on other than NFC task (scritp wrapper) */
-    if (GKI_get_taskid() != NFC_TASK) {
+    if (gki_utils->get_taskid() != NFC_TASK) {
       /* post event to start timer in NFC task */
-      p_msg = (NFC_HDR*)GKI_getbuf(NFC_HDR_SIZE);
+      p_msg = (NFC_HDR*)gki_utils->getbuf(NFC_HDR_SIZE);
       if (p_msg != nullptr) {
         p_msg->event = BT_EVT_TO_START_QUICK_TIMER;
-        GKI_send_msg(NFC_TASK, NFC_MBOX_ID, p_msg);
+        gki_utils->send_msg(NFC_TASK, NFC_MBOX_ID, p_msg);
       }
     } else {
       /* Quick-timer is required for LLCP */
-      GKI_start_timer(NFC_QUICK_TIMER_ID,
-                      ((GKI_SECS_TO_TICKS(1) / QUICK_TIMER_TICKS_PER_SEC)),
-                      true);
+      gki_utils->start_timer(
+          NFC_QUICK_TIMER_ID,
+          ((GKI_SECS_TO_TICKS(1) / QUICK_TIMER_TICKS_PER_SEC)), true);
     }
   }
 
-  GKI_remove_from_timer_list(&nfc_cb.quick_timer_queue, p_tle);
+  gki_utils->remove_from_timer_list(&nfc_cb.quick_timer_queue, p_tle);
 
   p_tle->event = type;
   p_tle->ticks = timeout; /* Save the number of ticks for the timer */
 
-  GKI_add_to_timer_list(&nfc_cb.quick_timer_queue, p_tle);
+  gki_utils->add_to_timer_list(&nfc_cb.quick_timer_queue, p_tle);
 }
 
 /*******************************************************************************
@@ -207,11 +215,14 @@ void nfc_start_quick_timer(TIMER_LIST_ENT* p_tle, uint16_t type,
 **
 *******************************************************************************/
 void nfc_stop_quick_timer(TIMER_LIST_ENT* p_tle) {
-  GKI_remove_from_timer_list(&nfc_cb.quick_timer_queue, p_tle);
+  if (gki_utils == nullptr) {
+    gki_utils = new GkiUtils();
+  }
+  gki_utils->remove_from_timer_list(&nfc_cb.quick_timer_queue, p_tle);
 
   /* if timer list is empty stop periodic GKI timer */
   if (GKI_timer_list_empty(&nfc_cb.quick_timer_queue)) {
-    GKI_stop_timer(NFC_QUICK_TIMER_ID);
+    gki_utils->stop_timer(NFC_QUICK_TIMER_ID);
   }
 }
 
