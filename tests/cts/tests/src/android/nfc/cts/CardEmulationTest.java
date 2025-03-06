@@ -153,9 +153,15 @@ public class CardEmulationTest {
         CardEmulation instance = CardEmulation.getInstance(mAdapter);
         ComponentName offHostService = new ComponentName(mContext, CtsMyOffHostApduService.class);
 
-        Assert.assertTrue(instance.setOffHostForService(offHostService, "eSE"));
-        Assert.assertTrue(instance.setShouldDefaultToObserveModeForService(offHostService, true));
-        Assert.assertTrue(instance.unsetOffHostForService(offHostService));
+        try {
+            Assert.assertTrue(instance.setOffHostForService(offHostService, "eSE"));
+            Assert.assertTrue(
+                    instance.setShouldDefaultToObserveModeForService(offHostService, true));
+            Assert.assertTrue(instance.unsetOffHostForService(offHostService));
+        } finally {
+            Assert.assertTrue(
+                    instance.setShouldDefaultToObserveModeForService(offHostService, false));
+        }
     }
 
     @Test
@@ -1040,6 +1046,11 @@ public class CardEmulationTest {
             Assert.assertTrue(adapter.isObserveModeEnabled());
         } finally {
             Assert.assertTrue(cardEmulation.unsetPreferredService(activity));
+            ComponentName backgroundService =
+                    new ComponentName(mContext, BackgroundHostApduService.class);
+            Assert.assertTrue(
+                    cardEmulation.setShouldDefaultToObserveModeForService(
+                            backgroundService, false));
             activity.finish();
             adapter.notifyHceDeactivated();
         }
@@ -1079,6 +1090,9 @@ public class CardEmulationTest {
         try {
             ComponentName backgroundService =
                     new ComponentName(mContext, BackgroundHostApduService.class);
+            Assert.assertTrue(
+                    cardEmulation.setShouldDefaultToObserveModeForService(
+                            backgroundService, true));
             Assert.assertTrue(cardEmulation.setPreferredService(activity, backgroundService));
             ensurePreferredService(BackgroundHostApduService.class);
 
