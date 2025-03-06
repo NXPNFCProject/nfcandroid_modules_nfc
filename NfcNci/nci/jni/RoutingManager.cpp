@@ -162,7 +162,6 @@ RoutingManager::RoutingManager()
   mNfcFOnDhHandle = NFA_HANDLE_INVALID;
 
   mDeinitializing = false;
-  mEeInfoChanged = false;
 }
 
 /*******************************************************************************
@@ -224,12 +223,8 @@ bool RoutingManager::initialize(nfc_jni_native_data* native) {
   if (nfaStat != NFA_STATUS_OK)
     LOG(ERROR) << fn << "Failed to register wildcard AID for DH";
 
-  updateRoutingTable();
-
-  // For startup case with NFC secure enabled.
-  if (mSecureNfcEnabled) {
-    NFA_SetNfcSecure(mSecureNfcEnabled);
-  }
+  // Trigger RT update
+  mEeInfoChanged = true;
 
   return true;
 }
@@ -249,143 +244,6 @@ RoutingManager& RoutingManager::getInstance() {
 }
 
 /*******************************************************************************
-**
-** Function:        enableRoutingToHost
-**
-** Description:     enabling the routing for HCE
-**
-** Returns:         None
-**
-*******************************************************************************/
-void RoutingManager::enableRoutingToHost() {
-  static const char fn[] = "RoutingManager::enableRoutingToHost()";
-  tNFA_STATUS nfaStat;
-  SyncEventGuard guard(mRoutingEvent);
-
-  // Default routing for T3T protocol
-  if (!mIsScbrSupported && mDefaultEe == NFC_DH_ID) {
-    nfaStat = NFA_EeSetDefaultProtoRouting(NFC_DH_ID, NFA_PROTOCOL_MASK_T3T, 0,
-                                           0, 0, 0, 0);
-    if (nfaStat == NFA_STATUS_OK)
-      mRoutingEvent.wait();
-    else
-      LOG(ERROR) << fn << "Fail to set default proto routing for T3T";
-  }
-
-  // Default routing for IsoDep protocol
-  tNFA_PROTOCOL_MASK protoMask = NFA_PROTOCOL_MASK_ISO_DEP;
-  if (mDefaultIsoDepRoute == NFC_DH_ID) {
-    nfaStat = NFA_EeSetDefaultProtoRouting(
-        NFC_DH_ID, protoMask, 0, 0, mSecureNfcEnabled ? 0 : protoMask, 0, 0);
-    if (nfaStat == NFA_STATUS_OK)
-      mRoutingEvent.wait();
-    else
-      LOG(ERROR) << fn << "Fail to set default proto routing for IsoDep";
-  }
-
-  // Route Nfc-A to host if we don't have a SE
-  tNFA_TECHNOLOGY_MASK techMask = NFA_TECHNOLOGY_MASK_A;
-  if ((mHostListenTechMask & NFA_TECHNOLOGY_MASK_A) &&
-      (mSeTechMask & NFA_TECHNOLOGY_MASK_A) == 0) {
-    nfaStat = NFA_EeSetDefaultTechRouting(
-        NFC_DH_ID, techMask, 0, 0, mSecureNfcEnabled ? 0 : techMask,
-        mSecureNfcEnabled ? 0 : techMask, mSecureNfcEnabled ? 0 : techMask);
-    if (nfaStat == NFA_STATUS_OK)
-      mRoutingEvent.wait();
-    else
-      LOG(ERROR) << fn << "Fail to set default tech routing for Nfc-A";
-  }
-
-  // Route Nfc-B to host if we don't have a SE
-  techMask = NFA_TECHNOLOGY_MASK_B;
-  if ((mHostListenTechMask & NFA_TECHNOLOGY_MASK_B) &&
-      (mSeTechMask & NFA_TECHNOLOGY_MASK_B) == 0) {
-    nfaStat = NFA_EeSetDefaultTechRouting(
-        NFC_DH_ID, techMask, 0, 0, mSecureNfcEnabled ? 0 : techMask,
-        mSecureNfcEnabled ? 0 : techMask, mSecureNfcEnabled ? 0 : techMask);
-    if (nfaStat == NFA_STATUS_OK)
-      mRoutingEvent.wait();
-    else
-      LOG(ERROR) << fn << "Fail to set default tech routing for Nfc-B";
-  }
-
-  // Route Nfc-F to host if we don't have a SE
-  techMask = NFA_TECHNOLOGY_MASK_F;
-  if ((mHostListenTechMask & NFA_TECHNOLOGY_MASK_F) &&
-      (mSeTechMask & NFA_TECHNOLOGY_MASK_F) == 0) {
-    nfaStat = NFA_EeSetDefaultTechRouting(
-        NFC_DH_ID, techMask, 0, 0, mSecureNfcEnabled ? 0 : techMask,
-        mSecureNfcEnabled ? 0 : techMask, mSecureNfcEnabled ? 0 : techMask);
-    if (nfaStat == NFA_STATUS_OK)
-      mRoutingEvent.wait();
-    else
-      LOG(ERROR) << fn << "Fail to set default tech routing for Nfc-F";
-  }
-}
-
-/*******************************************************************************
-**
-** Function:        Disabling the routing for HCE
-**
-** Returns:         None
-**
-*******************************************************************************/
-void RoutingManager::disableRoutingToHost() {
-  static const char fn[] = "RoutingManager::disableRoutingToHost()";
-  tNFA_STATUS nfaStat;
-  SyncEventGuard guard(mRoutingEvent);
-
-  // Clear default routing for IsoDep protocol
-  if (mDefaultIsoDepRoute == NFC_DH_ID) {
-    nfaStat =
-        NFA_EeClearDefaultProtoRouting(NFC_DH_ID, NFA_PROTOCOL_MASK_ISO_DEP);
-    if (nfaStat == NFA_STATUS_OK)
-      mRoutingEvent.wait();
-    else
-      LOG(ERROR) << fn << "Fail to clear default proto routing for IsoDep";
-  }
-
-  // Clear default routing for Nfc-A technology if we don't have a SE
-  if ((mHostListenTechMask & NFA_TECHNOLOGY_MASK_A) &&
-      (mSeTechMask & NFA_TECHNOLOGY_MASK_A) == 0) {
-    nfaStat = NFA_EeClearDefaultTechRouting(NFC_DH_ID, NFA_TECHNOLOGY_MASK_A);
-    if (nfaStat == NFA_STATUS_OK)
-      mRoutingEvent.wait();
-    else
-      LOG(ERROR) << fn << "Fail to clear default tech routing for Nfc-A";
-  }
-
-  // Clear default routing for Nfc-B technology if we don't have a SE
-  if ((mHostListenTechMask & NFA_TECHNOLOGY_MASK_B) &&
-      (mSeTechMask & NFA_TECHNOLOGY_MASK_B) == 0) {
-    nfaStat = NFA_EeClearDefaultTechRouting(NFC_DH_ID, NFA_TECHNOLOGY_MASK_B);
-    if (nfaStat == NFA_STATUS_OK)
-      mRoutingEvent.wait();
-    else
-      LOG(ERROR) << fn << "Fail to clear default tech routing for Nfc-B";
-  }
-
-  // Clear default routing for Nfc-F technology if we don't have a SE
-  if ((mHostListenTechMask & NFA_TECHNOLOGY_MASK_F) &&
-      (mSeTechMask & NFA_TECHNOLOGY_MASK_F) == 0) {
-    nfaStat = NFA_EeClearDefaultTechRouting(NFC_DH_ID, NFA_TECHNOLOGY_MASK_F);
-    if (nfaStat == NFA_STATUS_OK)
-      mRoutingEvent.wait();
-    else
-      LOG(ERROR) << fn << "Fail to clear default tech routing for Nfc-F";
-  }
-
-  // Clear default routing for T3T protocol
-  if (!mIsScbrSupported && mDefaultEe == NFC_DH_ID) {
-    nfaStat = NFA_EeClearDefaultProtoRouting(NFC_DH_ID, NFA_PROTOCOL_MASK_T3T);
-    if (nfaStat == NFA_STATUS_OK)
-      mRoutingEvent.wait();
-    else
-      LOG(ERROR) << fn << "Fail to clear default proto routing for T3T";
-  }
-}
-
-/*******************************************************************************
  **
  ** Function:        isTypeATypeBTechSupportedInEe
  **
@@ -397,24 +255,23 @@ void RoutingManager::disableRoutingToHost() {
  *******************************************************************************/
 bool RoutingManager::isTypeATypeBTechSupportedInEe(tNFA_HANDLE eeHandle) {
   static const char fn[] = "RoutingManager::isTypeATypeBTechSupportedInEe";
-  bool status = false;
   uint8_t mActualNumEe = MAX_NUM_EE;
   tNFA_EE_INFO eeInfo[mActualNumEe];
   memset(&eeInfo, 0, mActualNumEe * sizeof(tNFA_EE_INFO));
   tNFA_STATUS nfaStat = NFA_EeGetInfo(&mActualNumEe, eeInfo);
-  LOG(DEBUG) << fn;
   if (nfaStat != NFA_STATUS_OK) {
-    return status;
+    return false;
   }
   for (auto i = 0; i < mActualNumEe; i++) {
     if (eeHandle == eeInfo[i].ee_handle) {
       if (eeInfo[i].la_protocol || eeInfo[i].lb_protocol) {
-        status = true;
-        break;
+        return true;
       }
     }
   }
-  return status;
+  LOG(WARNING) << StringPrintf(
+      "%s; Route does not support A/B, using default: ", fn);
+  return false;
 }
 
 /*******************************************************************************
@@ -506,16 +363,19 @@ bool RoutingManager::removeAidRouting(const uint8_t* aid, uint8_t aidLen) {
 tNFA_STATUS RoutingManager::commitRouting() {
   static const char fn[] = "RoutingManager::commitRouting";
   tNFA_STATUS nfaStat = 0;
-  LOG(DEBUG) << fn;
-  if(mEeInfoChanged) {
-    mSeTechMask = updateEeTechRouteSetting();
-    mEeInfoChanged = false;
-  }
-  {
-    SyncEventGuard guard(mEeUpdateEvent);
-    nfaStat = NFA_EeUpdateNow();
-    if (nfaStat == NFA_STATUS_OK) {
-      mEeUpdateEvent.wait();  // wait for NFA_EE_UPDATED_EVT
+  if (mAidRoutingConfigured || mEeInfoChanged) {
+    LOG(DEBUG) << StringPrintf("%s: RT update needed", fn);
+    if (mEeInfoChanged) {
+      clearRoutingEntry(CLEAR_PROTOCOL_ENTRIES | CLEAR_TECHNOLOGY_ENTRIES);
+      updateRoutingTable();
+      mEeInfoChanged = false;
+    }
+    {
+      SyncEventGuard guard(mEeUpdateEvent);
+      nfaStat = NFA_EeUpdateNow();
+      if (nfaStat == NFA_STATUS_OK) {
+        mEeUpdateEvent.wait();  // wait for NFA_EE_UPDATED_EVT
+      }
     }
   }
   return nfaStat;
@@ -900,7 +760,6 @@ void RoutingManager::stackCallback(uint8_t event,
   }
 }
 
-
 /*******************************************************************************
 **
 ** Function:        updateRoutingTable
@@ -932,18 +791,9 @@ void RoutingManager::updateRoutingTable() {
 *******************************************************************************/
 void RoutingManager::updateIsoDepProtocolRoute(int route) {
   static const char fn[] = "RoutingManager::updateIsoDepProtocolRoute";
-  tNFA_PROTOCOL_MASK protoMask = NFA_PROTOCOL_MASK_ISO_DEP;
-  tNFA_STATUS nfaStat;
-
-  SyncEventGuard guard(mRoutingEvent);
-  nfaStat = NFA_EeClearDefaultProtoRouting(mDefaultIsoDepRoute, protoMask);
-  if (nfaStat == NFA_STATUS_OK)
-    mRoutingEvent.wait();
-  else
-    LOG(ERROR) << fn << "Fail to clear IsoDep route";
-
+  LOG(DEBUG) << StringPrintf("%s; New default ISO-DEP route: 0x%x", fn, route);
+  mEeInfoChanged = true;
   mDefaultIsoDepRoute = route;
-  updateDefaultProtocolRoute();
 }
 
 /*******************************************************************************
@@ -976,26 +826,24 @@ void RoutingManager::updateSystemCodeRoute(int route) {
 void RoutingManager::updateDefaultProtocolRoute() {
   static const char fn[] = "RoutingManager::updateDefaultProtocolRoute";
 
+  LOG(DEBUG) << StringPrintf("%s; Default ISO-DEP route: 0x%x", fn,
+                             mDefaultIsoDepRoute);
   // Default Routing for ISO-DEP
   tNFA_PROTOCOL_MASK protoMask = NFA_PROTOCOL_MASK_ISO_DEP;
   tNFA_STATUS nfaStat;
   if (mDefaultIsoDepRoute != NFC_DH_ID &&
       isTypeATypeBTechSupportedInEe(mDefaultIsoDepRoute |
                                     NFA_HANDLE_GROUP_EE)) {
-    nfaStat = NFA_EeClearDefaultProtoRouting(mDefaultIsoDepRoute, protoMask);
     nfaStat = NFA_EeSetDefaultProtoRouting(
         mDefaultIsoDepRoute, protoMask, mSecureNfcEnabled ? 0 : protoMask, 0,
         mSecureNfcEnabled ? 0 : protoMask, mSecureNfcEnabled ? 0 : protoMask,
         mSecureNfcEnabled ? 0 : protoMask);
   } else {
-    nfaStat = NFA_EeClearDefaultProtoRouting(NFC_DH_ID, protoMask);
     nfaStat = NFA_EeSetDefaultProtoRouting(
         NFC_DH_ID, protoMask, 0, 0, mSecureNfcEnabled ? 0 : protoMask, 0, 0);
     mDefaultIsoDepRoute = NFC_DH_ID;
   }
-  if (nfaStat == NFA_STATUS_OK)
-    LOG(DEBUG) << fn << ": Succeed to register default ISO-DEP route";
-  else
+  if (nfaStat != NFA_STATUS_OK)
     LOG(ERROR) << fn << ": failed to register default ISO-DEP route";
 
   // Default routing for T3T protocol
@@ -1006,7 +854,6 @@ void RoutingManager::updateDefaultProtocolRoute() {
       nfaStat =
           NFA_EeSetDefaultProtoRouting(NFC_DH_ID, protoMask, 0, 0, 0, 0, 0);
     } else {
-      nfaStat = NFA_EeClearDefaultProtoRouting(mDefaultEe, protoMask);
       nfaStat = NFA_EeSetDefaultProtoRouting(
           mDefaultEe, protoMask, 0, 0, mSecureNfcEnabled ? 0 : protoMask,
           mSecureNfcEnabled ? 0 : protoMask, mSecureNfcEnabled ? 0 : protoMask);
@@ -1031,6 +878,9 @@ void RoutingManager::updateDefaultRoute() {
   static const char fn[] = "RoutingManager::updateDefaultRoute";
   if (NFC_GetNCIVersion() != NCI_VERSION_2_0) return;
 
+  LOG(DEBUG) << StringPrintf("%s; Default SC route: 0x%x", fn,
+                             mDefaultSysCodeRoute);
+
   // Register System Code for routing
   SyncEventGuard guard(mRoutingEvent);
   tNFA_STATUS nfaStat = NFA_EeAddSystemCodeRouting(
@@ -1042,18 +892,19 @@ void RoutingManager::updateDefaultRoute() {
   } else if (nfaStat == NFA_STATUS_OK) {
     mIsScbrSupported = true;
     mRoutingEvent.wait();
-    LOG(DEBUG) << fn << ": Succeed to register system code";
   } else {
     LOG(ERROR) << fn << ": Fail to register system code";
     // still support SCBR routing for other NFCEEs
     mIsScbrSupported = true;
   }
 
+  LOG(DEBUG) << StringPrintf("%s; Default AID route: 0x%x", fn, mDefaultEe);
+
   // Register zero lengthy Aid for default Aid Routing
   if (mDefaultEe != mDefaultIsoDepRoute) {
     if ((mDefaultEe != NFC_DH_ID) &&
         (!isTypeATypeBTechSupportedInEe(mDefaultEe | NFA_HANDLE_GROUP_EE))) {
-      LOG(DEBUG)
+      LOG(WARNING)
           << fn << ": mDefaultEE Doesn't support either Tech A/B. Returning...";
       return;
     }
@@ -1062,9 +913,7 @@ void RoutingManager::updateDefaultRoute() {
       powerState = (mDefaultEe != 0x00) ? mOffHostAidRoutingPowerState : 0x11;
     nfaStat = NFA_EeAddAidRouting(mDefaultEe, 0, NULL, powerState,
                                   AID_ROUTE_QUAL_PREFIX);
-    if (nfaStat == NFA_STATUS_OK)
-      LOG(DEBUG) << fn << ": Succeed to register zero length AID";
-    else
+    if (nfaStat != NFA_STATUS_OK)
       LOG(ERROR) << fn << ": failed to register zero length AID";
   }
 }
@@ -1081,28 +930,12 @@ void RoutingManager::updateDefaultRoute() {
 tNFA_TECHNOLOGY_MASK RoutingManager::updateTechnologyABFRoute(int route,
                                                               int felicaRoute) {
   static const char fn[] = "RoutingManager::updateTechnologyABFRoute";
-
-  tNFA_STATUS nfaStat;
-
-  SyncEventGuard guard(mRoutingEvent);
-  nfaStat = NFA_EeClearDefaultTechRouting(
-      mDefaultOffHostRoute,
-      NFA_TECHNOLOGY_MASK_A | NFA_TECHNOLOGY_MASK_B | NFA_TECHNOLOGY_MASK_F);
-  if (nfaStat == NFA_STATUS_OK)
-    mRoutingEvent.wait();
-  else
-    LOG(ERROR) << fn << "Fail to clear Tech route";
-
-  nfaStat =
-      NFA_EeClearDefaultTechRouting(mDefaultFelicaRoute, NFA_TECHNOLOGY_MASK_F);
-  if (nfaStat == NFA_STATUS_OK)
-    mRoutingEvent.wait();
-  else
-    LOG(ERROR) << fn << "Fail to clear Default Felica route";
-
+  LOG(DEBUG) << StringPrintf("%s; New default A/B route: 0x%x", fn, route);
+  LOG(DEBUG) << StringPrintf("%s; New default F route: 0x%x", fn, felicaRoute);
+  mEeInfoChanged = true;
   mDefaultFelicaRoute = felicaRoute;
   mDefaultOffHostRoute = route;
-  return updateEeTechRouteSetting();
+  return mSeTechMask;
 }
 
 /*******************************************************************************
@@ -1118,7 +951,12 @@ tNFA_TECHNOLOGY_MASK RoutingManager::updateEeTechRouteSetting() {
   static const char fn[] = "RoutingManager::updateEeTechRouteSetting";
   tNFA_TECHNOLOGY_MASK allSeTechMask = 0x00;
 
-  LOG(DEBUG) << fn << ": Number of EE is " << (int)mEeInfo.num_ee;
+  LOG(DEBUG) << StringPrintf("%s; Default route A/B: 0x%x", fn,
+                             mDefaultOffHostRoute);
+  LOG(DEBUG) << StringPrintf("%s; Default route F: 0x%x", fn,
+                             mDefaultFelicaRoute);
+
+  LOG(DEBUG) << StringPrintf("%s; Nb NFCEE: %d", fn, mEeInfo.num_ee);
 
   tNFA_STATUS nfaStat;
 
@@ -1140,7 +978,7 @@ tNFA_TECHNOLOGY_MASK RoutingManager::updateEeTechRouteSetting() {
         mEeInfo.ee_disc_info[i].lf_protocol,
         mEeInfo.ee_disc_info[i].lbp_protocol);
 
-    if ((mDefaultOffHostRoute != 0) &&
+    if ((mDefaultOffHostRoute != NFC_DH_ID) &&
         (eeHandle == (mDefaultOffHostRoute | NFA_HANDLE_GROUP_EE))) {
       offHostRouteFound = true;
       if (mEeInfo.ee_disc_info[i].la_protocol != 0)
@@ -1163,12 +1001,12 @@ tNFA_TECHNOLOGY_MASK RoutingManager::updateEeTechRouteSetting() {
 
     LOG(DEBUG) << StringPrintf("%s: seTechMask[%u]=0x%02x", fn, i, seTechMask);
     if (seTechMask != 0x00) {
-      LOG(DEBUG) << StringPrintf("Configuring tech mask 0x%02x on EE 0x%04x",
+      LOG(DEBUG) << StringPrintf(": Configuring tech mask 0x%02x on EE 0x%04x",
                                  seTechMask, eeHandle);
 
       nfaStat = NFA_CeConfigureUiccListenTech(eeHandle, seTechMask);
       if (nfaStat != NFA_STATUS_OK)
-        LOG(ERROR) << fn << "Failed to configure UICC listen technologies.";
+        LOG(ERROR) << fn << ": Failed to configure UICC listen technologies.";
 
       // clear previous before setting new power state
       nfaStat = NFA_EeClearDefaultTechRouting(eeHandle, seTechMask);
@@ -1181,7 +1019,7 @@ tNFA_TECHNOLOGY_MASK RoutingManager::updateEeTechRouteSetting() {
           mSecureNfcEnabled ? 0 : seTechMask,
           mSecureNfcEnabled ? 0 : seTechMask);
       if (nfaStat != NFA_STATUS_OK)
-        LOG(ERROR) << fn << "Failed to configure UICC technology routing.";
+        LOG(ERROR) << fn << ": Failed to configure UICC technology routing.";
 
       allSeTechMask |= seTechMask;
     }
@@ -1424,6 +1262,7 @@ void RoutingManager::nfaEeCallback(tNFA_EE_EVT event,
 
     case NFA_EE_UPDATED_EVT: {
       LOG(DEBUG) << StringPrintf("%s: NFA_EE_UPDATED_EVT", fn);
+      routingManager.mAidRoutingConfigured = false;
       SyncEventGuard guard(routingManager.mEeUpdateEvent);
       routingManager.mEeUpdateEvent.notifyOne();
     } break;
