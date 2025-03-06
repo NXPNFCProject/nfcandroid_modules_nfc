@@ -301,7 +301,7 @@
 
 /* CE Type 4 Tag, Frame Waiting time Integer */
 #ifndef CE_T4T_ISO_DEP_FWI
-#define CE_T4T_ISO_DEP_FWI 7
+#define CE_T4T_ISO_DEP_FWI 0x70
 #ifndef RW_CI_TOUT_RESP
 #define RW_CI_TOUT_RESP 1000
 #endif
