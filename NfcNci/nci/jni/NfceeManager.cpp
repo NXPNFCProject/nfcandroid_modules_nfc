@@ -40,6 +40,7 @@ NfceeManager::NfceeManager() : mNumEePresent(0) {
   mActualNumEe = MAX_NUM_NFCEE;
   eseName = "eSE";
   uiccName = "SIM";
+  ndefNfceeName = "NDEF-NFCEE";
   memset(&mNfceeData_t, 0, sizeof(mNfceeData));
 }
 
@@ -107,6 +108,14 @@ jobject NfceeManager::getActiveNfceeList(JNIEnv* e) {
 
   for (uint8_t i = 0; i < uiccRoute.size(); ++i) {
     nfceeMap[uiccRoute[i]] = uiccName + std::to_string(i + 1);
+  }
+
+  if (NfcConfig::hasKey(NAME_T4T_NFCEE_ENABLE)) {
+    if (NfcConfig::getUnsigned(NAME_T4T_NFCEE_ENABLE)) {
+      uint8_t defaultNdefNfceeRoute =
+          NfcConfig::getUnsigned(NAME_DEFAULT_NDEF_NFCEE_ROUTE, 0x10);
+      nfceeMap[defaultNdefNfceeRoute] = ndefNfceeName;
+    }
   }
 
   for (int i = 0; i < mNfceeData_t.mNfceePresent; i++) {
