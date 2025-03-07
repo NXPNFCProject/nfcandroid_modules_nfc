@@ -1326,16 +1326,23 @@ public final class CardEmulation {
     })
     public @interface NfcInternalErrorType {}
 
-    /** Listener for preferred service state changes. */
+    /**
+     * Callback interface for NFC-related events.
+     *
+     * These callbacks will be called when registered with
+     * {@link #registerNfcEventCallback(Executor, NfcEventCallback)} and while the registered caller
+     * is still alive. When you are done listening to the callbacks, you should unregister it with
+     * {@link #unregisterNfcEventCallback(NfcEventCallback)}.
+     */
     @FlaggedApi(android.nfc.Flags.FLAG_NFC_EVENT_LISTENER)
     public interface NfcEventCallback {
         /**
-         * This method is called when this package gains or loses preferred Nfc service status,
-         * either the Default Wallet Role holder (see {@link
-         * android.app.role.RoleManager#ROLE_WALLET}) or the preferred service of the foreground
-         * activity set with {@link #setPreferredService(Activity, ComponentName)}
+         * This method is called when this package gains or loses preferred NFC service status.
+         * This can happen by way of either it becoming the default wallet role holder
+         * (see {@link android.app.role.RoleManager#ROLE_WALLET}) or the preferred service of the
+         * foreground activity, set with {@link #setPreferredService(Activity, ComponentName)}.
          *
-         * @param isPreferred true is this service has become the preferred Nfc service, false if it
+         * @param isPreferred true is this service has become the preferred NFC service, false if it
          *     is no longer the preferred service
          */
         @FlaggedApi(android.nfc.Flags.FLAG_NFC_EVENT_LISTENER)
@@ -1371,11 +1378,9 @@ public final class CardEmulation {
         default void onAidNotRouted(@NonNull String aid) {}
 
         /**
-         * This method is called when the NFC state changes.
+         * This method is called when the NFC adapter state changes.
          *
-         * @see NfcAdapter#getAdapterState()
-         *
-         * @param state The new NFC state
+         * @param state The new NFC adapter state
          */
         @FlaggedApi(android.nfc.Flags.FLAG_NFC_EVENT_LISTENER)
         default void onNfcStateChanged(@NfcAdapter.AdapterState int state) {}
@@ -1513,19 +1518,19 @@ public final class CardEmulation {
     }
 
     /**
-     * Register a listener for NFC Events.
+     * Register a callback for NFC events.
      *
      * @param executor The Executor to run the call back with
-     * @param listener The listener to register
+     * @param callback The callback to register
      */
     @FlaggedApi(android.nfc.Flags.FLAG_NFC_EVENT_LISTENER)
     public void registerNfcEventCallback(
-            @NonNull @CallbackExecutor Executor executor, @NonNull NfcEventCallback listener) {
+            @NonNull @CallbackExecutor Executor executor, @NonNull NfcEventCallback callback) {
         if (!android.nfc.Flags.nfcEventListener()) {
             return;
         }
         synchronized (mNfcEventCallbacks) {
-            mNfcEventCallbacks.put(listener, executor);
+            mNfcEventCallbacks.put(callback, executor);
             if (mNfcEventCallbacks.size() == 1) {
                 callService(() -> sService.registerNfcEventCallback(mINfcEventCallback));
                 linkToNfcDeath();
@@ -1536,18 +1541,18 @@ public final class CardEmulation {
     private IBinder.DeathRecipient mDeathRecipient;
 
     /**
-     * Unregister a preferred service listener that was previously registered with {@link
-     * #registerNfcEventCallback(Executor, NfcEventCallback)}
+     * Unregister an NFC event callback that was previously registered with {@link
+     * #registerNfcEventCallback(Executor, NfcEventCallback)}.
      *
-     * @param listener The previously registered listener to unregister
+     * @param callback The previously registered callback to unregister
      */
     @FlaggedApi(android.nfc.Flags.FLAG_NFC_EVENT_LISTENER)
-    public void unregisterNfcEventCallback(@NonNull NfcEventCallback listener) {
+    public void unregisterNfcEventCallback(@NonNull NfcEventCallback callback) {
         if (!android.nfc.Flags.nfcEventListener()) {
             return;
         }
         synchronized (mNfcEventCallbacks) {
-            mNfcEventCallbacks.remove(listener);
+            mNfcEventCallbacks.remove(callback);
             if (mNfcEventCallbacks.size() == 0) {
                 callService(() -> sService.unregisterNfcEventCallback(mINfcEventCallback));
                 if (mDeathRecipient != null) {
