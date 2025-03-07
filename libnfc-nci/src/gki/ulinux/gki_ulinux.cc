@@ -73,9 +73,7 @@ gki_pthread_info_t gki_pthread_info[GKI_MAX_TASKS];
 static pthread_mutex_t gki_init_mutex;
 static std::once_flag s_gki_init_mutex_once;
 
-void gki_init_mutex_init() {
-  pthread_mutex_init(&gki_init_mutex, nullptr);
-}
+void gki_init_mutex_init() { pthread_mutex_init(&gki_init_mutex, nullptr); }
 
 /*******************************************************************************
 **
@@ -522,7 +520,7 @@ void GKI_run(__attribute__((unused)) void* p_task_id) {
     LOG(VERBOSE) << StringPrintf(">>> RESTARTED run_cond: %d", *p_run_cond);
 #endif
   } /* for */
-    pthread_mutex_unlock(&gki_init_mutex);
+  pthread_mutex_unlock(&gki_init_mutex);
 #endif
 
   pthread_mutex_lock(&gki_cb.os.gki_end_mutex);

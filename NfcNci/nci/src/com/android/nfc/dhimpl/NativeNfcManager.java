@@ -46,7 +46,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 /** Native interface to the NFC Manager functions */
@@ -733,16 +732,16 @@ public class NativeNfcManager implements DeviceHost {
     public void notifyObserveModeChanged(boolean enabled) {
         mListener.onObserveModeStateChanged(enabled);
     }
-
     /** Notifies remote endpoint removed */
     private void notifyEndpointRemoved(int reason) {
         mListener.onEndpointRemoved(reason);
-    }
 
-    public void onRestartRfDiscovery() {
-        mListener.onRestartRfDiscovery();
     }
 
     @Override
     public native boolean isRemovalDetectionInPollModeSupported();
+
+    public void onRestartRfDiscovery() {
+        mListener.onRestartRfDiscovery();
+    }
 }

@@ -34,4 +34,3 @@ public class NativeT4tNfceeManager {
 
   public native boolean isNdefNfceefeatureEnabled();
 }
-

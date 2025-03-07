@@ -92,4 +92,3 @@ public class EventListenerEmulatorActivity extends BaseEmulatorActivity {
         return TransportService1.COMPONENT;
     }
 }
-

@@ -389,6 +389,7 @@ public class CardEmulationTest {
         }
 
         ArrayList<EventLogEntry> mEvents = new ArrayList<EventLogEntry>();
+        ArrayList<EventLogEntry>[] mSpecificEvents = new ArrayList[8];
 
         EventPollLoopReceiver(Context context) {
           this(context, false);

@@ -139,7 +139,7 @@ class NfcVendorExtn {
   bool processCmd(uint16_t dataLen, uint8_t* pData);
 
   /**
-   * @brief Forwards NCI response to extension library for further handling
+   * @brief sends the NCI packet to handle extension feature
    * @param  dataLen length of the NCI packet
    * @param  pData data buffer pointer
    * @return returns true if it is vendor specific feature,
@@ -150,7 +150,7 @@ class NfcVendorExtn {
   bool processRspNtf(uint16_t dataLen, uint8_t* pData);
 
   /**
-   * @brief Forwards HAL/API events to extension library for further handling
+   * @brief sends the NCI packet to handle extension feature
    * @param  event
    * @param  status
    * @return returns true if it is vendor specific feature,

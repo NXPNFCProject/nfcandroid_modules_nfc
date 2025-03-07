@@ -570,7 +570,6 @@ bool nfa_dm_get_config(tNFA_DM_MSG* p_data) {
 
   return true;
 }
-
 /*******************************************************************************
 **
 ** Function         nfa_dm_set_power_sub_state
