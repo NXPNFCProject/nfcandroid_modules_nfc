@@ -507,12 +507,6 @@ public class RegisteredServicesCache {
             }
         }
 
-        if (DEBUG) {
-            Log.d(
-                    TAG,
-                    "getInstalledServices() - Adding service for routing of NDEF-NFCEE AID");
-        }
-
         // Add NDEF-NFCEE AID - Only if NDEF-NFCEE feature supported
         // And only for user 0 to avoid adding several times (if multiple profiles)
         if (userId == UserHandle.SYSTEM.getIdentifier()

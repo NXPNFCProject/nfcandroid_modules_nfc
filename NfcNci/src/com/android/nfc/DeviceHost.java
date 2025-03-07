@@ -323,6 +323,7 @@ public interface DeviceHost {
     /**
      * Sends Vendor NCI command
      */
+
     NfcVendorNciResponse sendRawVendorCmd(int mt, int gid, int oid, byte[] payload);
 
     public boolean detectEpRemoval(int waiting_time_int);
@@ -333,9 +334,7 @@ public interface DeviceHost {
      * Get the active NFCEE list
      */
     public Map<String, Integer> dofetchActiveNfceeList();
-
     public boolean isRemovalDetectionInPollModeSupported();
-
     /**
      * Restarts RF Discovery
      */
