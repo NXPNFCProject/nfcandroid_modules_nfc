@@ -75,9 +75,11 @@ typedef struct {
 /**
  * @brief Holds functional event codes to support
  *        extension features.
+ * Begin with 0x0B to avoid conflicts with standard and vendor specific HAL
+ * events
  */
 typedef enum {
-  HANDLE_VENDOR_NCI_MSG,
+  HANDLE_VENDOR_NCI_MSG = 0x0B,
   HANDLE_VENDOR_NCI_RSP_NTF,
   HANDLE_WRITE_COMPLETE_STATUS,
   HANDLE_HAL_CONTROL_GRANTED,
