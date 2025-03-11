@@ -19,6 +19,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.SystemProperties;
+import android.sysprop.NfcProperties;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -36,7 +37,7 @@ import java.util.Optional;
 
 public class RoutingOptionManager {
     static final String TAG = "RoutingOptionManager";
-    static final boolean DBG = SystemProperties.getBoolean("persist.nfc.debug_enabled", false);
+    static final boolean DBG = NfcProperties.debug_enabled().orElse(true);
 
     static final int ROUTE_UNKNOWN = -1;
     static final int ROUTE_DEFAULT = -2;

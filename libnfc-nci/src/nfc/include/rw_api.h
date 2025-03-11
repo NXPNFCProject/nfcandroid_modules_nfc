@@ -1355,50 +1355,6 @@ extern tNFC_STATUS RW_I93PresenceCheck(void);
 *****************************************************************************/
 extern bool RW_I93CheckLegacyProduct(uint8_t ic_manuf, uint8_t pdt_code);
 
-/*******************************************************************************
-**
-** Function         rw_ci_select
-**
-** Description      This function send Select command for Chinese Id card.
-**
-** Returns          NFC_STATUS_OK if success
-**
-*******************************************************************************/
-extern tNFC_STATUS rw_ci_select(void);
-
-/*****************************************************************************
-**
-** Function         RW_CiPresenceCheck
-**
-** Description
-**      Check if the tag is still in the field.
-**
-**      The RW_CI_PRESENCE_CHECK_EVT w/ status is used to indicate presence
-**      or non-presence.
-**
-** Returns
-**      NFC_STATUS_OK, if raw data frame sent
-**      NFC_STATUS_NO_BUFFERS: unable to allocate a buffer for this operation
-**      NFC_STATUS_FAILED: other error
-**
-*****************************************************************************/
-extern tNFC_STATUS RW_CiPresenceCheck(void);
-
-/*****************************************************************************
-**
-** Function         RW_CiSendAttrib
-**
-** Description
-**      Send the Attrib to the Endpoint.
-**
-** Returns
-**      NFC_STATUS_OK, if raw data frame sent
-**      NFC_STATUS_NO_BUFFERS: unable to allocate a buffer for this operation
-**      NFC_STATUS_FAILED: other error
-**
-*****************************************************************************/
-extern tNFC_STATUS RW_CiSendAttrib(uint8_t* nfcid0);
-
 /*****************************************************************************
 **
 ** Function         RW_I93SetAddressingMode
@@ -1488,6 +1444,50 @@ extern tNFC_STATUS RW_T4tNfceeSelectApplication(void);
 **
 *******************************************************************************/
 void RW_T4tNfceeUpdateCC(uint8_t* ccInfo);
+
+/*******************************************************************************
+**
+** Function         rw_ci_select
+**
+** Description      This function send Select command for Chinese Id card.
+**
+** Returns          NFC_STATUS_OK if success
+**
+*******************************************************************************/
+extern tNFC_STATUS rw_ci_select(void);
+
+/*****************************************************************************
+**
+** Function         RW_CiPresenceCheck
+**
+** Description
+**      Check if the tag is still in the field.
+**
+**      The RW_CI_PRESENCE_CHECK_EVT w/ status is used to indicate presence
+**      or non-presence.
+**
+** Returns
+**      NFC_STATUS_OK, if raw data frame sent
+**      NFC_STATUS_NO_BUFFERS: unable to allocate a buffer for this operation
+**      NFC_STATUS_FAILED: other error
+**
+*****************************************************************************/
+extern tNFC_STATUS RW_CiPresenceCheck(void);
+
+/*****************************************************************************
+**
+** Function         RW_CiSendAttrib
+**
+** Description
+**      Send the Attrib to the Endpoint.
+**
+** Returns
+**      NFC_STATUS_OK, if raw data frame sent
+**      NFC_STATUS_NO_BUFFERS: unable to allocate a buffer for this operation
+**      NFC_STATUS_FAILED: other error
+**
+*****************************************************************************/
+extern tNFC_STATUS RW_CiSendAttrib(uint8_t* nfcid0);
 
 /*******************************************************************************
 **
