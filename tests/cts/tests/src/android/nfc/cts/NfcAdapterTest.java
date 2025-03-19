@@ -105,12 +105,12 @@ public class NfcAdapterTest {
     public void setUp() throws NoSuchFieldException {
         MockitoAnnotations.initMocks(this);
         mContext = spy(new ContextWrapper(InstrumentationRegistry.getContext()));
-        assumeTrue(supportsHardware());
+        assumeTrue("Device must support NFC", supportsHardware());
         // Backup the original service. It is being overridden
         // when creating a mocked adapter.
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
-        Assume.assumeNotNull(adapter);
-        Assume.assumeTrue(NfcUtils.enableNfc(adapter, mContext));
+        Assume.assumeNotNull("NFC Adapter is null", adapter);
+        assumeTrue("NFC Adapter could not be enabled", NfcUtils.enableNfc(adapter, mContext));
     }
 
     @Test
