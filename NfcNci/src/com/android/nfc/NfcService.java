@@ -5806,7 +5806,10 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 screenState = ScreenStateHelper.SCREEN_STATE_ON_UNLOCKED;
             }
         }
-        if (DBG) Log.d(TAG, "applyScreenState(): screenState=" + screenState );
+        if (DBG) {
+            Log.d(TAG, "applyScreenState(): screenState = "
+                    + ScreenStateHelper.screenStateToString(screenState));
+        }
         if (mScreenState != screenState) {
             if (nci_version != NCI_VERSION_2_0) {
                 new ApplyRoutingTask().execute(Integer.valueOf(screenState));
