@@ -45,4 +45,6 @@ class MockGkiUtils : public GkiUtilsInterface {
   MOCK_METHOD(void, freebuf, (void* p_buf), (override));
   MOCK_METHOD(void, enqueue, (BUFFER_Q * p_q, void* p_buf), (override));
   MOCK_METHOD(void*, dequeue, (BUFFER_Q * p_q), (override));
+  MOCK_METHOD(void*, getpoolbuf, (uint8_t pool_id), (override));
+  MOCK_METHOD(void*, read_mbox, (uint8_t id), (override));
 };
