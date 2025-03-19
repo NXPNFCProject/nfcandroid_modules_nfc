@@ -101,6 +101,7 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.os.ResultReceiver;
 import android.os.SystemClock;
+import android.os.Trace;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.os.VibrationAttributes;
@@ -2339,7 +2340,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                                 + enable);
 
                 long start = SystemClock.elapsedRealtime();
+                Trace.beginSection("setObserveMode: " + enable);
                 boolean result = mDeviceHost.setObserveMode(enable);
+                Trace.endSection();
                 int latency = Math.toIntExact(SystemClock.elapsedRealtime() - start);
                 if (mStatsdUtils != null) {
                     mStatsdUtils.logObserveModeStateChanged(enable, triggerSource, latency);
