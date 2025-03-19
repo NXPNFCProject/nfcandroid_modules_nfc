@@ -467,6 +467,8 @@ class GkiUtilsInterface {
   virtual void freebuf(void* p_buf) = 0;
   virtual void enqueue(BUFFER_Q* p_q, void* p_buf) = 0;
   virtual void* dequeue(BUFFER_Q* p_q) = 0;
+  virtual void* getpoolbuf(uint8_t pool_id) = 0;
+  virtual void* read_mbox(uint8_t) = 0;
 };
 
 class GkiUtils : public GkiUtilsInterface {
@@ -512,6 +514,10 @@ class GkiUtils : public GkiUtilsInterface {
     GKI_enqueue(p_q, p_buf);
   };
   void* dequeue(BUFFER_Q* p_q) override { return GKI_dequeue(p_q); };
+  void* getpoolbuf(uint8_t pool_id) override {
+    return GKI_getpoolbuf(pool_id);
+  };
+  void* read_mbox(uint8_t id) override { return GKI_read_mbox(id); };
 };
 
 extern GkiUtilsInterface* gki_utils;
