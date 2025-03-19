@@ -626,6 +626,14 @@ public final class NfcAdapter {
     }
 
     /**
+     * @hide
+     */
+    @UnsupportedAppUsage
+    public static IT4tNdefNfcee getNdefNfceeService() {
+        return sNdefNfceeService;
+    }
+
+    /**
      * A listener to be invoked when NFC controller always on state changes.
      * <p>Register your {@code ControllerAlwaysOnListener} implementation with {@link
      * NfcAdapter#registerControllerAlwaysOnListener} and disable it with {@link
