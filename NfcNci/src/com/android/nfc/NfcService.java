@@ -935,6 +935,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         public int presenceCheckDelay;
         public IBinder binder;
         public int uid;
+        public byte[] annotation;
     }
 
     final class DiscoveryTechParams {
@@ -3046,6 +3047,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                         : DEFAULT_PRESENCE_CHECK_DELAY;
                 mReaderModeParams.binder = binder;
                 mReaderModeParams.uid = uid;
+                mReaderModeParams.annotation = extras == null ? null
+                        : extras.getByteArray(
+                            NfcAdapter.EXTRA_READER_TECH_A_POLLING_LOOP_ANNOTATION);
             }
         }
 
@@ -4467,7 +4471,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             paramsBuilder.setTechMask(techMask);
             paramsBuilder.setEnableLowPowerDiscovery(false);
         }
-
+        if (mReaderModeParams != null && mReaderModeParams.annotation != null) {
+            paramsBuilder.setTechAPollingLoopAnnotation(mReaderModeParams.annotation);
+        }
         if (mIsHceCapable) {
             // Host routing is always enabled, provided we aren't in reader mode
             if (mReaderModeParams == null || mReaderModeParams.flags == DISABLE_POLLING_FLAGS) {

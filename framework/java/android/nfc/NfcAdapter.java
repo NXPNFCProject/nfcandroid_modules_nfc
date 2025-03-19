@@ -272,6 +272,17 @@ public final class NfcAdapter {
      */
     public static final String EXTRA_PREFERRED_PAYMENT_CHANGED_REASON =
             "android.nfc.extra.PREFERRED_PAYMENT_CHANGED_REASON";
+
+    /**
+     * Key to specify an NFC-A polling loop annotation (as a byte array) in the extras Bundle when
+     * calling {@link #enableReaderMode(Activity, ReaderCallback, int, Bundle)}.
+     *
+     * This polling loop annotation will be included as a non-standard polling frame which will be
+     * reported to via {@link android.nfc.cardemulation.HostApduService#processPollingFrames(List)}
+     */
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_READER_MODE_ANNOTATIONS)
+    public static final String EXTRA_READER_TECH_A_POLLING_LOOP_ANNOTATION =
+            "android.nfc.extra.READER_TECH_A_POLLING_LOOP_ANNOTATION";
     /**
      * Nfc is enabled and the preferred payment aids are registered.
      */

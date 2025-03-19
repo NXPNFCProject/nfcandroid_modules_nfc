@@ -1168,20 +1168,15 @@ void static nfaVSCallback(uint8_t event, uint16_t param_len, uint8_t* p_param) {
         }
           FALLTHROUGH_INTENDED;
         case NCI_ANDROID_SET_PASSIVE_OBSERVER_TECH:
-        case NCI_ANDROID_PASSIVE_OBSERVE: {
+        case NCI_ANDROID_PASSIVE_OBSERVE:
+        case NCI_ANDROID_SET_TECH_A_POLLING_LOOP_ANNOTATION:
+        case NCI_ANDROID_SET_PASSIVE_OBSERVER_EXIT_FRAME: {
           gVSCmdStatus = p_param[4];
-          LOG(INFO) << StringPrintf("Observe mode RSP: status: %x",
-                                    gVSCmdStatus);
+          LOG(INFO) << StringPrintf("RSP status: %x to Android proprietary cmd %x",
+                                    gVSCmdStatus, android_sub_opcode);
           SyncEventGuard guard(gNfaVsCommand);
           gNfaVsCommand.notifyOne();
         } break;
-        case NCI_ANDROID_SET_PASSIVE_OBSERVER_EXIT_FRAME: {
-              gVSCmdStatus = p_param[4];
-              LOG(INFO) << StringPrintf("Set exit frame table RSP: status: %x",
-                                        gVSCmdStatus);
-              SyncEventGuard guard(gNfaVsCommand);
-              gNfaVsCommand.notifyOne();
-          } break;
         case NCI_ANDROID_GET_CAPS: {
           gVSCmdStatus = p_param[4];
           SyncEventGuard guard(gNfaVsCommand);
@@ -1703,6 +1698,40 @@ static void nfcManager_configNfccConfigControl(bool flag) {
     }
 }
 
+static tNFA_STATUS setTechAPollingLoopAnnotation(JNIEnv* env, jobject o,
+                                          jbyteArray tech_a_polling_loop_annotation) {
+    if (tech_a_polling_loop_annotation == NULL) {
+      LOG(ERROR) << "annotation is null, returning early";
+      return STATUS_SUCCESS;
+    }
+    std::vector<uint8_t> command;
+    command.push_back(NCI_ANDROID_SET_TECH_A_POLLING_LOOP_ANNOTATION);
+    command.push_back(0x01);
+    command.push_back(0x00);
+
+    ScopedByteArrayRO annotationBytes(env, tech_a_polling_loop_annotation);
+    command.push_back(annotationBytes.size() + 3);
+    command.push_back(0x0a);
+    if (annotationBytes.size() > 0) {
+      command.insert(command.end(), &annotationBytes[0],
+                    &annotationBytes[annotationBytes.size()]);
+    }
+    command.push_back(0x00);
+    command.push_back(0x00);
+    SyncEventGuard guard(gNfaVsCommand);
+    tNFA_STATUS status =
+        NFA_SendVsCommand(NCI_MSG_PROP_ANDROID, command.size(), command.data(), nfaVSCallback);
+    if (status == NFA_STATUS_OK) {
+      if (!gNfaVsCommand.wait(1000)) {
+        LOG(ERROR) << StringPrintf(
+            "%s: Timed out waiting for a response to setting a polling loop annotation ",
+            __FUNCTION__);
+        gVSCmdStatus = NFA_STATUS_FAILED;
+      }
+    }
+    return gVSCmdStatus;
+}
+
 /*******************************************************************************
 **
 ** Function:        nfcManager_enableDiscovery
@@ -1723,6 +1752,7 @@ static void nfcManager_enableDiscovery(JNIEnv* e, jobject o,
                                        jboolean enable_lptd,
                                        jboolean reader_mode,
                                        jboolean enable_host_routing,
+                                       jbyteArray tech_a_polling_loop_annotation,
                                        jboolean restart) {
   tNFA_TECHNOLOGY_MASK tech_mask = DEFAULT_TECH_MASK;
   struct nfc_jni_native_data* nat = getNative(e, o);
@@ -1749,6 +1779,8 @@ static void nfcManager_enableDiscovery(JNIEnv* e, jobject o,
   // Check polling configuration
   if (tech_mask != 0) {
     stopPolling_rfDiscoveryDisabled();
+    setTechAPollingLoopAnnotation(e, o, tech_a_polling_loop_annotation);
+
     startPolling_rfDiscoveryDisabled(tech_mask);
 
     if (sPollingEnabled) {
@@ -2627,7 +2659,7 @@ static JNINativeMethod gMethods[] = {
 
     {"getLfT3tMax", "()I", (void*)nfcManager_getLfT3tMax},
 
-    {"doEnableDiscovery", "(IZZZZ)V", (void*)nfcManager_enableDiscovery},
+    {"doEnableDiscovery", "(IZZZ[BZ)V", (void*)nfcManager_enableDiscovery},
 
     {"doStartStopPolling", "(Z)V", (void*)nfcManager_doStartStopPolling},
 
