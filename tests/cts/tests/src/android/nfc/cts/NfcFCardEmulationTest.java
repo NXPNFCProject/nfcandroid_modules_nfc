@@ -33,10 +33,10 @@ public class NfcFCardEmulationTest {
 
     @Before
     public void setUp() throws RemoteException {
-        assumeTrue(supportsHardware());
+        assumeTrue("Device must support NFC type F HCE", supportsHardware());
         Context mContext = InstrumentationRegistry.getContext();
         mAdapter = NfcAdapter.getDefaultAdapter(mContext);
-        Assert.assertNotNull(mAdapter);
+        Assert.assertNotNull("NFC Adapter is null", mAdapter);
     }
 
     @Test

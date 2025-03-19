@@ -104,8 +104,9 @@ public class CardEmulationTest {
         assumeTrue("Device must support NFC HCE", supportsHardware());
         mContext = InstrumentationRegistry.getContext();
         mAdapter = NfcAdapter.getDefaultAdapter(mContext);
-        Assert.assertNotNull(mAdapter);
-        assumeTrue(NfcUtils.enableNfc(mAdapter, mContext));
+        Assert.assertNotNull("NFC Adapter is null", mAdapter);
+        Assert.assertTrue("NFC Adapter could not be enabled",
+            NfcUtils.enableNfc(mAdapter, mContext));
     }
 
     @After
@@ -116,7 +117,7 @@ public class CardEmulationTest {
     @Test
     public void getNonNullInstance() {
         CardEmulation instance = CardEmulation.getInstance(mAdapter);
-        Assert.assertNotNull(instance);
+        Assert.assertNotNull("CardEmulation instance is null", instance);
     }
 
     @Test
@@ -2091,7 +2092,7 @@ public class CardEmulationTest {
     static void ensureUnlocked() {
         final Context context = InstrumentationRegistry.getInstrumentation().getContext();
         final UserManager userManager = context.getSystemService(UserManager.class);
-        assumeFalse(userManager.isHeadlessSystemUserMode());
+        assumeFalse("Device must not be headless", userManager.isHeadlessSystemUserMode());
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         final PowerManager pm = context.getSystemService(PowerManager.class);
         final KeyguardManager km = context.getSystemService(KeyguardManager.class);
