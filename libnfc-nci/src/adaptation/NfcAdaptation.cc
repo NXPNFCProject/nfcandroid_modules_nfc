@@ -36,6 +36,8 @@
 #include "debug_nfcsnoop.h"
 #include "nfa_api.h"
 #include "nfa_rw_api.h"
+#include "nfa_sys.h"
+#include "nfa_sys_int.h"
 #include "nfc_config.h"
 #include "nfc_int.h"
 
@@ -756,7 +758,16 @@ void NfcAdaptation::DeviceShutdown() {
 ** Returns:     None.
 **
 *******************************************************************************/
-void NfcAdaptation::Dump(int fd) { debug_nfcsnoop_dump(fd); }
+void NfcAdaptation::Dump(int fd) {
+  LOG(DEBUG) << StringPrintf("%s :enable_cplt_flags=0x%x, enable_cplt_mask=0x%x",
+                               __func__,
+                               nfa_sys_cb.enable_cplt_flags,
+                               nfa_sys_cb.enable_cplt_mask);
+  dprintf(fd, "enable_cplt_flags=0x%x, enable_cplt_mask=0x%x\n",
+          nfa_sys_cb.enable_cplt_flags,
+          nfa_sys_cb.enable_cplt_mask);
+  debug_nfcsnoop_dump(fd);
+}
 
 /*******************************************************************************
 **
