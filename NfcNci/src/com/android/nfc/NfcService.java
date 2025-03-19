@@ -289,7 +289,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
     // Time to wait for routing to be applied before watchdog
     // goes off
-    static final int ROUTING_WATCHDOG_MS = 10000;
+    static final int ROUTING_WATCHDOG_MS = 6000;
 
     // Default delay used for presence checks
     static final int DEFAULT_PRESENCE_CHECK_DELAY = 125;
