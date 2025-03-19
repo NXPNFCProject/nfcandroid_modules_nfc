@@ -2557,8 +2557,12 @@ public class CardEmulationTest {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
         CardEmulation instance = CardEmulation.getInstance(adapter);
+        int originalSubscriptionId = instance.getDefaultNfcSubscriptionId();
+
         instance.setDefaultNfcSubscriptionId(0); // This may not be set on all OEM devices.
         instance.getDefaultNfcSubscriptionId(); // This may not be set on all OEM devices.
+
+        instance.setDefaultNfcSubscriptionId(originalSubscriptionId);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_NFC_APDU_SERVICE_INFO_CONSTRUCTOR)
