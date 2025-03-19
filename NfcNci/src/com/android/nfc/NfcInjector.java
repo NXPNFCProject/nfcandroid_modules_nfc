@@ -351,7 +351,8 @@ public class NfcInjector {
      * Returns whether the device unlocked or not.
      */
     public boolean isDeviceLocked() {
-        return (android.app.Flags.deviceUnlockListener() && Flags.useDeviceLockListener())
+        return (isInProvisionMode()
+            || (android.app.Flags.deviceUnlockListener() && Flags.useDeviceLockListener()))
                             ? mKeyguardManager.isDeviceLocked()
                             : mKeyguardManager.isKeyguardLocked();
     }
