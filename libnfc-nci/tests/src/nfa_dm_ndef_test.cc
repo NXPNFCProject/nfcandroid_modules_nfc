@@ -63,7 +63,7 @@ TEST_F(NfaDmTest, RegisterHandler_Success) {
     reg_info.tnf = NFA_TNF_DEFAULT;
     reg_info.name_len = 4;
     EXPECT_CALL(mock_handler, OnNDEFData('\0', ::testing::_)).Times(1);
-    uint8_t name[] = "Test";
+    uint8_t name[] = "U";
     memcpy(reg_info.name, name, reg_info.name_len);
     bool result = nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info);
     EXPECT_FALSE(result);
@@ -74,7 +74,7 @@ TEST_F(NfaDmTest, RegisterHandler_ReplaceExisting) {
     reg_info1.p_ndef_cback = NDEFCallbackBridge;
     reg_info1.tnf = NFA_TNF_DEFAULT;
     reg_info1.name_len = 5;
-    uint8_t name1[] = "Test1";
+    uint8_t name1[] = "1";
     memcpy(reg_info1.name, name1, reg_info1.name_len);
     EXPECT_CALL(mock_handler, OnNDEFData(::testing::_, ::testing::_)).Times(1);
     nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info1);
@@ -83,7 +83,7 @@ TEST_F(NfaDmTest, RegisterHandler_ReplaceExisting) {
     reg_info2.tnf = NFA_TNF_DEFAULT;
     reg_info2.name_len = 5;
     EXPECT_CALL(mock_handler, OnNDEFData(::testing::_, ::testing::_)).Times(1);
-    uint8_t name2[] = "Test2";
+    uint8_t name2[] = "2";
     memcpy(reg_info2.name, name2, reg_info2.name_len);
     bool result = nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info2);
     EXPECT_FALSE(result);
@@ -96,7 +96,7 @@ TEST_F(NfaDmTest, DeregisterHandler_Success) {
     reg_info.p_ndef_cback = NDEFCallbackBridge;
     reg_info.tnf = NFA_TNF_DEFAULT;
     reg_info.name_len = 5;
-    uint8_t name[] = "Test";
+    uint8_t name[] = "U";
     memcpy(reg_info.name, name, reg_info.name_len);
     nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info);
     EXPECT_CALL(mock_handler, OnNDEFData(::testing::_, ::testing::_)).Times(0);
@@ -110,7 +110,7 @@ TEST_F(NfaDmTest, DeregisterHandler_Fail_HandlerNotRegistered) {
     reg_info.p_ndef_cback = NDEFCallbackBridge;
     reg_info.tnf = NFA_TNF_DEFAULT;
     reg_info.name_len = 5;
-    uint8_t name[] = "Test";
+    uint8_t name[] = "U";
     memcpy(reg_info.name, name, reg_info.name_len);
     bool result = nfa_dm_ndef_dereg_hdlr((tNFA_DM_MSG*)&reg_info);
     EXPECT_TRUE(result);
@@ -121,7 +121,7 @@ TEST_F(NfaDmTest, DeregisterHandler_ReleaseSlot) {
     reg_info1.p_ndef_cback = NDEFCallbackBridge;
     reg_info1.tnf = NFA_TNF_DEFAULT;
     reg_info1.name_len = 5;
-    uint8_t name1[] = "Test1";
+    uint8_t name1[] = "1";
     memcpy(reg_info1.name, name1, reg_info1.name_len);
     nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info1);
     bool result1 = nfa_dm_ndef_dereg_hdlr((tNFA_DM_MSG*)&reg_info1);
@@ -130,7 +130,7 @@ TEST_F(NfaDmTest, DeregisterHandler_ReleaseSlot) {
     reg_info2.p_ndef_cback = NDEFCallbackBridge;
     reg_info2.tnf = NFA_TNF_DEFAULT;
     reg_info2.name_len = 5;
-    uint8_t name2[] = "Test2";
+    uint8_t name2[] = "2";
     memcpy(reg_info2.name, name2, reg_info2.name_len);
     bool result2 = nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info2);
     EXPECT_FALSE(result2);
@@ -141,7 +141,7 @@ TEST_F(NfaDmTest, DeregisterHandler_AllSlotsOccupied) {
         reg_info.p_ndef_cback = NDEFCallbackBridge;
         reg_info.tnf = NFA_TNF_DEFAULT;
         reg_info.name_len = 4;
-        uint8_t name[] = "Test";
+        uint8_t name[] = "U";
         memcpy(reg_info.name, name, reg_info.name_len);
         nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info);
     }
@@ -149,7 +149,7 @@ TEST_F(NfaDmTest, DeregisterHandler_AllSlotsOccupied) {
     reg_info_to_deregister.p_ndef_cback = NDEFCallbackBridge;
     reg_info_to_deregister.tnf = NFA_TNF_DEFAULT;
     reg_info_to_deregister.name_len = 4;
-    uint8_t name_to_deregister[] = "Test";
+    uint8_t name_to_deregister[] = "U";
     memcpy(reg_info_to_deregister.name, name_to_deregister, reg_info_to_deregister.name_len);
     bool result = nfa_dm_ndef_dereg_hdlr((tNFA_DM_MSG*)&reg_info_to_deregister);
     EXPECT_TRUE(result);
@@ -170,7 +170,7 @@ TEST_F(NfaDmTest, HandleMessage_RegisteredHandler) {
     reg_info.p_ndef_cback = NDEFCallbackBridge;
     reg_info.tnf = NFA_TNF_DEFAULT;
     reg_info.name_len = 5;
-    uint8_t name[] = "Test";
+    uint8_t name[] = "U";
     memcpy(reg_info.name, name, reg_info.name_len);
     nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info);
     uint8_t event = 1;
@@ -201,7 +201,7 @@ TEST_F(NfaDmTest, HandleMessage_InvalidEvent) {
   reg_info.p_ndef_cback = NDEFCallbackBridge;
   reg_info.tnf = NFA_TNF_DEFAULT;
   reg_info.name_len = 5;
-  uint8_t name[] = "Test";
+  uint8_t name[] = "U";
   memcpy(reg_info.name, name, reg_info.name_len);
   nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info);
   uint8_t invalid_event = 99;
@@ -220,7 +220,7 @@ TEST_F(NfaDmTest, HandleMessage_CallbackInvocation) {
   reg_info.p_ndef_cback = NDEFCallbackBridge;
   reg_info.tnf = NFA_TNF_DEFAULT;
   reg_info.name_len = 5;
-  uint8_t name[] = "Test";
+  uint8_t name[] = "U";
   memcpy(reg_info.name, name, reg_info.name_len);
   nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info);
   uint8_t event = 2;
@@ -239,7 +239,7 @@ TEST_F(NfaDmTest, HandleMultipleMessages) {
   reg_info.p_ndef_cback = NDEFCallbackBridge;
   reg_info.tnf = NFA_TNF_DEFAULT;
   reg_info.name_len = 5;
-  uint8_t name[] = "Test";
+  uint8_t name[] = "U";
   memcpy(reg_info.name, name, reg_info.name_len);
   nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info);
   uint8_t event1 = 1, event2 = 2;
@@ -265,14 +265,14 @@ TEST_F(NfaDmTest, FindNextHandler_Success) {
   reg_info1.p_ndef_cback = NDEFCallbackBridge;
   reg_info1.tnf = NFA_TNF_DEFAULT;
   reg_info1.name_len = 5;
-  uint8_t name1[] = "Test1";
+  uint8_t name1[] = "1";
   memcpy(reg_info1.name, name1, reg_info1.name_len);
   nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info1);
   tNFA_DM_API_REG_NDEF_HDLR reg_info2 = {};
   reg_info2.p_ndef_cback = NDEFCallbackBridge;
   reg_info2.tnf = NFA_TNF_DEFAULT;
   reg_info2.name_len = 5;
-  uint8_t name2[] = "Test2";
+  uint8_t name2[] = "2";
   memcpy(reg_info2.name, name2, reg_info2.name_len);
   nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info2);
   unsigned char event = 1;
@@ -308,7 +308,7 @@ TEST_F(NfaDmTest, FindNextHandler_NoMatch) {
   reg_info1.p_ndef_cback = NDEFCallbackBridge;
   reg_info1.tnf = NFA_TNF_DEFAULT;
   reg_info1.name_len = 5;
-  uint8_t name1[] = "Test1";
+  uint8_t name1[] = "1";
   memcpy(reg_info1.name, name1, reg_info1.name_len);
   nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info1);
   unsigned char event = 1;
@@ -329,7 +329,7 @@ TEST_F(NfaDmTest, FindNextHandler_InvalidEvent) {
   reg_info1.p_ndef_cback = NDEFCallbackBridge;
   reg_info1.tnf = NFA_TNF_DEFAULT;
   reg_info1.name_len = 5;
-  uint8_t name1[] = "Test1";
+  uint8_t name1[] = "1";
   memcpy(reg_info1.name, name1, reg_info1.name_len);
   nfa_dm_ndef_reg_hdlr((tNFA_DM_MSG*)&reg_info1);
   unsigned char invalid_event = 99;
