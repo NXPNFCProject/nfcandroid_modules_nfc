@@ -334,7 +334,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     private static final int NCI_STATUS_MESSAGE_CORRUPTED = 0x02;
     private static final int NCI_STATUS_FAILED = 0x03;
     private static final int SEND_VENDOR_CMD_TIMEOUT_MS = 3_000;
-    private static final int CHECK_FIRMWARE_TIMEOUT_MS = 8_000;
+    private static final int CHECK_FIRMWARE_TIMEOUT_MS = 60_000;
     private static final int NCI_GID_PROP = 0x0F;
     private static final int NCI_MSG_PROP_ANDROID = 0x0C;
     private static final int NCI_MSG_PROP_ANDROID_POWER_SAVING = 0x01;
