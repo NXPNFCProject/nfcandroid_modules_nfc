@@ -22,9 +22,9 @@
 
 class NfcNcifTest : public ::testing::Test {
  protected:
-  void SetUp() override {}
+  void SetUp() override { gki_utils = new MockGkiUtils(); }
 
-  void TearDown() override {}
+  void TearDown() override { gki_utils = nullptr; }
 };
 
 TEST_F(NfcNcifTest, NfcModeSetNtfTimeout) {
@@ -408,4 +408,146 @@ TEST_F(NfcNcifTest, ValidPacketAppInitSuccess) {
   };
 
   nfc_ncif_proc_ee_action(packet, packet_len);
+}
+
+TEST_F(NfcNcifTest, ProcEeDiscoverValidPacketOneEntrySuccess) {
+  uint8_t packet[] = {
+      0x01,                      // num_info (one entry)
+      0x00,                      // op
+      NFC_EE_DISCOVER_INFO_LEN,  // length
+      0x02,                      // nfcee_id
+      0x03,                      // tech_n_mode
+      0x04                       // protocol
+  };
+  uint16_t packet_len = sizeof(packet);
+
+  nfc_cb.p_resp_cback = [](tNFC_RESPONSE_EVT event, tNFC_RESPONSE* p_response) {
+    ASSERT_EQ(p_response->ee_discover_req.status, NFC_STATUS_OK);
+    ASSERT_EQ(p_response->ee_discover_req.num_info, 0x01);
+    ASSERT_EQ(p_response->ee_discover_req.info[0].op, 0x00);
+    ASSERT_EQ(p_response->ee_discover_req.info[0].nfcee_id, 0x02);
+    ASSERT_EQ(p_response->ee_discover_req.info[0].tech_n_mode, 0x03);
+    ASSERT_EQ(p_response->ee_discover_req.info[0].protocol, 0x04);
+    ASSERT_EQ(event, NFC_EE_DISCOVER_REQ_REVT);
+  };
+
+  nfc_ncif_proc_ee_discover_req(packet, packet_len);
+}
+
+TEST_F(NfcNcifTest, ProcGetRoutingValidPacketOneEntrySuccess) {
+  uint8_t packet[] = {
+      0x00,       // more = false
+      0x01,       // num_entries = 1
+      0x01,       // qualifier_type
+      0x02,       // tlv_size
+      0xAA, 0xBB  // tlv data
+  };
+  uint8_t packet_len = sizeof(packet);
+
+  nfc_cb.p_resp_cback = [](tNFC_RESPONSE_EVT event, tNFC_RESPONSE* p_response) {
+    ASSERT_EQ(p_response->get_routing.status, NFC_STATUS_OK);
+    ASSERT_EQ(p_response->get_routing.qualifier_type, 0x01);
+    ASSERT_EQ(p_response->get_routing.num_tlvs, 1);
+    ASSERT_EQ(p_response->get_routing.tlv_size, 0x02);
+    ASSERT_EQ(p_response->get_routing.param_tlvs[0], 0xAA);
+    ASSERT_EQ(p_response->get_routing.param_tlvs[1], 0xBB);
+    ASSERT_EQ(event, NFC_GET_ROUTING_REVT);
+  };
+
+  nfc_ncif_proc_get_routing(packet, packet_len);
+}
+
+TEST_F(NfcNcifTest, ProcConnCreateRspValidResponseSuccess) {
+  uint8_t packet[] = {
+      0x00,          0x01, 0x02,  // NCI Header
+      NCI_STATUS_OK,              // status
+      0x0A,                       // buff_size
+      0x05,                       // num_buff
+      0x0B                        // conn_id
+  };
+  uint16_t packet_len = sizeof(packet);
+  uint8_t dest_type = NCI_DEST_TYPE_NFCEE;
+
+  tNFC_CONN_CBACK* mock_cb = [](__attribute__((unused)) uint8_t conn_id,
+                                __attribute__((unused)) tNFC_CONN_EVT event,
+                                tNFC_CONN* p_data) {
+    ASSERT_EQ(p_data->conn_create.status, NCI_STATUS_OK);
+    ASSERT_EQ(p_data->conn_create.dest_type, NCI_DEST_TYPE_NFCEE);
+    ASSERT_EQ(p_data->conn_create.buff_size, 0x0A);
+    ASSERT_EQ(p_data->conn_create.num_buffs, 0x05);
+  };
+
+  nfc_cb.conn_cb[0].conn_id = NFC_PEND_CONN_ID;
+  nfc_cb.conn_cb[0].p_cback = mock_cb;
+
+  nfc_ncif_proc_conn_create_rsp(packet, packet_len, dest_type);
+  ASSERT_EQ(nfc_cb.conn_cb[0].conn_id, 0x0B);
+}
+
+TEST_F(NfcNcifTest, ProcDataSuccess) {
+  NFC_HDR* p_msg = (NFC_HDR*)malloc(sizeof(NFC_HDR) + 5);
+  p_msg->event |= NFC_PEND_CONN_ID;
+  p_msg->offset = 0;
+  p_msg->len = 5;
+  uint8_t* data = (uint8_t*)(p_msg + 1) + p_msg->offset;
+  data[0] = 0;
+  data[1] = 0;
+  data[2] = 0;
+
+  nfc_cb.conn_cb[0].conn_id = NFC_PEND_CONN_ID;
+
+  nfc_ncif_proc_data(p_msg);
+  free(p_msg);
+}
+
+TEST_F(NfcNcifTest, ProcDataFirstFragmentSuccess) {
+  NFC_HDR* p_msg = (NFC_HDR*)malloc(sizeof(NFC_HDR) + 5);
+  p_msg->event |= NFC_PEND_CONN_ID;
+  p_msg->event |= (0x10 << NCI_PBF_SHIFT);
+  p_msg->offset = 0;
+  p_msg->len = 5;
+  uint8_t* data = (uint8_t*)(p_msg + 1) + p_msg->offset;
+  data[0] = 0x80;
+  data[1] = 0;
+  data[2] = 0;
+  nfc_cb.conn_cb[0].conn_id = NFC_PEND_CONN_ID;
+  EXPECT_CALL(*(MockGkiUtils*)gki_utils, getlast(testing::_))
+      .WillOnce(testing::Return(nullptr));
+  EXPECT_CALL(*(MockGkiUtils*)gki_utils, enqueue(testing::_, p_msg));
+
+  nfc_ncif_proc_data(p_msg);
+  free(p_msg);
+}
+
+TEST_F(NfcNcifTest, ProcDataExistingFragmentEnoughSpaceSuccess) {
+  NFC_HDR* p_msg = (NFC_HDR*)malloc(sizeof(NFC_HDR) + 5);
+  p_msg->event |= NFC_PEND_CONN_ID;
+  p_msg->event |= (0x10 << NCI_PBF_SHIFT);
+  p_msg->offset = 0;
+  p_msg->len = 5;
+  uint8_t* data = (uint8_t*)(p_msg + 1) + p_msg->offset;
+  data[0] = 0x80;
+  data[1] = 0;
+  data[2] = 0;
+
+  NFC_HDR* p_last_msg = (NFC_HDR*)malloc(sizeof(NFC_HDR) + 10);
+  p_last_msg->offset = 8;
+  p_last_msg->len = 10;
+  p_last_msg->layer_specific = NFC_RAS_FRAGMENTED;
+
+  NFC_HDR* p_new_msg = (NFC_HDR*)malloc(sizeof(NFC_HDR) + 500);
+  p_new_msg->offset = 0;
+  p_new_msg->len = 500;
+
+  EXPECT_CALL(*(MockGkiUtils*)gki_utils, getlast(testing::_))
+      .WillOnce(testing::Return(p_last_msg));
+  EXPECT_CALL(*(MockGkiUtils*)gki_utils, getpoolbuf(testing::_))
+      .WillOnce(testing::Return(p_new_msg));
+  EXPECT_CALL(*(MockGkiUtils*)gki_utils, enqueue(testing::_, p_msg));
+  EXPECT_CALL(*(MockGkiUtils*)gki_utils, freebuf(p_msg));
+
+  nfc_ncif_proc_data(p_msg);
+  free(p_msg);
+  free(p_last_msg);
+  free(p_new_msg);
 }
