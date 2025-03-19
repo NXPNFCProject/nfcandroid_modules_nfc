@@ -62,6 +62,7 @@ class ThreadCondVar : public ThreadMutex {
   virtual ~ThreadCondVar();
   void signal();
   void wait();
+  bool wait(long millisec);
   explicit operator pthread_cond_t*() { return &mCondVar; }
   // NOLINTNEXTLINE(google-explicit-constructor)
   operator pthread_mutex_t*() {
