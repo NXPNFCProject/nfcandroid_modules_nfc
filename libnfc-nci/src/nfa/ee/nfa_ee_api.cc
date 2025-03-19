@@ -117,12 +117,14 @@ tNFA_STATUS NFA_EeGetInfo(uint8_t* p_num_nfcee, tNFA_EE_INFO* p_info) {
   memset(p_info, 0, sizeof(tNFA_EE_INFO) * max_ret);
   /* compose output */
   for (xx = 0; (xx < ret) && (num_ret < max_ret); xx++, p_cb++) {
-    LOG(VERBOSE) << StringPrintf("xx:%d max_ret:%d, num_ret:%d ee_status:0x%x",
-                               xx, max_ret, num_ret, p_cb->ee_status);
     if ((p_cb->ee_status & NFA_EE_STATUS_INT_MASK) ||
-        (p_cb->ee_status == NFA_EE_STATUS_REMOVED)) {
+        (p_cb->ee_status == NFA_EE_STATUS_REMOVED) ||
+        (p_cb->ee_status & NFA_EE_STATUS_MEP_MASK)) {
       continue;
     }
+    LOG(DEBUG) << StringPrintf(
+        "%s; xx:%d max_ret:%d, num_ret:%d nfcee_id: 0x%x ee_status:0x%x",
+        __func__, xx, max_ret, num_ret, p_cb->nfcee_id, p_cb->ee_status);
     p_info->ee_handle = NFA_HANDLE_GROUP_EE | (tNFA_HANDLE)p_cb->nfcee_id;
     p_info->ee_status = p_cb->ee_status;
     p_info->num_interface = p_cb->num_interface;
@@ -136,7 +138,72 @@ tNFA_STATUS NFA_EeGetInfo(uint8_t* p_num_nfcee, tNFA_EE_INFO* p_info) {
     p_info++;
     num_ret++;
   }
-  LOG(VERBOSE) << StringPrintf("num_ret:%d", num_ret);
+  *p_num_nfcee = num_ret;
+  return (NFA_STATUS_OK);
+}
+
+/*******************************************************************************
+**
+** Function         NFA_EeGetMepInfo
+**
+** Description      This function retrieves the NFCEE information from NFA.
+**                  The actual number of NFCEE is returned in p_num_nfcee
+**                  and NFCEE information is returned in p_info
+**
+** Returns          NFA_STATUS_OK if information is retrieved successfully
+**                  NFA_STATUS_FAILED If wrong state (retry later)
+**                  NFA_STATUS_INVALID_PARAM If bad parameter
+**
+*******************************************************************************/
+tNFA_STATUS NFA_EeGetMepInfo(uint8_t* p_num_nfcee, tNFA_EE_INFO* p_info) {
+  int xx, ret = nfa_ee_cb.cur_ee;
+  tNFA_EE_ECB* p_cb = nfa_ee_cb.ecb;
+  uint8_t max_ret;
+  uint8_t num_ret = 0;
+
+  /* validate parameters */
+  if (p_info == nullptr || p_num_nfcee == nullptr) {
+    LOG(ERROR) << StringPrintf("%s; bad parameter", __func__);
+    return (NFA_STATUS_INVALID_PARAM);
+  }
+  max_ret = *p_num_nfcee;
+  *p_num_nfcee = 0;
+  if (nfa_ee_cb.em_state == NFA_EE_EM_STATE_INIT) {
+    LOG(ERROR) << StringPrintf("%s; bad em state: %d", __func__,
+                               nfa_ee_cb.em_state);
+    return (NFA_STATUS_FAILED);
+  }
+
+  // Reset the target array as we may have less elements than in previous call
+  // if some activations failed.
+  memset(p_info, 0, sizeof(tNFA_EE_INFO) * max_ret);
+
+  /* compose output */
+  for (xx = 0; (xx < ret) && (num_ret < max_ret); xx++, p_cb++) {
+    if (!(p_cb->ee_status & NFA_EE_STATUS_MEP_MASK)) {
+      continue;
+    }
+    LOG(DEBUG) << StringPrintf(
+        "%s; xx:%d max_ret:%d, num_ret:%d nfcee_id: 0x%x ee_status:0x%x",
+        __func__, xx, max_ret, num_ret, p_cb->nfcee_id, p_cb->ee_status);
+    p_info->ee_handle = NFA_HANDLE_GROUP_EE | (tNFA_HANDLE)p_cb->nfcee_id;
+    p_info->ee_status = p_cb->ee_status & ~NFA_EE_STATUS_MEP_MASK;
+
+    if ((p_cb->ee_status & NFA_EE_STATUS_INT_MASK) ||
+        (p_cb->ee_status == NFA_EE_STATUS_REMOVED)) {
+      p_info->num_interface = p_cb->num_interface;
+      p_info->num_tlvs = p_cb->num_tlvs;
+      p_info->la_protocol = p_cb->la_protocol;
+      p_info->lb_protocol = p_cb->lb_protocol;
+      p_info->lf_protocol = p_cb->lf_protocol;
+      memcpy(p_info->ee_interface, p_cb->ee_interface, p_cb->num_interface);
+      memcpy(p_info->ee_tlv, p_cb->ee_tlv,
+             p_cb->num_tlvs * sizeof(tNFA_EE_TLV));
+      p_info->ee_power_supply_status = p_cb->ee_power_supply_status;
+    }
+    p_info++;
+    num_ret++;
+  }
   *p_num_nfcee = num_ret;
   return (NFA_STATUS_OK);
 }
