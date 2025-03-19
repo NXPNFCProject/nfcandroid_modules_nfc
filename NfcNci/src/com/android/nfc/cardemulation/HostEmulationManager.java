@@ -1494,6 +1494,16 @@ public class HostEmulationManager {
                                             .build())
                                     .build())
                             .build());
+
+            if (mPollingFramesToSend != null && mPollingFramesToSend.containsKey(name)) {
+                sendPollingFramesToServiceLocked(mPaymentService, mPollingFramesToSend.get(name));
+                mPollingFramesToSend.remove(name);
+                if (mUnprocessedPollingFrames != null) {
+                    ArrayList unprocessedPollingFrames = mUnprocessedPollingFrames;
+                    mUnprocessedPollingFrames = null;
+                    onPollingLoopDetected(unprocessedPollingFrames);
+                }
+            }
         }
 
         @Override
