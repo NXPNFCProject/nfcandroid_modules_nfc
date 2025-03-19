@@ -3413,8 +3413,15 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         public void checkFirmware() throws RemoteException {
             if (DBG) Log.i(TAG, "checkFirmware");
             NfcPermissions.enforceAdminPermissions(mContext);
+
+            if (isNfcEnabled()) {
+                if (DBG) Log.i(TAG, "Check firmware by restarting Nfc stack");
+                restartStack();
+                return;
+            }
             FutureTask<Integer> checkFirmwareTask =
                 new FutureTask<>(() -> {
+                    if (DBG) Log.i(TAG, "Nfc is disabled, checking Firmware");
                     mDeviceHost.checkFirmware();
                     return 0;
                 });
