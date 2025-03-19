@@ -230,8 +230,8 @@ protected:
 };
 
 TEST_F(NfaRegisterNDefUriHandlerTest, ValidParameters) {
-  uint8_t uri[] = "U";
-  uint8_t uri_len = sizeof(uri) - 1;
+  uint8_t uri[] = { 'U' };
+  uint8_t uri_len = sizeof(uri);
   tNFA_DM_API_REG_NDEF_HDLR expected_msg = {};
   expected_msg.flags = NFA_NDEF_FLAGS_WKT_URI;
   expected_msg.tnf = NFA_TNF_WKT;
@@ -259,8 +259,8 @@ TEST_F(NfaRegisterNDefUriHandlerTest, MemoryAllocationFailure) {
 }
 
 TEST_F(NfaRegisterNDefUriHandlerTest, InvalidUriId) {
-  uint8_t uri[] = "U";
-  uint8_t uri_len = sizeof(uri) - 1;
+  uint8_t uri[] = { 'U' };
+  uint8_t uri_len = sizeof(uri);
   tNFA_DM_API_REG_NDEF_HDLR expected_msg = {};
   expected_msg.flags = NFA_NDEF_FLAGS_WKT_URI;
   expected_msg.tnf = NFA_TNF_WKT;
