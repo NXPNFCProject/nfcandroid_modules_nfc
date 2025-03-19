@@ -199,16 +199,10 @@ class NfcExitFrameMultiDeviceTestCases(base_test.BaseTestClass):
                 self._setup_failure_reason = 'Failed to connect to casimir'
                 _LOG.info("casimir_id = " + casimir_id)
                 self.pn532 = pn532.Casimir(casimir_id)
-            elif len(pn532_serial_path) > 0:
+            else:
                 self._setup_failure_reason = 'Failed to connect to PN532 board.'
                 self.pn532 = pn532.PN532(pn532_serial_path)
                 self.pn532.mute()
-            else:
-                self._setup_failure_reason = 'Two devices are not present.'
-                _LOG.info("No value provided for pn532_serial_path. Defaulting to two-device " +
-                          "configuration.")
-                if len(devices) < 2:
-                    return
                 self._setup_failure_reason = (
                     'Cannot load reader snippet. Is NfcReaderTestApp.apk '
                     'installed on the reader?'
