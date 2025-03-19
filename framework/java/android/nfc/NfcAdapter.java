@@ -1807,23 +1807,9 @@ public final class NfcAdapter {
     public void setDiscoveryTechnology(@NonNull Activity activity,
             @PollTechnology int pollTechnology, @ListenTechnology int listenTechnology) {
 
-        if (listenTechnology == FLAG_LISTEN_DISABLE) {
-            synchronized (sLock) {
-                if (!sHasNfcFeature) {
-                    throw new UnsupportedOperationException();
-                }
-            }
-        } else if (pollTechnology == FLAG_READER_DISABLE) {
-            synchronized (sLock) {
-                if (!sHasCeFeature) {
-                    throw new UnsupportedOperationException();
-                }
-            }
-        } else {
-            synchronized (sLock) {
-                if (!sHasNfcFeature || !sHasCeFeature) {
-                    throw new UnsupportedOperationException();
-                }
+        synchronized (sLock) {
+            if (!sHasNfcFeature && !sHasCeFeature) {
+                throw new UnsupportedOperationException();
             }
         }
     /*
