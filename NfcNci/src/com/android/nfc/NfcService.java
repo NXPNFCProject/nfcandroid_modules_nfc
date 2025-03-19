@@ -338,7 +338,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     private static final int NCI_GID_PROP = 0x0F;
     private static final int NCI_MSG_PROP_ANDROID = 0x0C;
     private static final int NCI_MSG_PROP_ANDROID_POWER_SAVING = 0x01;
-    private static final int NCI_PROP_ANDROID_QUERY_POWER_SAVING_STATUS_CMD = 0x05;
+    private static final int NCI_PROP_ANDROID_QUERY_POWER_SAVING_STATUS_CMD = 0x0A;
     private static final int POWER_STATE_SWITCH_ON = 0x01;
 
     public static final int WAIT_FOR_OEM_CALLBACK_TIMEOUT_MS = 3000;
