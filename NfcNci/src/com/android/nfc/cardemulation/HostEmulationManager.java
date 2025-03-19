@@ -332,6 +332,19 @@ public class HostEmulationManager {
         mNfcOemExtensionCallback = nfcOemExtensionCallback;
     }
 
+    public void onBootCompleted() {
+        if (!mPaymentServiceBound) {
+            ComponentNameAndUser preferredPaymentService = mAidCache.getPreferredPaymentService();
+            // getPreferredPaymentService returns a non-null object even if there is no role holder,
+            // check for package name explicitly.
+            ComponentName preferredPaymentServiceName = preferredPaymentService.getComponentName();
+            if (preferredPaymentServiceName != null) {
+                Log.d(TAG, "onBootCompleted, payment service not bound, binding");
+                onPreferredPaymentServiceChanged(preferredPaymentService);
+            }
+        }
+    }
+
     /**
      *  Preferred payment service changed
      */
