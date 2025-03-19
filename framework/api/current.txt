@@ -101,6 +101,7 @@ package android.nfc {
     field public static final String EXTRA_NDEF_MESSAGES = "android.nfc.extra.NDEF_MESSAGES";
     field public static final String EXTRA_PREFERRED_PAYMENT_CHANGED_REASON = "android.nfc.extra.PREFERRED_PAYMENT_CHANGED_REASON";
     field public static final String EXTRA_READER_PRESENCE_CHECK_DELAY = "presence";
+    field @FlaggedApi("com.android.nfc.module.flags.reader_mode_annotations") public static final String EXTRA_READER_TECH_A_POLLING_LOOP_ANNOTATION = "android.nfc.extra.READER_TECH_A_POLLING_LOOP_ANNOTATION";
     field public static final String EXTRA_SECURE_ELEMENT_NAME = "android.nfc.extra.SECURE_ELEMENT_NAME";
     field public static final String EXTRA_TAG = "android.nfc.extra.TAG";
     field @FlaggedApi("android.nfc.enable_nfc_set_discovery_tech") public static final int FLAG_LISTEN_DISABLE = 0; // 0x0
