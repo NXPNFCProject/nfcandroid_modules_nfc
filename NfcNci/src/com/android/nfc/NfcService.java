@@ -5177,9 +5177,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     if (!isNfcEnabled()) break;
                     if (DBG) Log.d(TAG, "Clear routing table");
                     int clearFlags = (Integer)msg.obj;
-                    if (isNfcEnabled()) {
-                        mDeviceHost.clearRoutingEntry(clearFlags);
-                    }
+                    mDeviceHost.clearRoutingEntry(clearFlags);
                     break;
                 case MSG_UPDATE_ISODEP_PROTOCOL_ROUTE:
                     if (DBG) Log.d(TAG, "Update IsoDep Protocol Route");
