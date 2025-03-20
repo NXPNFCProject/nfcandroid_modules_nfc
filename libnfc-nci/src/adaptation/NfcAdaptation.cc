@@ -1003,6 +1003,9 @@ void NfcAdaptation::HalOpen(tHAL_NFC_CBACK* p_hal_cback,
 void NfcAdaptation::HalClose() {
   const char* func = "NfcAdaptation::HalClose";
   LOG(VERBOSE) << StringPrintf("%s", func);
+  if (sVndExtnsPresent) {
+    sNfcVendorExtn->processEvent(HANDLE_NFC_HAL_CLOSE, HAL_NFC_STATUS_OK);
+  }
   if (mAidlHal != nullptr) {
     mAidlHal->close(NfcCloseType::DISABLE);
   } else if (mHal != nullptr) {
@@ -1054,6 +1057,10 @@ void NfcAdaptation::HalCoreInitialized(uint16_t data_len,
                                        uint8_t* p_core_init_rsp_params) {
   const char* func = "NfcAdaptation::HalCoreInitialized";
   LOG(VERBOSE) << StringPrintf("%s", func);
+  if (sVndExtnsPresent) {
+    sNfcVendorExtn->processEvent(HANDLE_NFC_HAL_CORE_INITIALIZE,
+                                 HAL_NFC_STATUS_OK);
+  }
   if (mAidlHal != nullptr) {
     // AIDL coreInitialized doesn't send data to HAL.
     mAidlHal->coreInitialized();
@@ -1137,6 +1144,9 @@ void NfcAdaptation::HalControlGranted() {
 void NfcAdaptation::HalPowerCycle() {
   const char* func = "NfcAdaptation::HalPowerCycle";
   LOG(VERBOSE) << StringPrintf("%s", func);
+  if (sVndExtnsPresent) {
+    sNfcVendorExtn->processEvent(HANDLE_NFC_HAL_POWER_CYCLE, HAL_NFC_STATUS_OK);
+  }
   if (mAidlHal != nullptr) {
     mAidlHal->powerCycle();
   } else if (mHal != nullptr) {
@@ -1156,7 +1166,9 @@ void NfcAdaptation::HalPowerCycle() {
 uint8_t NfcAdaptation::HalGetMaxNfcee() {
   const char* func = "NfcAdaptation::HalGetMaxNfcee";
   LOG(VERBOSE) << StringPrintf("%s", func);
-
+  if (sVndExtnsPresent) {
+    sNfcVendorExtn->processEvent(HANDLE_NFC_GET_MAX_NFCEE, HAL_NFC_STATUS_OK);
+  }
   return nfa_ee_max_ee_cfg;
 }
 
