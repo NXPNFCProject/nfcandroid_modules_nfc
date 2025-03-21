@@ -1626,11 +1626,6 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
     public void updateForShouldDefaultToObserveMode(int userId) {
         long token = Binder.clearCallingIdentity();
         try {
-            if (!android.nfc.Flags.nfcObserveMode()) {
-                Log.d(TAG, "observe mode isn't enabled");
-                return;
-            }
-
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
             if (adapter == null) {
                 Log.e(TAG, "adapter is null, returning");

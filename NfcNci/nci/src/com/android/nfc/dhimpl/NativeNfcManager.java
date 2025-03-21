@@ -215,9 +215,6 @@ public class NativeNfcManager implements DeviceHost {
 
     @Override
     public boolean isObserveModeSupported() {
-        if (!android.nfc.Flags.nfcObserveMode()) {
-            return false;
-        }
         // Check if the device overlay and HAL capabilities indicate that observe
         // mode is supported.
         if (!mContext.getResources().getBoolean(

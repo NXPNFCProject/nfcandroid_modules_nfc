@@ -1204,7 +1204,6 @@ public final class NfcAdapter {
      * respond to the reader and proceed with the transaction.
      * @return true if the mode is supported, false otherwise.
      */
-    @FlaggedApi(Flags.FLAG_NFC_OBSERVE_MODE)
     public boolean isObserveModeSupported() {
         return callServiceReturn(() ->  sService.isObserveModeSupported(), false);
     }
@@ -1215,7 +1214,6 @@ public final class NfcAdapter {
      * @return true if observe mode is enabled, false otherwise.
      */
 
-    @FlaggedApi(Flags.FLAG_NFC_OBSERVE_MODE)
     public boolean isObserveModeEnabled() {
         return callServiceReturn(() ->  sService.isObserveModeEnabled(), false);
     }
@@ -1236,7 +1234,6 @@ public final class NfcAdapter {
      * @return boolean indicating success or failure.
      */
 
-    @FlaggedApi(Flags.FLAG_NFC_OBSERVE_MODE)
     public boolean setObserveModeEnabled(boolean enabled) {
         if (mContext == null) {
             throw new UnsupportedOperationException("You need a context on NfcAdapter to use the "
