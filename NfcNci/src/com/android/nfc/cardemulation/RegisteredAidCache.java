@@ -292,7 +292,6 @@ public class RegisteredAidCache {
     }
 
     @TargetApi(35)
-    @FlaggedApi(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     ApduServiceInfo resolvePollingLoopFilterConflict(List<ApduServiceInfo> conflictingServices) {
         ApduServiceInfo matchedForeground = null;
         List<ApduServiceInfo> roleHolderServices = new ArrayList<>();

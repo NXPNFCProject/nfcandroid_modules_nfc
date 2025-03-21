@@ -2561,7 +2561,6 @@ public final class NfcAdapter {
      * @hide
      */
     @TestApi
-    @FlaggedApi(Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void notifyPollingLoop(@NonNull PollingFrame pollingFrame) {
         callService(() ->  sService.notifyPollingLoop(pollingFrame));
     }
@@ -2572,7 +2571,6 @@ public final class NfcAdapter {
      *
      * @hide
      */
-    @FlaggedApi(Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void notifyTestHceData(int technology, byte[] data) {
         callService(() ->  sService.notifyTestHceData(technology, data));
     }
@@ -2626,7 +2624,6 @@ public final class NfcAdapter {
      * @hide
      */
     @TestApi
-    @FlaggedApi(Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void notifyHceDeactivated() {
         callService(() ->  sService.notifyHceDeactivated());
     }

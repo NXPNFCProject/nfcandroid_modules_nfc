@@ -401,7 +401,6 @@ public class HostEmulationManager {
 
 
     @TargetApi(35)
-    @FlaggedApi(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void updatePollingLoopFilters(@UserIdInt int userId, List<ApduServiceInfo> services) {
         HashMap<String, List<ApduServiceInfo>> pollingLoopFilters =
                 new HashMap<String, List<ApduServiceInfo>>();
@@ -543,7 +542,6 @@ public class HostEmulationManager {
     }
 
     @TargetApi(35)
-    @FlaggedApi(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void onPollingLoopDetected(List<PollingFrame> pollingFrames) {
         Log.d(TAG, "onPollingLoopDetected, size: " + pollingFrames.size());
         synchronized (mLock) {
@@ -1625,8 +1623,7 @@ public class HostEmulationManager {
                 } else if (mPollingFramesToSend != null && mPollingFramesToSend.containsKey(name)) {
                     sendPollingFramesToServiceLocked(messenger, mPollingFramesToSend.get(name));
                     mPollingFramesToSend.remove(name);
-                    if (android.nfc.Flags.nfcReadPollingLoop()
-                            && mUnprocessedPollingFrames != null) {
+                    if (mUnprocessedPollingFrames != null) {
                         ArrayList unprocessedPollingFrames = mUnprocessedPollingFrames;
                         mUnprocessedPollingFrames = null;
                         onPollingLoopDetected(unprocessedPollingFrames);

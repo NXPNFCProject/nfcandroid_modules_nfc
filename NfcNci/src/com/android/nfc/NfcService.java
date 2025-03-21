@@ -739,8 +739,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
     @Override
     public void onPollingLoopDetected(List<PollingFrame> frames) {
-        if (mCardEmulationManager != null
-                && android.nfc.Flags.nfcReadPollingLoop()) {
+        if (mCardEmulationManager != null) {
             if (Flags.postCallbacks()) {
                 mHandler.post(() -> {
                     if (mCardEmulationManager != null) {

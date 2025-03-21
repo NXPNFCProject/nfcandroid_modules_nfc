@@ -1502,10 +1502,8 @@ static jboolean doPartialInit() {
     SyncEventGuard guard(sNfaEnableEvent);
     tHAL_NFC_ENTRY* halFuncEntries = theInstance.GetHalEntryFuncs();
     NFA_Partial_Init(halFuncEntries, gPartialInitMode);
-    if (android_nfc_nfc_read_polling_loop() || android_nfc_nfc_vendor_cmd()) {
-      LOG(DEBUG) << StringPrintf("%s: register VS callbacks", __func__);
-      NFA_RegVSCback(true, &nfaVSCallback);
-    }
+    LOG(DEBUG) << StringPrintf("%s: register VS callbacks", __func__);
+    NFA_RegVSCback(true, &nfaVSCallback);
 
     LOG(DEBUG) << StringPrintf("%s: calling enable", __func__);
     stat = NFA_Enable(nfaDeviceManagementCallback, nfaConnectionCallback);
@@ -1563,10 +1561,8 @@ static jboolean nfcManager_doInitialize(JNIEnv* e, jobject o) {
 
       NFA_Init(halFuncEntries);
 
-      if (android_nfc_nfc_read_polling_loop() || android_nfc_nfc_vendor_cmd()) {
-        LOG(DEBUG) << StringPrintf("%s: register VS callbacks", __func__);
-        NFA_RegVSCback(true, &nfaVSCallback);
-      }
+      LOG(DEBUG) << StringPrintf("%s: register VS callbacks", __func__);
+      NFA_RegVSCback(true, &nfaVSCallback);
 
       if (gIsDtaEnabled == true) {
         // Allows to set appl_dta_mode_flag
@@ -1901,10 +1897,8 @@ static jboolean doPartialDeinit() {
   }
   sIsDisabling = false;
 
-  if (android_nfc_nfc_read_polling_loop() || android_nfc_nfc_vendor_cmd()) {
-    LOG(DEBUG) << StringPrintf("%s: deregister VS callbacks", __func__);
-    NFA_RegVSCback(false, &nfaVSCallback);
-  }
+  LOG(DEBUG) << StringPrintf("%s: deregister VS callbacks", __func__);
+  NFA_RegVSCback(false, &nfaVSCallback);
 
   NfcAdaptation& theInstance = NfcAdaptation::GetInstance();
   LOG(DEBUG) << StringPrintf("%s: exit", __func__);
@@ -1974,10 +1968,8 @@ static jboolean nfcManager_doDeinitialize(JNIEnv*, jobject) {
     sNfaEnableDisablePollingEvent.notifyOne();
   }
 
-  if (android_nfc_nfc_read_polling_loop() || android_nfc_nfc_vendor_cmd()) {
-    LOG(DEBUG) << StringPrintf("%s: deregister VS callbacks", __func__);
-    NFA_RegVSCback(false, &nfaVSCallback);
-  }
+  LOG(DEBUG) << StringPrintf("%s: deregister VS callbacks", __func__);
+  NFA_RegVSCback(false, &nfaVSCallback);
 
   NfcAdaptation& theInstance = NfcAdaptation::GetInstance();
   theInstance.Finalize();
@@ -2041,15 +2033,11 @@ static jboolean nfcManager_doDownload(JNIEnv*, jobject) {
   NfcAdaptation& theInstance = NfcAdaptation::GetInstance();
   bool result = JNI_FALSE;
   theInstance.Initialize();  // start GKI, NCI task, NFC task
-  if (android_nfc_nfc_read_polling_loop() || android_nfc_nfc_vendor_cmd()) {
-    tHAL_NFC_ENTRY* halFuncEntries = theInstance.GetHalEntryFuncs();
-    NFA_Partial_Init(halFuncEntries, ENABLE_MODE_TRANSPARENT);
-    NFA_RegVSCback(true, &nfaVSCallback);
-  }
+  tHAL_NFC_ENTRY* halFuncEntries = theInstance.GetHalEntryFuncs();
+  NFA_Partial_Init(halFuncEntries, ENABLE_MODE_TRANSPARENT);
+  NFA_RegVSCback(true, &nfaVSCallback);
   result = theInstance.DownloadFirmware();
-  if (android_nfc_nfc_read_polling_loop() || android_nfc_nfc_vendor_cmd()) {
-    NFA_RegVSCback(false, &nfaVSCallback);
-  }
+  NFA_RegVSCback(false, &nfaVSCallback);
   theInstance.Finalize();
   LOG(DEBUG) << StringPrintf("%s: exit", __func__);
   return result;
