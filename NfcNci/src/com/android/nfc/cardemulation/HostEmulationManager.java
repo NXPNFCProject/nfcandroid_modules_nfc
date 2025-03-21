@@ -388,7 +388,6 @@ public class HostEmulationManager {
 
 
     @TargetApi(35)
-    @FlaggedApi(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
     public void updateForShouldDefaultToObserveMode(boolean enabled) {
         synchronized (mLock) {
             if (isHostCardEmulationActivated()) {

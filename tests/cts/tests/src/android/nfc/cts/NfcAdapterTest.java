@@ -609,7 +609,6 @@ public class NfcAdapterTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NFC_OBSERVE_MODE)
     public void testShouldDefaultToObserveModeAfterNfcOffOn() throws InterruptedException {
         NfcAdapter adapter = getDefaultAdapter();
         adapter.notifyHceDeactivated();
@@ -639,7 +638,6 @@ public class NfcAdapterTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NFC_OBSERVE_MODE)
     public void testShouldDefaultToObserveModeWithNfcOff() throws InterruptedException {
         NfcAdapter adapter = getDefaultAdapter();
         adapter.notifyHceDeactivated();

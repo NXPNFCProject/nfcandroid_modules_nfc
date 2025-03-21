@@ -443,7 +443,6 @@ public final class CardEmulation {
      * @param enable Whether the service should default to observe mode or not
      * @return whether the change was successful.
      */
-    @FlaggedApi(Flags.FLAG_NFC_OBSERVE_MODE)
     public boolean setShouldDefaultToObserveModeForService(@NonNull ComponentName service,
             boolean enable) {
         return callServiceReturn(() ->
