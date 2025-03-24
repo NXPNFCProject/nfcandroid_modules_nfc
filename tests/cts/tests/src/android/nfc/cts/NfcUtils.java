@@ -26,7 +26,6 @@ import android.content.IntentFilter;
 import android.nfc.NfcAdapter;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.util.Log;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -34,26 +33,27 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public final class NfcUtils {
     private NfcUtils() {}
-    private static final String TAG = "NfcUtils";
 
     static boolean enableNfc(NfcAdapter nfcAdapter, Context context) {
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        BroadcastReceiver nfcChangeListener = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                int s = intent.getIntExtra(NfcAdapter.EXTRA_ADAPTER_STATE,
-                        NfcAdapter.STATE_OFF);
-
-                if (s == NfcAdapter.STATE_ON) {
-                    countDownLatch.countDown();
-                }
-            }
-        };
-
         try {
             if (nfcAdapter.isEnabled()) {
                 return true;
             }
+            CountDownLatch countDownLatch = new CountDownLatch(1);
+            AtomicInteger state = new AtomicInteger(NfcAdapter.STATE_OFF);
+            BroadcastReceiver nfcChangeListener = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    int s = intent.getIntExtra(NfcAdapter.EXTRA_ADAPTER_STATE,
+                            NfcAdapter.STATE_OFF);
+                    if (s == NfcAdapter.STATE_TURNING_ON) {
+                        return;
+                    }
+                    context.unregisterReceiver(this);
+                    state.set(s);
+                    countDownLatch.countDown();
+                }
+            };
             HandlerThread handlerThread = new HandlerThread("nfc_cts_listener");
             handlerThread.start();
             Handler handler = new Handler(handlerThread.getLooper());
@@ -64,22 +64,14 @@ public final class NfcUtils {
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().adoptShellPermissionIdentity(WRITE_SECURE_SETTINGS);
             if (!nfcAdapter.enable()) {
-                Log.e(TAG, "Failed to enable NFC");
                 return false;
             }
-
-            boolean turnedOn = countDownLatch.await(2000, TimeUnit.MILLISECONDS);
-
-            if (!turnedOn) {
-                Log.e(TAG, "Timed out waiting for NFC to enable");
-            }
-
-            return turnedOn;
+            countDownLatch.await(2000, TimeUnit.MILLISECONDS);
+            return state.get() == NfcAdapter.STATE_ON;
         } catch (Exception e) {
-            Log.e(TAG, "Failed to enable NFC", e);
+            e.printStackTrace();
             return false;
         } finally {
-            context.unregisterReceiver(nfcChangeListener);
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().dropShellPermissionIdentity();
         }
