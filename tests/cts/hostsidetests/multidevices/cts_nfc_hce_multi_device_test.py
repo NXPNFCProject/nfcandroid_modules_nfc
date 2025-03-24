@@ -155,14 +155,12 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             start_emulator_fun(*args)
         else:
             if preferred_service is None:
-                self.emulator.nfc_emulator.startSimpleEmulatorActivity(service_list,
-                                                                       expected_service, is_payment,
-                                                                       should_disable_services_on_destroy)
+                self.emulator.nfc_emulator.startSimpleEmulatorActivity(
+                        service_list, expected_service, is_payment,
+                        should_disable_services_on_destroy)
             else:
                 self.emulator.nfc_emulator.startSimpleEmulatorActivityWithPreferredService(
-                    service_list, expected_service, preferred_service, is_payment,
-                    should_disable_services_on_destroy
-                )
+                        service_list, expected_service, preferred_service, is_payment)
 
         if is_payment:
             role_held_handler.waitAndGet('RoleHeld', _NFC_TIMEOUT_SEC)
