@@ -18,7 +18,6 @@ package com.android.nfc.cardemulation;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.os.SystemProperties;
 import android.sysprop.NfcProperties;
 import android.text.TextUtils;
 import android.util.Log;

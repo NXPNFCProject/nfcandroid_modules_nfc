@@ -301,7 +301,7 @@ public class RegisteredAidCache {
             if (componentName.equals(mPreferredForegroundService) &&
                     userId == mUserIdPreferredForegroundService) {
                 matchedForeground = serviceInfo;
-            } else if(mWalletRoleObserver.isWalletRoleFeatureEnabled()) {
+            } else if (mWalletRoleObserver.isWalletRoleFeatureEnabled()) {
                 if (isDefaultOrAssociatedWalletService(serviceInfo, userId)) {
                     roleHolderServices.add(serviceInfo);
                 }
@@ -339,7 +339,7 @@ public class RegisteredAidCache {
             } else {
                 if (DBG) Log.d(TAG, "resolveAidLocked: " + serviceAidInfo.service.getComponent() +
                         " is unselected other service");
-                if(!serviceAidInfo.service.isOnHost()) {
+                if (!serviceAidInfo.service.isOnHost()) {
                     String offHostName = serviceAidInfo.service.getOffHostSecureElement();
                     if (offHostName != null &&
                             !resolveInfo.unCheckedOffHostSecureElement.contains(offHostName)) {
@@ -412,20 +412,20 @@ public class RegisteredAidCache {
         }
     }
 
-    /**
-     * Resolves a conflict between multiple services handling the same
-     * AIDs. Note that the AID itself is not an input to the decision
-     * process - the algorithm just looks at the competing services
-     * and what preferences the user has indicated. In short, it works like
-     * this:
-     *
-     * 1) If there is a preferred foreground service, that service wins
-     * 2) Else if there is a default wallet app, that app wins
-     * 3) Else, if there is a preferred payment service, that service wins
-     * 4) Else, if there is no winner, and all conflicting services will be
-     *    in the list of resolved services.
-     */
-     AidResolveInfo resolveAidConflictLocked(Collection<ServiceAidInfo> conflictingServices,
+   /**
+    * Resolves a conflict between multiple services handling the same
+    * AIDs. Note that the AID itself is not an input to the decision
+    * process - the algorithm just looks at the competing services
+    * and what preferences the user has indicated. In short, it works like
+    * this:
+    *
+    * 1) If there is a preferred foreground service, that service wins
+    * 2) Else if there is a default wallet app, that app wins
+    * 3) Else, if there is a preferred payment service, that service wins
+    * 4) Else, if there is no winner, and all conflicting services will be
+    *    in the list of resolved services.
+    */
+    AidResolveInfo resolveAidConflictLocked(Collection<ServiceAidInfo> conflictingServices,
                                              boolean makeSingleServiceDefault) {
         if (conflictingServices == null || conflictingServices.size() == 0) {
             Log.e(TAG, "resolveAidConflict: No services passed in.");
@@ -438,24 +438,23 @@ public class RegisteredAidCache {
         ApduServiceInfo matchedPayment = null;
         List<ApduServiceInfo> defaultWalletServices = new ArrayList<>();
 
-         // [nfc_w_temp] Implement eSIM
-         List<ServiceAidInfo> filteredServices;
-         if (mPreferredSimType == TelephonyUtils.SIM_TYPE_UNKNOWN) {
-             if (DBG) Log.i(TAG, "Sim based service is removed due to unknown sim type.");
-             filteredServices = conflictingServices.stream().filter(
-                     serviceAidInfo-> {
-                         if (serviceAidInfo.service.isOnHost()) return true;
-                         String offHost = serviceAidInfo.service.getOffHostSecureElement();
-                         if (offHost != null) {
-                             return !offHost.startsWith(RoutingOptionManager.SE_PREFIX_SIM);
-                         }
-                         return false;
-                     }
-             ).collect(Collectors.toList());
-         }
-         else {
-             filteredServices = conflictingServices.stream().collect(Collectors.toList());
-         }
+        // [nfc_w_temp] Implement eSIM
+        List<ServiceAidInfo> filteredServices;
+        if (mPreferredSimType == TelephonyUtils.SIM_TYPE_UNKNOWN) {
+            if (DBG) Log.i(TAG, "Sim based service is removed due to unknown sim type.");
+            filteredServices = conflictingServices.stream().filter(
+                    serviceAidInfo-> {
+                        if (serviceAidInfo.service.isOnHost()) return true;
+                        String offHost = serviceAidInfo.service.getOffHostSecureElement();
+                        if (offHost != null) {
+                            return !offHost.startsWith(RoutingOptionManager.SE_PREFIX_SIM);
+                        }
+                        return false;
+                    }
+            ).collect(Collectors.toList());
+        } else {
+            filteredServices = conflictingServices.stream().collect(Collectors.toList());
+        }
 
         for (ServiceAidInfo serviceAidInfo : filteredServices) {
             boolean serviceClaimsPaymentAid =
@@ -472,7 +471,7 @@ public class RegisteredAidCache {
                     resolveInfo.category = CardEmulation.CATEGORY_PAYMENT;
                 }
                 matchedForeground = serviceAidInfo.service;
-            } else if(mWalletRoleObserver.isWalletRoleFeatureEnabled()) {
+            } else if (mWalletRoleObserver.isWalletRoleFeatureEnabled()) {
                 if (isDefaultOrAssociatedWalletService(serviceAidInfo.service, userId)) {
                     if (VDBG) Log.d(TAG, "Prioritizing default wallet services.");
 
@@ -556,7 +555,7 @@ public class RegisteredAidCache {
             if (componentName.equals(mPreferredForegroundService) &&
                     userId == mUserIdPreferredForegroundService) {
                 defaultServiceInfo.foregroundDefault = serviceAidInfo;
-            } else if(mWalletRoleObserver.isWalletRoleFeatureEnabled()) {
+            } else if (mWalletRoleObserver.isWalletRoleFeatureEnabled()) {
                 if (isDefaultOrAssociatedWalletService(serviceAidInfo.service, userId)) {
                     defaultServiceInfo.walletDefaults.add(serviceAidInfo);
                 }
@@ -619,7 +618,7 @@ public class RegisteredAidCache {
             }
              return resolveinfo;
         } else if (mWalletRoleObserver.isWalletRoleFeatureEnabled()) {
-            if(!aidDefaultInfo.walletDefaults.isEmpty()) {
+            if (!aidDefaultInfo.walletDefaults.isEmpty()) {
                 // Check if any of the conflicting services is foreground default
                 if (conflictingDefaultInfo.foregroundDefault != null) {
                     // Conflicting AID registration is in foreground, trumps prefix tap&pay default
@@ -807,7 +806,7 @@ public class RegisteredAidCache {
     }
 
     ResolvedPrefixConflictAid findPrefixConflictForSubsetAid(String subsetAid ,
-            List<ApduServiceInfo> prefixServices, boolean priorityRootAid){
+            List<ApduServiceInfo> prefixServices, boolean priorityRootAid) {
         ArrayList<String> prefixAids = new ArrayList<String>();
         String minPrefix = null;
         //This functions checks whether there is a prefix AID matching to subset AID
@@ -821,7 +820,7 @@ public class RegisteredAidCache {
             for (String prefixAid : service.getPrefixAids()) {
                 // Cut off "#"
                 String plainPrefix= prefixAid.substring(0, prefixAid.length() - 1);
-                if( plainSubsetAid.startsWith(plainPrefix)) {
+                if (plainSubsetAid.startsWith(plainPrefix)) {
                     if (priorityRootAid) {
                        int userId = UserHandle.getUserHandleForUid(service.getUid())
                                .getIdentifier();
@@ -1078,9 +1077,9 @@ public class RegisteredAidCache {
                             foundChildService |= !childResolveInfo.services.isEmpty();
                         }
                     }
-                    if(resolveInfo.prefixInfo != null &&
-                            resolveInfo.prefixInfo.prefixAid != null &&
-                            !resolveInfo.prefixInfo.matchingSubset) {
+                    if (resolveInfo.prefixInfo != null
+                            && resolveInfo.prefixInfo.prefixAid != null
+                            && !resolveInfo.prefixInfo.matchingSubset) {
                         AidResolveInfo childResolveInfo = resolveAidConflictLocked(
                         mAidServices.get(resolveInfo.prefixInfo.prefixAid), false);
                         mAidCache.put(resolveInfo.prefixInfo.prefixAid, childResolveInfo);
@@ -1168,20 +1167,20 @@ public class RegisteredAidCache {
             if (aid.endsWith("#")) {
                 aidType.aidInfo |= AID_ROUTE_QUAL_SUBSET;
             }
-            if(aid.endsWith("*") || (resolveInfo.prefixInfo != null &&
-                    resolveInfo.prefixInfo.matchingSubset)) {
+            if (aid.endsWith("*") || (resolveInfo.prefixInfo != null
+                    && resolveInfo.prefixInfo.matchingSubset)) {
                 aidType.aidInfo |= AID_ROUTE_QUAL_PREFIX;
             }
             if (resolveInfo.services.isEmpty()) {
                 // No interested services
                 // prevent unchecked offhost aids route to offhostSE
-		        if (!resolveInfo.unCheckedOffHostSecureElement.isEmpty()) {
+                if (!resolveInfo.unCheckedOffHostSecureElement.isEmpty()) {
                     aidType.unCheckedOffHostSE.addAll(resolveInfo.unCheckedOffHostSecureElement);
                     aidType.isOnHost = true;
                     aidType.power = POWER_STATE_SWITCH_ON;
                     routingEntries.put(aid, aidType);
                     force = true;
-		        }
+                }
             } else if (resolveInfo.defaultService != null) {
                 // There is a default service set, route to where that service resides -
                 // either on the host (HCE) or on an SE.
@@ -1391,7 +1390,7 @@ public class RegisteredAidCache {
                     + mPreferredForegroundService + "(" + mUserIdPreferredForegroundService +")" );
                 return false;
             }
-        } else if(mWalletRoleObserver.isWalletRoleFeatureEnabled()) {
+        } else if (mWalletRoleObserver.isWalletRoleFeatureEnabled()) {
             if (isDefaultOrAssociatedWalletPackage(packageName, userId)) {
                 return true;
             } else {

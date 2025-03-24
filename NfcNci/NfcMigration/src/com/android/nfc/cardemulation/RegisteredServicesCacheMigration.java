@@ -388,12 +388,12 @@ public class RegisteredServicesCacheMigration {
     private void readDynamicSettingsLocked() {
         Map<Integer, List<Pair<ComponentName, DynamicSettings>>> readSettingsMap
                 = readDynamicSettingsFromFile(mDynamicSettingsFile);
-        for(Integer userId: readSettingsMap.keySet()) {
+        for (Integer userId: readSettingsMap.keySet()) {
             UserServices services = findOrCreateUserLocked(userId);
             List<Pair<ComponentName, DynamicSettings>> componentNameDynamicServiceStatusPairs
                     = readSettingsMap.get(userId);
             int pairsSize = componentNameDynamicServiceStatusPairs.size();
-            for(int i = 0; i < pairsSize; i++) {
+            for (int i = 0; i < pairsSize; i++) {
                 Pair<ComponentName, DynamicSettings> pair
                         = componentNameDynamicServiceStatusPairs.get(i);
                 services.dynamicSettings.put(pair.first, pair.second);
@@ -489,12 +489,12 @@ public class RegisteredServicesCacheMigration {
     private void readOthersLocked() {
         Map<Integer, List<Pair<ComponentName, OtherServiceStatus>>> readSettingsMap
                 = readOtherFromFile(mOthersFile);
-        for(Integer userId: readSettingsMap.keySet()) {
+        for (Integer userId: readSettingsMap.keySet()) {
             UserServices services = findOrCreateUserLocked(userId);
             List<Pair<ComponentName, OtherServiceStatus>> componentNameOtherServiceStatusPairs
                     = readSettingsMap.get(userId);
             int pairsSize = componentNameOtherServiceStatusPairs.size();
-            for(int i = 0; i < pairsSize; i++) {
+            for (int i = 0; i < pairsSize; i++) {
                 Pair<ComponentName, OtherServiceStatus> pair
                         = componentNameOtherServiceStatusPairs.get(i);
                 services.others.put(pair.first,

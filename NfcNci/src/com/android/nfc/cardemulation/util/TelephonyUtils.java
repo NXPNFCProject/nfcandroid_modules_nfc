@@ -19,7 +19,6 @@ import android.content.Context;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
-import android.telephony.UiccCardInfo;
 import android.util.Log;
 
 import java.util.Collections;

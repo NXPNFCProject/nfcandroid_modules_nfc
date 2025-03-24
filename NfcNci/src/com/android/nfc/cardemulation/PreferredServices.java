@@ -32,13 +32,10 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.UserHandle;
 import android.os.UserManager;
-import android.permission.flags.Flags;
-
 import android.provider.Settings;
 import android.provider.Settings.SettingNotFoundException;
 import android.sysprop.NfcProperties;
 import android.util.Log;
-import android.util.Pair;
 import android.util.proto.ProtoOutputStream;
 
 import com.android.nfc.ForegroundUtils;
@@ -176,7 +173,7 @@ public class PreferredServices implements com.android.nfc.ForegroundUtils.Callba
         List<ApduServiceInfo> serviceInfos = mServiceCache.getInstalledServices(userId);
         List<ComponentName> roleHolderPaymentServices = new ArrayList<>();
         int servicesCount = serviceInfos.size();
-        for(int i = 0; i < servicesCount; i++) {
+        for (int i = 0; i < servicesCount; i++) {
             ApduServiceInfo serviceInfo = serviceInfos.get(i);
             ComponentName componentName = serviceInfo.getComponent();
             if (componentName.getPackageName()
@@ -301,7 +298,7 @@ public class PreferredServices implements com.android.nfc.ForegroundUtils.Callba
                 mForegroundCurrent = preferredService;
                 mForegroundCurrentUid = mForegroundUid;
                 changed = true;
-            } else if (preferredService == null && mForegroundCurrent != null){
+            } else if (preferredService == null && mForegroundCurrent != null) {
                 mForegroundCurrent = preferredService;
                 mForegroundCurrentUid = mForegroundUid;
                 changed = true;
@@ -351,7 +348,7 @@ public class PreferredServices implements com.android.nfc.ForegroundUtils.Callba
             computePreferredForegroundService();
         }
 
-        if(mWalletRoleObserver.isWalletRoleFeatureEnabled()
+        if (mWalletRoleObserver.isWalletRoleFeatureEnabled()
                 && mUserIdDefaultWalletHolder >= 0) {
             PackageAndUser roleHolder = mWalletRoleObserver
                     .getDefaultWalletRoleHolder(mUserIdDefaultWalletHolder);

@@ -19,9 +19,6 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.database.ContentObserver;
-import android.net.Uri;
-import android.provider.Settings;
 import android.telephony.SubscriptionInfo;
 import android.util.Log;
 

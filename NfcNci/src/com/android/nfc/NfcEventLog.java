@@ -25,16 +25,12 @@ import android.util.Log;
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.nfc.proto.NfcEventProto;
 
-import libcore.util.HexEncoding;
-
 import com.google.protobuf.InvalidProtocolBufferException;
 
-import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayDeque;
 

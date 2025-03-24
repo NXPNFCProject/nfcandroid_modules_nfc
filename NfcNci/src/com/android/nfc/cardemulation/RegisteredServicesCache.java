@@ -22,8 +22,6 @@ import static android.nfc.cardemulation.CardEmulation.SET_SERVICE_ENABLED_STATUS
 import static android.nfc.cardemulation.CardEmulation.SET_SERVICE_ENABLED_STATUS_FAILURE_UNKNOWN_ERROR;
 import static android.nfc.cardemulation.CardEmulation.SET_SERVICE_ENABLED_STATUS_OK;
 
-import android.annotation.TargetApi;
-import android.annotation.FlaggedApi;
 import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -57,8 +55,8 @@ import androidx.annotation.VisibleForTesting;
 
 import com.android.internal.annotations.GuardedBy;
 import com.android.internal.util.FastXmlSerializer;
-import com.android.nfc.NfcService;
 import com.android.nfc.NfcInjector;
+import com.android.nfc.NfcService;
 import com.android.nfc.R;
 import com.android.nfc.Utils;
 import com.android.nfc.cardemulation.util.NfcFileUtils;
@@ -76,16 +74,11 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Pattern;
 
 /**
  * This class is inspired by android.content.pm.RegisteredServicesCache
@@ -843,12 +836,12 @@ public class RegisteredServicesCache {
     private void readDynamicSettingsLocked() {
         Map<Integer, List<Pair<ComponentName, DynamicSettings>>> readSettingsMap
                 = readDynamicSettingsFromFile(mDynamicSettingsFile);
-        for(Integer userId: readSettingsMap.keySet()) {
+        for (Integer userId: readSettingsMap.keySet()) {
             UserServices services = findOrCreateUserLocked(userId);
             List<Pair<ComponentName, DynamicSettings>> componentNameDynamicServiceStatusPairs
                     = readSettingsMap.get(userId);
             int pairsSize = componentNameDynamicServiceStatusPairs.size();
-            for(int i = 0; i < pairsSize; i++) {
+            for (int i = 0; i < pairsSize; i++) {
                 Pair<ComponentName, DynamicSettings> pair
                         = componentNameDynamicServiceStatusPairs.get(i);
                 services.dynamicSettings.put(pair.first, pair.second);
@@ -945,12 +938,12 @@ public class RegisteredServicesCache {
     private void readOthersLocked() {
         Map<Integer, List<Pair<ComponentName, OtherServiceStatus>>> readSettingsMap
                 = readOtherFromFile(mOthersFile);
-        for(Integer userId: readSettingsMap.keySet()) {
+        for (Integer userId: readSettingsMap.keySet()) {
             UserServices services = findOrCreateUserLocked(userId);
             List<Pair<ComponentName, OtherServiceStatus>> componentNameOtherServiceStatusPairs
                     = readSettingsMap.get(userId);
             int pairsSize = componentNameOtherServiceStatusPairs.size();
-            for(int i = 0; i < pairsSize; i++) {
+            for (int i = 0; i < pairsSize; i++) {
                 Pair<ComponentName, OtherServiceStatus> pair
                         = componentNameOtherServiceStatusPairs.get(i);
                 services.others.put(pair.first,
@@ -975,7 +968,7 @@ public class RegisteredServicesCache {
                     out.startTag(null, "service");
                     out.attribute(null, "component", service.getKey().flattenToString());
                     out.attribute(null, "uid", Integer.toString(service.getValue().uid));
-                    if(service.getValue().offHostSE != null) {
+                    if (service.getValue().offHostSE != null) {
                         out.attribute(null, "offHostSE", service.getValue().offHostSE);
                     }
                     if (service.getValue().shouldDefaultToObserveModeStr != null) {
@@ -1440,7 +1433,7 @@ public class RegisteredServicesCache {
                     return false;
                 }
                 if (!serviceInfo.removeDynamicAidGroupForCategory(category)) {
-                    Log.e(TAG," Could not find dynamic AIDs for category " + category);
+                    Log.e(TAG, "Could not find dynamic AIDs for category " + category);
                     return false;
                 }
                 // Remove from local cache

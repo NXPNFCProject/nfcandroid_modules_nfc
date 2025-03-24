@@ -18,12 +18,9 @@
 
 package com.android.nfc.wlc;
 
-import android.app.Activity;
 import android.content.Context;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
-import android.nfc.NfcAdapter;
-import android.os.Bundle;
 import android.sysprop.NfcProperties;
 import android.util.Log;
 
@@ -266,8 +263,10 @@ public class NfcCharging {
             try {
                 ndefRecords = mNdefMessage.getRecords();
                 if (ndefRecords != null && ndefRecords.length > 0) {
-                    if (DBG)
-                        Log.d(TAG, "checkWlcCapMsg: number of ndefRecords = " + ndefRecords.length);
+                    if (DBG) {
+                        Log.d(TAG, "checkWlcCapMsg: number of ndefRecords = "
+                                + ndefRecords.length);
+                    }
                     mNdefType = ndefRecords[0].getType();
 
                     if (mNdefType != null) {
@@ -333,13 +332,12 @@ public class NfcCharging {
                         if (Arrays.equals(mNdefType, WLCSTAI)) {
                             checkWlcStaiMsg(mNdefPayload2);
                         } else if (Arrays.equals(mNdefType, USIWLC)) {
-                            if (DBG)
-                                Log.d(
-                                        TAG,
-                                        "mNdefPayload USIWLC = "
-                                                + bytesToHex(mNdefPayload2)
-                                                + " length = "
-                                                + mNdefPayload2.length);
+                            if (DBG) {
+                                Log.d(TAG, "mNdefPayload USIWLC = "
+                                        + bytesToHex(mNdefPayload2)
+                                        + " length = "
+                                        + mNdefPayload2.length);
+                            }
 
                             if (mNdefPayload2.length > 8) {
                                 mVendorId = (mNdefPayload2[8] << 8 | mNdefPayload2[7]) >> 4;
@@ -492,12 +490,12 @@ public class NfcCharging {
     public void sendWLCPI(TagEndpoint tag, NdefMessage ndefMsg) {
         NdefMessage WLCP_INFO =
                 constructWLCPI(
-                        (byte) Ptx,
-                        (byte) 0x00,
-                        (byte) 0x00,
-                        (byte) 0x00,
-                        (byte) 0x00,
-                        (byte) 0x00);
+                    (byte) Ptx,
+                    (byte) 0x00,
+                    (byte) 0x00,
+                    (byte) 0x00,
+                    (byte) 0x00,
+                    (byte) 0x00);
         if (tag.writeNdef(WLCP_INFO.toByteArray())) {
             Log.d(TAG, "Write NDEF success");
         } else {
@@ -608,15 +606,14 @@ public class NfcCharging {
             synchronized (this) {
                 if (DBG) Log.d(TAG, "Starting WLC flow");
                 while (isPresent && !isStopped && !isFull) {
-                    if (DBG)
-                        Log.d(
-                                TAG,
-                                "isPresent= "
-                                        + isPresent
-                                        + " isStopped= "
-                                        + isStopped
-                                        + " isFull= "
-                                        + isFull);
+                    if (DBG) {
+                        Log.d(TAG, "isPresent= "
+                                + isPresent
+                                + " isStopped= "
+                                + isStopped
+                                + " isFull= "
+                                + isFull);
+                    }
                     try {
                         if (watchdogTimeout > 0) {
                             this.wait(watchdogTimeout);
@@ -633,11 +630,10 @@ public class NfcCharging {
             synchronized (NfcCharging.this) {
                 isPresent = false;
                 NfcChargingOnGoing = false;
-                if (DBG)
-                    Log.d(
-                            TAG,
-                            "WLC state machine interrupted, NfcChargingOnGoing is "
-                                    + NfcChargingOnGoing);
+                if (DBG) {
+                    Log.d(TAG, "WLC state machine interrupted, NfcChargingOnGoing is "
+                            + NfcChargingOnGoing);
+                }
                 resetInternalValues();
             }
             mLastState = DISCONNECTED;
@@ -651,8 +647,9 @@ public class NfcCharging {
             TagHandler.disconnect();
             // Disable discovery and restart polling loop only if not screen state change pending
             if (!NfcService.getInstance().sendScreenMessageAfterNfcCharging()) {
-                if (DBG)
+                if (DBG) {
                     Log.d(TAG, "No pending screen state change, stop Nfc charging presence check");
+                }
                 stopNfcChargingPresenceChecking();
             }
 
@@ -682,318 +679,292 @@ public class NfcCharging {
         int wt = 1;
         switch (WLCState) {
             case STATE_2:
-                { // SM2
-                    if (DBG)
-                        Log.d(
-                                TAG,
-                                "HandleWLCState: STATE_2 (" + convert_state_2_str(STATE_2) + ")");
-                    if (mLastState != CONNECTED_CHARGING) {
-                        mLastState = CONNECTED_CHARGING;
-                        WlcDeviceInfo.put(State, mLastState);
-                        NfcService.getInstance().onWlcData(WlcDeviceInfo);
+                // SM2
+                if (DBG) {
+                    Log.d(TAG, "HandleWLCState: STATE_2 (" + convert_state_2_str(STATE_2) + ")");
+                }
+                if (mLastState != CONNECTED_CHARGING) {
+                    mLastState = CONNECTED_CHARGING;
+                    WlcDeviceInfo.put(State, mLastState);
+                    NfcService.getInstance().onWlcData(WlcDeviceInfo);
+                }
+                if (TagHandler != null) {
+                    if (!mFirstOccurrence) {
+                        mNdefMessage = TagHandler.getNdef();
                     }
-                    if (TagHandler != null) {
+                    if (mNdefMessage != null) {
                         if (!mFirstOccurrence) {
-                            mNdefMessage = TagHandler.getNdef();
-                        }
-
-                        if (mNdefMessage != null) {
-                            if (!mFirstOccurrence) {
-                                if (checkWlcCapMsg(mNdefMessage) == false) {
-                                    if (mWatchdogWlc != null) {
-                                        mWatchdogWlc.lost();
-                                    }
-                                    WLCL_Presence = false;
-                                    Log.d(TAG, " WLC_CAP : Presence Check FAILED ");
-                                    break;
+                            if (!checkWlcCapMsg(mNdefMessage)) {
+                                if (mWatchdogWlc != null) {
+                                    mWatchdogWlc.lost();
                                 }
-                            } else {
-                                mFirstOccurrence = false;
-                            }
-
-                            if (WlcCap_ModeReq == MODE_REQ_BATTERY_FULL) {
-                                mWatchdogWlc.full();
-                                NfcChargingOnGoing = false;
-                                if (DBG)
-                                    Log.d(
-                                            TAG,
-                                            "MODE_REQ is BATTERY_FULL, NfcChargingOnGoing is "
-                                                    + NfcChargingOnGoing);
-                                wt = TCapWt;
-
-                                WLCState = STATE_24;
-                                WlcDeviceInfo.put(BatteryLevel, 0x64);
-                                mUpdatedBatteryLevel = WlcDeviceInfo.get(BatteryLevel);
-                                WlcDeviceInfo.put(State, mLastState);
-                                mLastState = CONNECTED_NOT_CHARGING;
-                                NfcService.getInstance().onWlcData(WlcDeviceInfo);
-                                if (DBG) Log.d(TAG, " Battery full");
-                                break;
-
-                            } else if (WlcCap_ModeReq == MODE_REQ_STATIC
-                                    || mNativeNfcManager.isMultiTag() == true) {
-                                if (DBG) Log.d(TAG, " Static mode");
-                                wt = 0; // TCapWt;
-
-                                WLCState = STATE_6;
-                                break;
-
-                            } else {
-                                if (DBG) Log.d(TAG, " Negotiated mode");
-                                wt = 5;
-
-                                WLCState = STATE_8;
+                                WLCL_Presence = false;
+                                Log.d(TAG, " WLC_CAP : Presence Check FAILED ");
                                 break;
                             }
                         } else {
-                            if (mWatchdogWlc != null) {
-                                mWatchdogWlc.lost();
-                            }
-                            WLCL_Presence = false;
-                            if (DBG) Log.d(TAG, " WLC_CAP: Presence Check FAILED");
+                            mFirstOccurrence = false;
                         }
+                        if (WlcCap_ModeReq == MODE_REQ_BATTERY_FULL) {
+                            mWatchdogWlc.full();
+                            NfcChargingOnGoing = false;
+                            if (DBG) {
+                                Log.d(TAG, "MODE_REQ is BATTERY_FULL, NfcChargingOnGoing is "
+                                            + NfcChargingOnGoing);
+                            }
+                            wt = TCapWt;
+                            WLCState = STATE_24;
+                            WlcDeviceInfo.put(BatteryLevel, 0x64);
+                            mUpdatedBatteryLevel = WlcDeviceInfo.get(BatteryLevel);
+                            WlcDeviceInfo.put(State, mLastState);
+                            mLastState = CONNECTED_NOT_CHARGING;
+                            NfcService.getInstance().onWlcData(WlcDeviceInfo);
+                            if (DBG) Log.d(TAG, " Battery full");
+                            break;
+
+                        } else if (WlcCap_ModeReq == MODE_REQ_STATIC
+                                || mNativeNfcManager.isMultiTag()) {
+                            if (DBG) Log.d(TAG, " Static mode");
+                            wt = 0; // TCapWt;
+
+                            WLCState = STATE_6;
+                            break;
+
+                        } else {
+                            if (DBG) Log.d(TAG, " Negotiated mode");
+                            wt = 5;
+
+                            WLCState = STATE_8;
+                            break;
+                        }
+                    } else {
+                        if (mWatchdogWlc != null) {
+                            mWatchdogWlc.lost();
+                        }
+                        WLCL_Presence = false;
+                        if (DBG) Log.d(TAG, " WLC_CAP: Presence Check FAILED");
                     }
-                    break;
                 }
+                break;
 
             case STATE_6:
-                { // SM6
-                    if (DBG)
-                        Log.d(
-                                TAG,
-                                "HandleWLCState: STATE_6 (" + convert_state_2_str(STATE_6) + ")");
-
-                    WLCState = STATE_2;
-                    wt = TCapWt + 5000;
-                    startWlcPowerTransfer(WlcCtl_PowerAdjReq, WlcCap_CapWt);
-                    break;
+                // SM6
+                if (DBG) {
+                    Log.d(TAG, "HandleWLCState: STATE_6 (" + convert_state_2_str(STATE_6) + ")");
                 }
+
+                WLCState = STATE_2;
+                wt = TCapWt + 5000;
+                startWlcPowerTransfer(WlcCtl_PowerAdjReq, WlcCap_CapWt);
+                break;
 
             case STATE_8:
-                { // SM8
-                    if (DBG)
-                        Log.d(
-                                TAG,
-                                "HandleWLCState: STATE_8 (" + convert_state_2_str(STATE_8) + ")");
-
-                    if (WlcCap_NegoWait == 1) {
-                        if (mNretry > Nwt_max) {
-                            if (mWatchdogWlc != null) {
-                                mWatchdogWlc.lost();
-                            }
-                            WLCL_Presence = false;
-                            if (DBG) Log.d(TAG, " WLCCAP :too much retry, conclude procedure ");
-                            WLCState = STATE_2;
-                            wt = 1;
-                            break;
-                        } else {
-                            mNretry += 1;
-                            if (DBG) Log.d(TAG, "mNretry = " + mNretry);
-                            wt = TCapWt;
-                            WLCState = STATE_2;
-                            break;
-                        }
-                    }
-                    WLCState = STATE_11;
-                    wt = 5;
-
-                    break;
+                // SM8
+                if (DBG) {
+                    Log.d(TAG, "HandleWLCState: STATE_8 (" + convert_state_2_str(STATE_8) + ")");
                 }
+
+                if (WlcCap_NegoWait == 1) {
+                    if (mNretry > Nwt_max) {
+                        if (mWatchdogWlc != null) {
+                            mWatchdogWlc.lost();
+                        }
+                        WLCL_Presence = false;
+                        if (DBG) Log.d(TAG, " WLCCAP :too much retry, conclude procedure ");
+                        WLCState = STATE_2;
+                        wt = 1;
+                        break;
+                    } else {
+                        mNretry += 1;
+                        if (DBG) Log.d(TAG, "mNretry = " + mNretry);
+                        wt = TCapWt;
+                        WLCState = STATE_2;
+                        break;
+                    }
+                }
+                WLCState = STATE_11;
+                wt = 5;
+
+                break;
 
             case STATE_11:
-                { // SM11
-                    if (DBG)
-                        Log.d(
-                                TAG,
-                                "HandleWLCState: STATE_11 (" + convert_state_2_str(STATE_11) + ")");
-
-                    sendWLCPI(TagHandler, null);
-                    if (DBG) Log.d(TAG, "end writing WLCP_INFO");
-                    wt = TNdefRdWt + 20;
-                    WLCState = STATE_12;
-                    break;
+                // SM11
+                if (DBG) {
+                    Log.d(TAG, "HandleWLCState: STATE_11 (" + convert_state_2_str(STATE_11) + ")");
                 }
+                sendWLCPI(TagHandler, null);
+                if (DBG) Log.d(TAG, "end writing WLCP_INFO");
+                wt = TNdefRdWt + 20;
+                WLCState = STATE_12;
+                break;
 
             case STATE_12:
-                { // SM12-SM15
-                    if (DBG)
-                        Log.d(
-                                TAG,
-                                "HandleWLCState: STATE_12 (" + convert_state_2_str(STATE_12) + ")");
+                // SM12-SM15
+                if (DBG) {
+                    Log.d(TAG, "HandleWLCState: STATE_12 ("
+                            + convert_state_2_str(STATE_12) + ")");
+                }
 
-                    if (TagHandler != null) {
-                        mNdefMessage = TagHandler.getNdef();
-                        if (mNdefMessage != null) {
-                            if (checkWlcCtlMsg(mNdefMessage)) {
-                                if (DBG)
-                                    Log.d(
-                                            TAG,
-                                            " WlcCtl_Cnt_new: "
-                                                    + WlcCtl_Cnt_new
-                                                    + "(mCnt +1)%8) = "
-                                                    + ((mCnt + 1) % 7));
+                if (TagHandler != null) {
+                    mNdefMessage = TagHandler.getNdef();
+                    if (mNdefMessage != null) {
+                        if (checkWlcCtlMsg(mNdefMessage)) {
+                            if (DBG) {
+                                Log.d(TAG, " WlcCtl_Cnt_new: "
+                                        + WlcCtl_Cnt_new
+                                        + "(mCnt +1)%8) = "
+                                        + ((mCnt + 1) % 7));
+                            }
 
-                                if (mCnt == -1) {
-                                    mCnt = WlcCtl_Cnt_new;
-                                } else if (WlcCtl_Cnt_new == mCnt) {
-                                    if (mNwcc_retry < 3) {
-                                        wt = 30; // Twcc,retry
-                                        mNwcc_retry++;
-                                        break;
-                                    } else if (mNwcc_retry == 3) {
-                                        // go to error
-                                        if (DBG) Log.d(TAG, " WLCL_CTL : Max mNwcc_retry reached");
-                                        mNwcc_retry = 0;
-                                        if (mWatchdogWlc != null) {
-                                            mWatchdogWlc.lost();
-                                        }
-                                        break;
-                                    }
-                                }
-                                mNwcc_retry = 0;
+                            if (mCnt == -1) {
                                 mCnt = WlcCtl_Cnt_new;
-                                if (WlcCap_RdConf == 1) {
-                                    WLCState = STATE_16;
-                                    wt = TNdefWrWt;
-                                    break;
-                                }
-                                wt = 1;
-                                WLCState = STATE_17;
-                            } else {
+                            } else if (WlcCtl_Cnt_new == mCnt) {
                                 if (mNwcc_retry < 3) {
                                     wt = 30; // Twcc,retry
                                     mNwcc_retry++;
                                     break;
                                 } else if (mNwcc_retry == 3) {
                                     // go to error
-                                    if (DBG)
-                                        Log.d(TAG, " WLCL_CTL not valid: Max mNwcc_retry reached");
+                                    if (DBG) Log.d(TAG, " WLCL_CTL : Max mNwcc_retry reached");
                                     mNwcc_retry = 0;
                                     if (mWatchdogWlc != null) {
                                         mWatchdogWlc.lost();
                                     }
                                     break;
                                 }
-
-                                WLCL_Presence = false;
-                                if (DBG) Log.d(TAG, " WLCL_CTL : Presence Check Failed ");
                             }
+                            mNwcc_retry = 0;
+                            mCnt = WlcCtl_Cnt_new;
+                            if (WlcCap_RdConf == 1) {
+                                WLCState = STATE_16;
+                                wt = TNdefWrWt;
+                                break;
+                            }
+                            wt = 1;
+                            WLCState = STATE_17;
                         } else {
-                            // no more tag
-                            if (mWatchdogWlc != null) {
-                                mWatchdogWlc.lost();
+                            if (mNwcc_retry < 3) {
+                                wt = 30; // Twcc,retry
+                                mNwcc_retry++;
+                                break;
+                            } else if (mNwcc_retry == 3) {
+                                // go to error
+                                if (DBG) {
+                                    Log.d(TAG, " WLCL_CTL not valid: Max mNwcc_retry reached");
+                                }
+                                mNwcc_retry = 0;
+                                if (mWatchdogWlc != null) {
+                                    mWatchdogWlc.lost();
+                                }
+                                break;
                             }
+
                             WLCL_Presence = false;
                             if (DBG) Log.d(TAG, " WLCL_CTL : Presence Check Failed ");
                         }
                     } else {
-                        // conclude - go to error
+                        // no more tag
+                        if (mWatchdogWlc != null) {
+                            mWatchdogWlc.lost();
+                        }
+                        WLCL_Presence = false;
+                        if (DBG) Log.d(TAG, " WLCL_CTL : Presence Check Failed ");
                     }
-                    break;
+                } else {
+                    // conclude - go to error
                 }
+                break;
 
             case STATE_16:
-                { // SM16
-                    if (DBG)
-                        Log.d(
-                                TAG,
-                                "HandleWLCState: STATE_16 (" + convert_state_2_str(STATE_16) + ")");
-
-                    sendEmptyNdef();
-                    WLCState = STATE_17;
-                    wt = 1;
-                    break;
+                // SM16
+                if (DBG) {
+                    Log.d(TAG, "HandleWLCState: STATE_16 (" + convert_state_2_str(STATE_16) + ")");
                 }
+
+                sendEmptyNdef();
+                WLCState = STATE_17;
+                wt = 1;
+                break;
 
             case STATE_17:
-                { // SM17
-                    if (DBG)
-                        Log.d(
-                                TAG,
-                                "HandleWLCState: STATE_17 (" + convert_state_2_str(STATE_17) + ")");
+                // SM17
+                if (DBG) {
+                    Log.d(TAG, "HandleWLCState: STATE_17 (" + convert_state_2_str(STATE_17) + ")");
+                }
 
-                    if (WlcCtl_WptReq == 0x0) {
-                        // No Power transfer Required
-                        if (DBG) Log.d(TAG, "No power transfer required");
-                        // go to presence check SM24
-                        WLCState = STATE_24;
-                        wt = TWptDuration;
-                        if (TWptDuration > 4000) {
-                            TagHandler.startPresenceChecking(200, callbackTagDisconnection);
-                        }
-                        break;
+                if (WlcCtl_WptReq == 0x0) {
+                    // No Power transfer Required
+                    if (DBG) Log.d(TAG, "No power transfer required");
+                    // go to presence check SM24
+                    WLCState = STATE_24;
+                    wt = TWptDuration;
+                    if (TWptDuration > 4000) {
+                        TagHandler.startPresenceChecking(200, callbackTagDisconnection);
                     }
-
-                    // Adjust WPT
-                    WLCState = STATE_21;
-                    wt = 1 + THoldOffWt;
                     break;
                 }
+
+                // Adjust WPT
+                WLCState = STATE_21;
+                wt = 1 + THoldOffWt;
+                break;
 
             case STATE_21:
-                { // SM21
-                    if (DBG)
-                        Log.d(
-                                TAG,
-                                "HandleWLCState: STATE_21 (" + convert_state_2_str(STATE_21) + ")");
-
-                    startWlcPowerTransfer(WlcCtl_PowerAdjReq, WlcCtl_WptDuration);
-                    WLCState = STATE_22;
-                    wt = TWptDuration + 5000;
-                    break;
+                // SM21
+                if (DBG) {
+                    Log.d(TAG, "HandleWLCState: STATE_21 (" + convert_state_2_str(STATE_21) + ")");
                 }
+                startWlcPowerTransfer(WlcCtl_PowerAdjReq, WlcCtl_WptDuration);
+                WLCState = STATE_22;
+                wt = TWptDuration + 5000;
+                break;
 
             case STATE_22:
-                { // SM22
-                    if (DBG)
-                        Log.d(
-                                TAG,
-                                "HandleWLCState: STATE_22 (" + convert_state_2_str(STATE_22) + ")");
-
-                    if (WlcCtl_WptInfoReq == 1) {
-                        WLCState = STATE_11;
-                        break;
-                    }
-                    WLCState = STATE_12;
-                    wt = 0;
+                // SM22
+                if (DBG) {
+                    Log.d(TAG, "HandleWLCState: STATE_22 (" + convert_state_2_str(STATE_22) + ")");
+                }
+                if (WlcCtl_WptInfoReq == 1) {
+                    WLCState = STATE_11;
                     break;
                 }
+                WLCState = STATE_12;
+                wt = 0;
+                break;
 
             case STATE_24:
-                { // SM24
-                    if (DBG)
-                        Log.d(
-                                TAG,
-                                "HandleWLCState: STATE_24 (" + convert_state_2_str(STATE_24) + ")");
-
-                    TagHandler.stopPresenceChecking();
-                    WLCState = STATE_2;
-                    NfcChargingOnGoing = false;
-                    if (mWatchdogWlc != null) {
-                        mWatchdogWlc.lost();
-                    }
-                    wt = 1;
-                    break;
+                // SM24
+                if (DBG) {
+                    Log.d(TAG, "HandleWLCState: STATE_24 (" + convert_state_2_str(STATE_24) + ")");
                 }
+
+                TagHandler.stopPresenceChecking();
+                WLCState = STATE_2;
+                NfcChargingOnGoing = false;
+                if (mWatchdogWlc != null) {
+                    mWatchdogWlc.lost();
+                }
+                wt = 1;
+                break;
+
             case STATE_21_1:
-                { // Stop WPT
-                    if (DBG) Log.d(TAG, "HandleWLCState Time completed");
-                    WLCState = STATE_22;
-                    wt = 0;
-                    break;
-                }
-            case STATE_21_2:
-                { // Stop WPT
-                    if (DBG) Log.d(TAG, "HandleWLCState: STATE_21_2 (exit)");
-                    WLCState = STATE_2;
-                    NfcChargingOnGoing = false;
+                // Stop WPT
+                if (DBG) Log.d(TAG, "HandleWLCState Time completed");
+                WLCState = STATE_22;
+                wt = 0;
+                break;
 
-                    if (mWatchdogWlc != null) {
-                        mWatchdogWlc.lost();
-                    }
-                    wt = 0;
-                    break;
+            case STATE_21_2:
+                // Stop WPT
+                if (DBG) Log.d(TAG, "HandleWLCState: STATE_21_2 (exit)");
+                WLCState = STATE_2;
+                NfcChargingOnGoing = false;
+
+                if (mWatchdogWlc != null) {
+                    mWatchdogWlc.lost();
                 }
+                wt = 0;
+                break;
         }
 
         return wt;
@@ -1055,7 +1026,7 @@ public class NfcCharging {
         mWatchdogWlc.setTimeout(0);
         WLCState = STATE_2;
         mWatchdogWlc.interrupt();
-      }
+    }
 
     public String convert_state_2_str(int state) {
         switch (state) {
