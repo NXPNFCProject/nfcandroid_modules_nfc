@@ -448,6 +448,17 @@ class NfcTag {
 
   /*******************************************************************************
   **
+  ** Function:        getMultiProtocolTagSupport
+  **
+  ** Description:     get mIsMultiProtocolTag
+  **
+  ** Returns:         mIsMultiProtocolTag
+  **
+  *******************************************************************************/
+  bool getMultiProtocolTagSupport();
+
+  /*******************************************************************************
+  **
   ** Function:        setNumDiscNtf
   **
   ** Description:     Update mNumDiscNtf

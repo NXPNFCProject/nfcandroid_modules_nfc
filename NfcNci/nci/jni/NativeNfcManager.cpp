@@ -268,6 +268,16 @@ static void handleRfDiscoveryEvent(tNFC_RESULT_DEVT* discoveredDevice) {
 
   LOG(DEBUG) << StringPrintf("%s: ", __func__);
 
+  if (gIsSelectingRfInterface && !natTag.getMultiProtocolTagSupport()) {
+    if (discoveredDevice->more == NCI_DISCOVER_NTF_MORE) return;
+    LOG(WARNING) << StringPrintf(
+        "%s: reselecting, mismatch in nb of detected interfaces, "
+        "restarting discovery",
+        __func__);
+    nativeNfcTag_doConnectStatus(false);
+    natTag.setReselect(false);
+    NFA_Deactivate(FALSE);
+  }
   if (discoveredDevice->protocol != NFA_PROTOCOL_NFC_DEP) {
     natTag.setNumDiscNtf(natTag.getNumDiscNtf() + 1);
   }
@@ -508,7 +518,7 @@ static void nfaConnectionCallback(uint8_t connEvent,
           "%s: NFA_DEACTIVATED_EVT   Type=%u, gIsTagDeactivating=%d", __func__,
           eventData->deactivated.type, gIsTagDeactivating);
       NfcTag::getInstance().setDeactivationState(eventData->deactivated);
-      NfcTag::getInstance().selectNextTagIfExists();
+
       if (eventData->deactivated.type != NFA_DEACTIVATE_TYPE_SLEEP) {
         {
           SyncEventGuard g(gDeactivatedEvent);
@@ -522,6 +532,8 @@ static void nfaConnectionCallback(uint8_t connEvent,
       } else if (gIsTagDeactivating) {
         NfcTag::getInstance().setActive(false);
         nativeNfcTag_doDeactivateStatus(0);
+      } else if (!sIsDisabling) {
+        NfcTag::getInstance().selectNextTagIfExists();
       }
 
       // If RF is activated for what we think is a Secure Element transaction
