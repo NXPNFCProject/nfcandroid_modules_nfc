@@ -35,7 +35,6 @@
 #include "NfcJniUtil.h"
 #include "NfcTag.h"
 #include "NfceeManager.h"
-#include "PowerSwitch.h"
 #include "RoutingManager.h"
 #include "SyncEvent.h"
 #include "android_nfc.h"
@@ -994,7 +993,6 @@ void nfaDeviceManagementCallback(uint8_t dmEvent,
         }
         sDiscoveryEnabled = false;
         sPollingEnabled = false;
-        PowerSwitch::getInstance().abort();
 
         if (!sIsDisabling && sIsNfaEnabled) {
           if (gIsDtaEnabled == true) {
@@ -1009,7 +1007,6 @@ void nfaDeviceManagementCallback(uint8_t dmEvent,
           sIsNfaEnabled = false;
           sIsDisabling = false;
         }
-        PowerSwitch::getInstance().initialize(PowerSwitch::UNKNOWN_LEVEL);
         LOG(ERROR) << StringPrintf("%s: crash NFC service", __func__);
         if (nat != NULL) {
           JNIEnv* e = NULL;
@@ -1025,10 +1022,6 @@ void nfaDeviceManagementCallback(uint8_t dmEvent,
         //////////////////////////////////////////////
       }
     } break;
-
-    case NFA_DM_PWR_MODE_CHANGE_EVT:
-      PowerSwitch::getInstance().deviceManagementCallback(dmEvent, eventData);
-      break;
 
     case NFA_DM_SET_POWER_SUB_STATE_EVT: {
       LOG(DEBUG) << StringPrintf(
@@ -1537,8 +1530,6 @@ static jboolean nfcManager_doInitialize(JNIEnv* e, jobject o) {
 
   struct nfc_jni_native_data* nat = getNative(e, o);
 
-  PowerSwitch& powerSwitch = PowerSwitch::getInstance();
-
   if (sIsNfaEnabled) {
     LOG(DEBUG) << StringPrintf("%s: already enabled", __func__);
     goto TheEnd;
@@ -1546,7 +1537,6 @@ static jboolean nfcManager_doInitialize(JNIEnv* e, jobject o) {
   if (gPartialInitMode != ENABLE_MODE_DEFAULT) {
     return doPartialInit();
   }
-  powerSwitch.initialize(PowerSwitch::FULL_POWER);
 
   {
 
@@ -1649,9 +1639,6 @@ static jboolean nfcManager_doInitialize(JNIEnv* e, jobject o) {
   }
 
 TheEnd:
-  if (sIsNfaEnabled) {
-    PowerSwitch::getInstance().setLevel(PowerSwitch::LOW_POWER);
-  }
   LOG(DEBUG) << StringPrintf("%s: exit", __func__);
   return sIsNfaEnabled ? JNI_TRUE : JNI_FALSE;
 }
@@ -1769,8 +1756,6 @@ static void nfcManager_enableDiscovery(JNIEnv* e, jobject o,
     return;
   }
 
-  PowerSwitch::getInstance().setLevel(PowerSwitch::FULL_POWER);
-
   if (sRfEnabled) {
     // Stop RF discovery to reconfigure
     startRfDiscovery(false);
@@ -1835,8 +1820,6 @@ static void nfcManager_enableDiscovery(JNIEnv* e, jobject o,
   startRfDiscovery(true);
   sDiscoveryEnabled = true;
 
-  PowerSwitch::getInstance().setModeOn(PowerSwitch::DISCOVERY);
-
   LOG(DEBUG) << StringPrintf("%s: exit", __func__);
 }
 
@@ -1865,9 +1848,6 @@ void nfcManager_disableDiscovery(JNIEnv* e, jobject o) {
   sDiscoveryEnabled = false;
   if (sPollingEnabled) status = stopPolling_rfDiscoveryDisabled();
 
-  // if nothing is active after this, then tell the controller to power down
-  if (!PowerSwitch::getInstance().setModeOff(PowerSwitch::DISCOVERY))
-    PowerSwitch::getInstance().setLevel(PowerSwitch::LOW_POWER);
 TheEnd:
   LOG(DEBUG) << StringPrintf("%s: exit: Status = 0x%X", __func__, status);
 }
@@ -1932,7 +1912,6 @@ static jboolean nfcManager_doDeinitialize(JNIEnv*, jobject) {
   if (!recovery_option || !sIsRecovering) {
     RoutingManager::getInstance().onNfccShutdown();
   }
-  PowerSwitch::getInstance().initialize(PowerSwitch::UNKNOWN_LEVEL);
   HciEventManager::getInstance().finalize();
 
   if (sIsNfaEnabled) {
@@ -2748,9 +2727,6 @@ static JNINativeMethod gMethods[] = {
 **
 *******************************************************************************/
 int register_com_android_nfc_NativeNfcManager(JNIEnv* e) {
-  LOG(DEBUG) << StringPrintf("%s: enter", __func__);
-  PowerSwitch::getInstance().initialize(PowerSwitch::UNKNOWN_LEVEL);
-  LOG(DEBUG) << StringPrintf("%s: exit", __func__);
   return jniRegisterNativeMethods(e, gNativeNfcManagerClassName, gMethods,
                                   NELEM(gMethods));
 }
