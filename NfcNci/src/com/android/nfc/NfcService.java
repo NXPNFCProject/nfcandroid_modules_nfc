@@ -4859,12 +4859,20 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                         if (mState == NfcAdapter.STATE_OFF
                                 || mState == NfcAdapter.STATE_TURNING_OFF) {
                             Log.d(TAG, "Skip commit routing when NFCC is off or turning off");
+                            if (mCommitRoutingCountDownLatch != null) {
+                                mCommitRoutingStatus = STATUS_UNKNOWN_ERROR;
+                                mCommitRoutingCountDownLatch.countDown();
+                            }
                             return;
                         }
                         if (mCurrentDiscoveryParameters.shouldEnableDiscovery()) {
                             if (mNfcOemExtensionCallback != null) {
                                 if (receiveOemCallbackResult(ACTION_ON_ROUTING_CHANGED)) {
                                     Log.e(TAG, "Oem skip commitRouting");
+                                    if (mCommitRoutingCountDownLatch != null) {
+                                        mCommitRoutingStatus = STATUS_UNKNOWN_ERROR;
+                                        mCommitRoutingCountDownLatch.countDown();
+                                    }
                                     return;
                                 }
                             }
