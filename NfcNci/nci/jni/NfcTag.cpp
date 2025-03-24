@@ -235,7 +235,6 @@ uint32_t TimeDiff(timespec start, timespec end) {
 *******************************************************************************/
 bool NfcTag::IsSameKovio(tNFA_ACTIVATED& activationData) {
   static const char fn[] = "NfcTag::IsSameKovio";
-  LOG(DEBUG) << StringPrintf("%s: enter", fn);
   tNFC_ACTIVATE_DEVT& rfDetail = activationData.activate_ntf;
 
   if (rfDetail.protocol != NFC_PROTOCOL_KOVIO) return false;
@@ -267,7 +266,7 @@ bool NfcTag::IsSameKovio(tNFA_ACTIVATED& activationData) {
     memcpy(mLastKovioUid, mTechParams[0].param.pk.uid, mLastKovioUidLen);
   }
   mLastKovioTime = now;
-  LOG(DEBUG) << StringPrintf("%s: exit, is same Kovio=%d", fn, rVal);
+  LOG(DEBUG) << StringPrintf("%s: is same Kovio=%d", fn, rVal);
   return rVal;
 }
 
@@ -360,7 +359,7 @@ void NfcTag::discoverTechnologies(tNFA_ACTIVATED& activationData) {
       // 2^MIN_FWI * 256 * 16 * 1000 / 13560000 is approximately 618
       int fwt = (1 << (fwi - MIN_FWI)) * 618;
       LOG(DEBUG) << StringPrintf(
-          "%s; Setting the transceive timeout = %d(x2), fwi = %0#x", fn, fwt,
+          "%s:  Setting the transceive timeout = %d(x2), fwi = %0#x", fn, fwt,
           fwi);
       setTransceiveTimeout(mTechList[index], fwt * 2);
     }
@@ -414,14 +413,14 @@ void NfcTag::discoverTechnologies(tNFA_ACTIVATED& activationData) {
         (rfDetail.rf_tech_param.mode == NFC_DISCOVERY_TYPE_POLL_B)) {
       mTechHandles[index] = rfDetail.rf_disc_id;
       mTechLibNfcTypes[index] = rfDetail.protocol;
-      LOG(DEBUG) << StringPrintf("%s; Tech type B, unknown ", fn);
+      LOG(DEBUG) << StringPrintf("%s:  Tech type B, unknown ", fn);
       mTechList[index] =
           TARGET_TYPE_ISO14443_3B;  // is TagTechnology.NFC_B by Java API
       // save the stack's data structure for interpretation later
       memcpy(&(mTechParams[index]), &(rfDetail.rf_tech_param),
              sizeof(rfDetail.rf_tech_param));
     } else {
-      LOG(ERROR) << StringPrintf("%s; unknown protocol ????", fn);
+      LOG(ERROR) << StringPrintf("%s:  unknown protocol ????", fn);
       mTechList[index] = TARGET_TYPE_UNKNOWN;
     }
   }
@@ -475,7 +474,7 @@ void NfcTag::discoverTechnologies(tNFA_DISC_RESULT& discoveryData) {
                                  mTechLibNfcTypesDiscData[i]);
     }
   }
-  LOG(DEBUG) << StringPrintf("%s; mNumDiscTechList=%x", fn, mNumDiscTechList);
+  LOG(DEBUG) << StringPrintf("%s:  mNumDiscTechList=%x", fn, mNumDiscTechList);
   mNumRfDiscId = discovery_ntf.rf_disc_id;
 TheEnd:
   LOG(DEBUG) << StringPrintf("%s: exit", fn);
@@ -540,7 +539,7 @@ void NfcTag::createNativeNfcTag(tNFA_ACTIVATED& activationData) {
   }
   mNativeData->tag = mJniEnv->NewGlobalRef(tag.get());
 
-  LOG(DEBUG) << StringPrintf("%s; mNumDiscNtf=%x", fn, mNumDiscNtf);
+  LOG(DEBUG) << StringPrintf("%s:  mNumDiscNtf=%x", fn, mNumDiscNtf);
 
   if (!mNumDiscNtf) {
     // notify NFC service about this new tag
@@ -696,7 +695,7 @@ void NfcTag::fillNativeNfcTagMembers3(JNIEnv* e, jclass tag_cls, jobject tag,
   }
 
   for (int i = mTechListTail; i < mNumTechList; i++) {
-    LOG(DEBUG) << StringPrintf("%s: index=%d; rf tech params mode=%u", fn, i,
+    LOG(DEBUG) << StringPrintf("%s: index=%d; rf tech params mode=%x", fn, i,
                                mTechParams[i].mode);
     if (NFC_DISCOVERY_TYPE_POLL_A == mTechParams[i].mode ||
         NFC_DISCOVERY_TYPE_LISTEN_A == mTechParams[i].mode) {
@@ -955,7 +954,7 @@ void NfcTag::fillNativeNfcTagMembers4(JNIEnv* e, jclass tag_cls, jobject tag,
     } else {
       if ((NCI_PROTOCOL_UNKNOWN == mTechLibNfcTypes[i]) &&
           (mTechParams[i].mode == NFC_DISCOVERY_TYPE_POLL_B)) {
-        LOG(DEBUG) << StringPrintf("%s; Chinese Id Card - MBI = %02X", fn,
+        LOG(DEBUG) << StringPrintf("%s:  Chinese Id Card - MBI = %02X", fn,
                                    activationData.params.ci.mbi);
         actBytes.reset(e->NewByteArray(1));
         e->SetByteArrayRegion(actBytes.get(), 0, 1,
@@ -1055,7 +1054,7 @@ void NfcTag::fillNativeNfcTagMembers5(JNIEnv* e, jclass tag_cls, jobject tag,
   e->SetObjectField(tag, f, uid.get());
   mTechListTail = mNumTechList;
   if (mNumDiscNtf == 0) mTechListTail = 0;
-  LOG(DEBUG) << StringPrintf("%s;mTechListTail=%x", fn, mTechListTail);
+  LOG(DEBUG) << StringPrintf("%s: mTechListTail=%x", fn, mTechListTail);
 }
 
 /*******************************************************************************
@@ -1475,16 +1474,16 @@ bool NfcTag::isNdefDetectionTimedOut() { return mNdefDetectionTimedOut; }
 void NfcTag::notifyTagDiscovered(bool discovered) {
   ScopedAttach attach(mNativeData->vm, &mJniEnv);
   if (mJniEnv == NULL) {
-    LOG(ERROR) << "jni env is null";
+    LOG(ERROR) << __func__ << ": jni env is null";
     return;
   }
-  LOG(DEBUG) << StringPrintf("%s: %d", __func__, discovered);
+  LOG(DEBUG) << StringPrintf("%s: discovered=%d", __func__, discovered);
   mJniEnv->CallVoidMethod(mNativeData->manager,
                           android::gCachedNfcManagerNotifyTagDiscovered,
                           discovered);
   if (mJniEnv->ExceptionCheck()) {
     mJniEnv->ExceptionClear();
-    LOG(ERROR) << StringPrintf("fail notify");
+    LOG(ERROR) << StringPrintf("%s: fail notify", __func__);
   }
 }
 
@@ -1623,7 +1622,7 @@ int NfcTag::getTransceiveTimeout(int techId) {
   if ((techId > 0) && (techId < (int)mTechnologyTimeoutsTable.size()))
     retval = mTechnologyTimeoutsTable[techId];
   else
-    LOG(ERROR) << StringPrintf("%s: invalid tech=%d", fn, techId);
+    LOG(ERROR) << StringPrintf("%s: invalid tech=%x", fn, techId);
   return retval;
 }
 
@@ -1644,7 +1643,7 @@ void NfcTag::setTransceiveTimeout(int techId, int timeout) {
   if ((techId >= 0) && (techId < (int)mTechnologyTimeoutsTable.size()))
     mTechnologyTimeoutsTable[techId] = timeout;
   else
-    LOG(ERROR) << StringPrintf("%s: invalid tech=%d", fn, techId);
+    LOG(ERROR) << StringPrintf("%s: invalid tech=%x", fn, techId);
 }
 
 /*******************************************************************************

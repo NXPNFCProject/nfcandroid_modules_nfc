@@ -68,47 +68,47 @@ NfcVendorExtn* NfcVendorExtn::getInstance() {
 }
 
 void NfcExtn_LibInit() {
-  LOG(VERBOSE) << StringPrintf("%s Enter", __func__);
+  LOG(VERBOSE) << __func__;
   if (fp_extn_init != NULL) {
     if (!fp_extn_init(NfcVendorExtn::getInstance()->getVendorExtnCb())) {
-      LOG(ERROR) << StringPrintf("%s : %s failed!", __func__,
+      LOG(ERROR) << StringPrintf("%s: %s failed!", __func__,
                                  vendor_nfc_init_name.c_str());
     }
   }
 }
 
 bool NfcExtn_LibSetup() {
-  LOG(VERBOSE) << StringPrintf("%s Enter", __func__);
+  LOG(VERBOSE) << __func__;
   p_oem_extn_handle = dlopen(mLibPathName.c_str(), RTLD_NOW);
   if (p_oem_extn_handle == NULL) {
     LOG(DEBUG) << StringPrintf(
-        "%s Error : opening (%s) !! dlerror: "
+        "%s: Error : opening (%s) !! dlerror: "
         "%s",
         __func__, mLibPathName.c_str(), dlerror());
     return false;
   }
   if ((fp_extn_init = (fp_extn_init_t)dlsym(
            p_oem_extn_handle, vendor_nfc_init_name.c_str())) == NULL) {
-    LOG(ERROR) << StringPrintf("%s Failed to find %s !!", __func__,
+    LOG(ERROR) << StringPrintf("%s: Failed to find %s !!", __func__,
                                vendor_nfc_init_name.c_str());
   }
 
   if ((fp_extn_deinit = (fp_extn_deinit_t)dlsym(
            p_oem_extn_handle, vendor_nfc_de_init_name.c_str())) == NULL) {
-    LOG(ERROR) << StringPrintf("%s Failed to find %s !!", __func__,
+    LOG(ERROR) << StringPrintf("%s: Failed to find %s !!", __func__,
                                vendor_nfc_de_init_name.c_str());
   }
 
   if ((fp_extn_handle_nfc_event = (fp_extn_handle_nfc_event_t)dlsym(
            p_oem_extn_handle, vendor_nfc_handle_event_name.c_str())) == NULL) {
-    LOG(ERROR) << StringPrintf("%s Failed to find %s !!", __func__,
+    LOG(ERROR) << StringPrintf("%s: Failed to find %s !!", __func__,
                                vendor_nfc_handle_event_name.c_str());
   }
 
   if ((fp_extn_on_config_update = (fp_extn_on_config_update_t)dlsym(
            p_oem_extn_handle, vendor_nfc_on_config_update_name.c_str())) ==
       NULL) {
-    LOG(ERROR) << StringPrintf("%s Failed to find %s !!", __func__,
+    LOG(ERROR) << StringPrintf("%s: Failed to find %s !!", __func__,
                                vendor_nfc_on_config_update_name.c_str());
   }
 
@@ -131,13 +131,13 @@ bool NfcVendorExtn::Initialize(sp<INfc> hidlHal,
 
 void NfcVendorExtn::setNciCallback(tHAL_NFC_CBACK* pHalCback,
                                    tHAL_NFC_DATA_CBACK* pDataCback) {
-  LOG(VERBOSE) << StringPrintf("%s:", __func__);
+  LOG(VERBOSE) << __func__;
   mVendorExtnCb.pHalCback = pHalCback;
   mVendorExtnCb.pDataCback = pDataCback;
 }
 
 bool NfcVendorExtn::processCmd(uint16_t dataLen, uint8_t* pData) {
-  LOG(VERBOSE) << StringPrintf("%s: Enter dataLen:%d", __func__, dataLen);
+  LOG(VERBOSE) << StringPrintf("%s: Enter dataLen=%d", __func__, dataLen);
   NciData_t nci_data;
   nci_data.data_len = dataLen;
   nci_data.p_data = (uint8_t*)pData;
@@ -149,13 +149,13 @@ bool NfcVendorExtn::processCmd(uint16_t dataLen, uint8_t* pData) {
     LOG(VERBOSE) << StringPrintf("%s: Exit status(%d)", __func__, stat);
     return stat == NFCSTATUS_EXTN_FEATURE_SUCCESS;
   } else {
-    LOG(ERROR) << StringPrintf("%s: %s", __func__, "processCmd not found!");
+    LOG(ERROR) << StringPrintf("%s: not found", __func__);
     return false;
   }
 }
 
 bool NfcVendorExtn::processRspNtf(uint16_t dataLen, uint8_t* pData) {
-  LOG(VERBOSE) << StringPrintf("%s: Enter dataLen:%d", __func__, dataLen);
+  LOG(VERBOSE) << StringPrintf("%s: dataLen=%d", __func__, dataLen);
   NciData_t nciData;
   nciData.data_len = dataLen;
   nciData.p_data = (uint8_t*)pData;
@@ -167,14 +167,14 @@ bool NfcVendorExtn::processRspNtf(uint16_t dataLen, uint8_t* pData) {
     LOG(VERBOSE) << StringPrintf("%s: Exit status(%d)", __func__, stat);
     return stat == NFCSTATUS_EXTN_FEATURE_SUCCESS;
   } else {
-    LOG(ERROR) << StringPrintf("%s: %s", __func__, "processRspNtf not found!");
+    LOG(ERROR) << StringPrintf("%s: not found", __func__);
     return false;
   }
 }
 
 bool NfcVendorExtn::processEvent(uint8_t event, uint8_t status) {
-  LOG(VERBOSE) << StringPrintf("%s: Enter event: %d, status: %d", __func__,
-                               event, status);
+  LOG(VERBOSE) << StringPrintf("%s: event=%d, status=%d", __func__, event,
+                               status);
   if (fp_extn_handle_nfc_event != NULL) {
     mNfcExtEventData.hal_event = event;
     mNfcExtEventData.hal_event_status = status;
@@ -183,27 +183,26 @@ bool NfcVendorExtn::processEvent(uint8_t event, uint8_t status) {
     LOG(DEBUG) << StringPrintf("%s: Exit status(%d)", __func__, stat);
     return stat == NFCSTATUS_EXTN_FEATURE_SUCCESS;
   } else {
-    LOG(ERROR) << StringPrintf("%s: %s", __func__, "processEvent not found!");
+    LOG(ERROR) << StringPrintf("%s: not found", __func__);
     return false;
   }
 }
 
 void NfcVendorExtn::getVendorConfigs(
     std::map<std::string, ConfigValue>* pConfigMap) {
-  LOG(VERBOSE) << StringPrintf("%s:", __func__);
+  LOG(VERBOSE) << __func__;
   mVendorExtnCb.configMap = *pConfigMap;
   if (fp_extn_on_config_update != NULL) {
     fp_extn_on_config_update(pConfigMap);
   } else {
-    LOG(ERROR) << StringPrintf("%s: %s", __func__,
-                               "getVendorConfigs not found!");
+    LOG(ERROR) << StringPrintf("%s: not found", __func__);
   }
 }
 
 VendorExtnCb* NfcVendorExtn::getVendorExtnCb() { return &mVendorExtnCb; }
 
 void phNfcExtn_LibClose() {
-  LOG(VERBOSE) << StringPrintf("%s Enter", __func__);
+  LOG(VERBOSE) << __func__;
   if (fp_extn_deinit != NULL) {
     if (!fp_extn_deinit()) {
       LOG(ERROR) << StringPrintf("%s: %s failed", __func__,
@@ -211,14 +210,14 @@ void phNfcExtn_LibClose() {
     }
   }
   if (p_oem_extn_handle != NULL) {
-    LOG(DEBUG) << StringPrintf("%s Closing %s!!", __func__, mLibName.c_str());
+    LOG(DEBUG) << StringPrintf("%s: Closing %s!!", __func__, mLibName.c_str());
     dlclose(p_oem_extn_handle);
     p_oem_extn_handle = NULL;
   }
 }
 
 bool NfcVendorExtn::finalize(void) {
-  LOG(VERBOSE) << StringPrintf("%s:", __func__);
+  LOG(VERBOSE) << __func__;
   phNfcExtn_LibClose();
   mVendorExtnCb.hidlHal = nullptr;
   mVendorExtnCb.aidlHal = nullptr;

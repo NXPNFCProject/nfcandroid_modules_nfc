@@ -70,7 +70,7 @@ public class NfcProprietaryCaps {
     }
 
     public static NfcProprietaryCaps createFromByteArray(byte[] caps) {
-        Log.i(TAG, "parsing proprietary caps: " + Arrays.toString(caps));
+        Log.i(TAG, "createFromByteArray: parsing proprietary caps: " + Arrays.toString(caps));
         PassiveObserveMode passiveObserveMode = PassiveObserveMode.NOT_SUPPORTED;
         boolean isPollingFrameNotificationSupported = false;
         boolean isPowerSavingModeSupported = false;

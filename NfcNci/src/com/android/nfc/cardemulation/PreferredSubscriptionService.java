@@ -66,7 +66,8 @@ public class PreferredSubscriptionService implements TelephonyUtils.Callback {
         if (mIsUiccCapable || mIsEuiccCapable) {
             mDefaultSubscriptionId = getPreferredSubscriptionId();
             if (mDefaultSubscriptionId == TelephonyUtils.SUBSCRIPTION_ID_UNKNOWN) {
-                Log.d(TAG, "Set preferred subscription to UICC, only update");
+                Log.d(TAG, "PreferredSubscriptionService: Set preferred subscription "
+                        + "to UICC, only update");
                 setPreferredSubscriptionId(TelephonyUtils.SUBSCRIPTION_ID_UICC, false);
             }
         }
@@ -113,13 +114,14 @@ public class PreferredSubscriptionService implements TelephonyUtils.Callback {
                     mActiveSubscriptoinState == TelephonyUtils.SUBSCRIPTION_STATE_ACTIVATE);
         }
         else {
-            Log.i(TAG, "Active Subscription is not changed");
+            Log.i(TAG, "onActiveSubscriptionsUpdated: Active Subscription is not changed");
         }
     }
 
     private boolean isSubscriptionActivated(int subscriptionId) {
         if (mActiveSubscriptions == null) {
-            Log.d(TAG, "get active subscriptions is list because it's null");
+            Log.d(TAG, "isSubscriptionActivated: get active subscriptions is "
+                    + "list because it's null");
             mActiveSubscriptions = mTelephonyUtils.getActiveSubscriptions().stream().filter(
                     TelephonyUtils.SUBSCRIPTION_ACTIVE_CONDITION_FOR_UICC.or(
                             TelephonyUtils.SUBSCRIPTION_ACTIVE_CONDITION_FOR_EUICC))
@@ -141,8 +143,8 @@ public class PreferredSubscriptionService implements TelephonyUtils.Callback {
                 TelephonyUtils.SUBSCRIPTION_STATE_ACTIVATE :
                 TelephonyUtils.SUBSCRIPTION_STATE_INACTIVATE;
         if (previousActiveSubscriptionState != currentActiveSubscriptionState) {
-            Log.d(TAG, "onSubscriptionsChanged - state changed: " +
-                    previousActiveSubscriptionState + " to " + currentActiveSubscriptionState);
+            Log.d(TAG, "checkSubscriptionStateChanged: state changed: "
+                    + previousActiveSubscriptionState + " to " + currentActiveSubscriptionState);
             mActiveSubscriptoinState = currentActiveSubscriptionState;
             return true;
         }

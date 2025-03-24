@@ -90,13 +90,13 @@ public class TelephonyUtils extends SubscriptionManager.OnSubscriptionsChangedLi
     public Optional<SubscriptionInfo> getActiveSubscriptionInfoById(int subscriptionId) {
         Log.d(TAG, "getActiveSubscriptionInfoById: " + subscriptionId);
         if (isUiccSubscription(subscriptionId)) {
-            Log.d(TAG, "Uicc Subscription");
+            Log.d(TAG, "getActiveSubscriptionInfoById: Uicc Subscription");
             return findFirstActiveSubscriptionInfo(subscriptionInfo ->
                     !subscriptionInfo.isEmbedded()
                             && subscriptionInfo.areUiccApplicationsEnabled());
         }
         else {
-            Log.d(TAG, "Embedded Uicc Subscription");
+            Log.d(TAG, "getActiveSubscriptionInfoById: Embedded Uicc Subscription");
             return Optional.ofNullable(
                     mSubscriptionManager.getActiveSubscriptionInfo(subscriptionId));
         }
@@ -119,7 +119,7 @@ public class TelephonyUtils extends SubscriptionManager.OnSubscriptionsChangedLi
     public void onSubscriptionsChanged() {
         Log.d(TAG, "onSubscriptionsChanged");
         if (!mIsSubscriptionsChangedListenerRegistered) {
-            Log.d(TAG, "Skip when receive the event with registering");
+            Log.d(TAG, "onSubscriptionsChanged: Skip when receive the event with registering");
             mIsSubscriptionsChangedListenerRegistered = true;
             return;
         }
@@ -145,7 +145,8 @@ public class TelephonyUtils extends SubscriptionManager.OnSubscriptionsChangedLi
                             response.set(result);
                         } ,
                         ()-> {
-                            Log.d(TAG, "Send APDU fail because active subscription is not exist");
+                            Log.d(TAG, "transmitApduToActiveSubscription: Send APDU fail because "
+                                    + "active subscription is not exist");
                             response.set("FFFF");
                         }
                 );

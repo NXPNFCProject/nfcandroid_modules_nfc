@@ -952,10 +952,11 @@ void NfcAdaptation::HalOpenInternal(tHAL_NFC_CBACK* p_hal_cback,
         p_hal_cback, p_data_cback);
     Status status = mAidlHal->open(mAidlCallback);
     if (!status.isOk()) {
-      LOG(ERROR) << "Open Error: "
-                 << ::aidl::android::hardware::nfc::toString(
-                        static_cast<NfcAidlStatus>(
-                            status.getServiceSpecificError()));
+      LOG(ERROR) << StringPrintf(
+          "%s: Open Error=%s", __func__,
+          ::aidl::android::hardware::nfc::toString(
+              static_cast<NfcAidlStatus>(status.getServiceSpecificError()))
+              .c_str());
     } else {
       bool verbose_vendor_log =
           android::base::GetBoolProperty(VERBOSE_VENDOR_LOG_PROPERTY, false);
@@ -1094,7 +1095,8 @@ bool NfcAdaptation::HalPrediscover() {
   if (mAidlHal != nullptr) {
     Status status = mAidlHal->preDiscover();
     if (status.isOk()) {
-      LOG(VERBOSE) << StringPrintf("%s wait for NFC_PRE_DISCOVER_CPLT_EVT", func);
+      LOG(VERBOSE) << StringPrintf("%s: wait for NFC_PRE_DISCOVER_CPLT_EVT",
+                                   func);
       return true;
     }
   } else if (mHal != nullptr) {
@@ -1125,7 +1127,7 @@ void NfcAdaptation::HalControlGranted() {
       NfcAidlStatus aidl_status;
       mAidlHal->controlGranted(&aidl_status);
     } else {
-      LOG(ERROR) << StringPrintf("Unsupported function %s", func);
+      LOG(ERROR) << StringPrintf("%s: Unsupported function", func);
     }
   } else if (mHal != nullptr) {
     mHal->controlGranted();

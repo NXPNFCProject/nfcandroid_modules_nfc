@@ -183,10 +183,11 @@ public class RoutingOptionManager {
         Log.d(TAG, "overwriteRoutingTable()");
         if (mOverrideDefaultRoute != ROUTE_UNKNOWN) {
             if (mOverrideDefaultRoute == ROUTE_DEFAULT) {
-                Log.i(TAG, "overwrite mDefaultRoute with default config value");
+                Log.i(TAG, "overwriteRoutingTable: overwrite mDefaultRoute with "
+                        + "default config value");
                 mDefaultRoute = doGetDefaultRouteDestination();
             } else {
-                Log.d(TAG, "overwriteRoutingTable() - mDefaultRoute : "
+                Log.d(TAG, "overwriteRoutingTable: mDefaultRoute : "
                     + Integer.toHexString(mOverrideDefaultRoute));
                 mDefaultRoute = mOverrideDefaultRoute;
             }
@@ -195,10 +196,11 @@ public class RoutingOptionManager {
 
         if (mOverrideDefaultIsoDepRoute != ROUTE_UNKNOWN) {
             if (mOverrideDefaultIsoDepRoute == ROUTE_DEFAULT) {
-                Log.i(TAG, "overwrite mDefaultIsoDepRoute with default config value");
+                Log.i(TAG, "overwriteRoutingTable: overwrite mDefaultIsoDepRoute "
+                        + "with default config value");
                 mDefaultIsoDepRoute = doGetDefaultIsoDepRouteDestination();
             } else {
-                Log.d(TAG, "overwriteRoutingTable() - mDefaultIsoDepRoute : "
+                Log.d(TAG, "overwriteRoutingTable: mDefaultIsoDepRoute : "
                         + Integer.toHexString(mOverrideDefaultIsoDepRoute));
                 mDefaultIsoDepRoute = mOverrideDefaultIsoDepRoute;
             }
@@ -208,10 +210,11 @@ public class RoutingOptionManager {
 
         if (mOverrideDefaultOffHostRoute != ROUTE_UNKNOWN) {
             if (mOverrideDefaultOffHostRoute == ROUTE_DEFAULT) {
-                Log.i(TAG, "overwrite mDefaultOffHostRoute with default config value");
+                Log.i(TAG, "overwriteRoutingTable: overwrite mDefaultOffHostRoute with "
+                        + "default config value");
                 mDefaultOffHostRoute = doGetDefaultOffHostRouteDestination();
             } else {
-                Log.d(TAG, "overwriteRoutingTable() - mDefaultOffHostRoute : "
+                Log.d(TAG, "overwriteRoutingTable: mDefaultOffHostRoute : "
                         + Integer.toHexString(mOverrideDefaultOffHostRoute));
                 mDefaultOffHostRoute = mOverrideDefaultOffHostRoute;
             }
@@ -221,10 +224,10 @@ public class RoutingOptionManager {
 
         if (mOverrideDefaultScRoute != ROUTE_UNKNOWN) {
             if (mOverrideDefaultScRoute == ROUTE_DEFAULT) {
-                Log.i(TAG, "overwriteRoutingTable() - mDefaultScRoute with default config value");
+                Log.i(TAG, "overwriteRoutingTable: mDefaultScRoute with default config value");
                 mDefaultScRoute = doGetDefaultScRouteDestination();
             } else {
-                Log.d(TAG, "overwriteRoutingTable() - mDefaultScRoute : "
+                Log.d(TAG, "overwriteRoutingTable: mDefaultScRoute : "
                             + Integer.toHexString(mOverrideDefaultScRoute));
                 mDefaultScRoute = mOverrideDefaultScRoute;
             }
@@ -353,9 +356,9 @@ public class RoutingOptionManager {
 
     public void readRoutingOptionsFromPrefs(
             Context context, DeviceConfigFacade deviceConfigFacade) {
-        Log.d(TAG, "readRoutingOptions with Context");
+        Log.d(TAG, "readRoutingOptionsFromPrefs");
         if (mPrefs == null) {
-            Log.d(TAG, "create mPrefs in readRoutingOptions");
+            Log.d(TAG, "readRoutingOptionsFromPrefs: create mPrefs in readRoutingOptions");
             mContext = context;
             mPrefs = context.getSharedPreferences(PREF_ROUTING_OPTIONS, Context.MODE_PRIVATE);
             mIsUiccCapable = context.getPackageManager().hasSystemFeature(
@@ -367,7 +370,7 @@ public class RoutingOptionManager {
         // If the OEM does not set default routes in the overlay and if no app has overwritten
         // the routing table using `overwriteRoutingTable`, skip this preference reading.
         if (!isRoutingTableOverwrittenOrOverlaid(deviceConfigFacade, mPrefs)) {
-            Log.d(TAG, "Routing table not overwritten or overlaid");
+            Log.d(TAG, "readRoutingOptionsFromPrefs: Routing table not overwritten or overlaid");
             return;
         }
 
@@ -406,7 +409,7 @@ public class RoutingOptionManager {
             writeRoutingOption(KEY_AUTO_CHANGE_CAPABLE, true);
         }
         mIsAutoChangeCapable = mPrefs.getBoolean(KEY_AUTO_CHANGE_CAPABLE, true);
-        Log.d(TAG, "ReadOptions - " + toString());
+        Log.d(TAG, "readRoutingOptionsFromPrefs: ReadOptions - " + toString());
     }
 
     public void setAutoChangeStatus(boolean status) {
@@ -448,7 +451,7 @@ public class RoutingOptionManager {
         // TODO - Implement
         if (getSecureElementForRoute(route).startsWith(SE_PREFIX_SIM)) {
             if (mPreferredSimSettings.type == TelephonyUtils.SIM_TYPE_UNKNOWN) {
-                Log.e(TAG, "sim is invalid");
+                Log.e(TAG, "getAlternativeRouteIfSimIsInvalid: sim is invalid");
                 return getRouteForSecureElement(mIsEseCapable ? (SE_PREFIX_ESE + 1) : DEVICE_HOST);
             }
         }
@@ -466,12 +469,12 @@ public class RoutingOptionManager {
         }
 
         for (Map.Entry<String, Integer> entry : mRouteForSecureElement.entrySet()) {
-            Log.d(TAG, "addOrUpdateTableItems() - route: " + entry.getKey() + ", nfceeId: "
+            Log.d(TAG, "addOrUpdateTableItems: route: " + entry.getKey() + ", nfceeId: "
                     + Integer.toHexString(entry.getValue()));
         }
         for (Map.Entry<Integer, String> entry : mSecureElementForRoute.entrySet()) {
-            Log.d(TAG, "addOrUpdateTableItems() - nfceeId: "
-                    + Integer.toHexString(entry.getKey()) + ", route: " + entry.getValue());
+            Log.d(TAG, "addOrUpdateTableItems: nfceeId: " + Integer.toHexString(entry.getKey())
+                    + ", route: " + entry.getValue());
         }
     }
 }

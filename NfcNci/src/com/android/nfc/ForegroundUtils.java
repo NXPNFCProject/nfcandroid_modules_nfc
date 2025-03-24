@@ -127,7 +127,7 @@ public class ForegroundUtils implements ActivityManager.OnUidImportanceListener 
         if (mForegroundUids.get(uid)) {
             return true;
         }
-        if (DBG) Log.d(TAG, "Checking UID:" + Integer.toString(uid));
+        if (DBG) Log.d(TAG, "isInForegroundLocked: Checking UID:" + Integer.toString(uid));
         // If the onForegroundActivitiesChanged() has not yet been called,
         // check whether the UID is in an active state to use the NFC.
         return (mActivityManager.getUidImportance(uid)
@@ -159,7 +159,9 @@ public class ForegroundUtils implements ActivityManager.OnUidImportanceListener 
             if (importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_GONE) {
                 mForegroundUids.delete(uid);
                 mBackgroundCallbacks.remove(uid);
-                if (VDBG) Log.d(TAG, "UID: " + Integer.toString(uid) + " deleted.");
+                if (VDBG) {
+                    Log.d(TAG, "onUidImportance: UID: " + Integer.toString(uid) + " deleted");
+                }
                 return;
             }
             if (importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
@@ -175,10 +177,10 @@ public class ForegroundUtils implements ActivityManager.OnUidImportanceListener 
             handleUidToBackground(uid);
         }
         if (VDBG) {
-            Log.d(TAG, "Foreground UID status:");
+            Log.d(TAG, "onUidImportance: Foreground UID status");
             synchronized (mLock) {
                 for (int j = 0; j < mForegroundUids.size(); j++) {
-                    Log.d(TAG, "UID: " + Integer.toString(mForegroundUids.keyAt(j))
+                    Log.d(TAG, "onUidImportance: UID: " + Integer.toString(mForegroundUids.keyAt(j))
                             + " is in foreground: " + Boolean.toString(mForegroundUids.valueAt(j)));
                 }
             }
