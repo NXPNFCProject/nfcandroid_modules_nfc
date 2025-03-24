@@ -223,7 +223,10 @@ public class StatsdUtils {
         int bindingLimitMillis = 500;
         if (mBindingStartTimeMillis > 0) {
             long bindingElapsedTimeMillis = SystemClock.elapsedRealtime() - mBindingStartTimeMillis;
-            if (DBG) Log.d(TAG, "binding took " + bindingElapsedTimeMillis + " millis");
+            if (DBG) {
+                Log.d(TAG, "notifyCardEmulationEventServiceBound: binding took "
+                        + bindingElapsedTimeMillis + " millis");
+            }
             if (bindingElapsedTimeMillis >= bindingLimitMillis) {
                 logErrorEvent(NfcStatsLog.NFC_ERROR_OCCURRED__TYPE__HCE_LATE_BINDING);
             }

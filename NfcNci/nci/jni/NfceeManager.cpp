@@ -154,7 +154,7 @@ bool NfceeManager::getNFCEeInfo() {
     LOG(ERROR) << StringPrintf("%s: fail get info; error=0x%X", fn, nfaStat);
     mActualNumEe = 0;
   } else {
-    LOG(INFO) << StringPrintf("%s: num NFCEE discovered: %u", fn, mActualNumEe);
+    LOG(INFO) << StringPrintf("%s: num NFCEE discovered=%u", fn, mActualNumEe);
     if (mActualNumEe != 0) {
       for (uint8_t xx = 0; xx < mActualNumEe; xx++) {
         tNFA_TECHNOLOGY_MASK eeTechnology = 0x00;

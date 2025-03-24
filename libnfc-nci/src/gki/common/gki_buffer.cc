@@ -259,7 +259,8 @@ void* GKI_getbuf(uint16_t size) {
 
 #if defined(DYN_ALLOC) || defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
   if (size == 0 || size > (USHRT_MAX - 3)) {
-    LOG(ERROR) << StringPrintf("getbuf: Requested size(%d) is invalid", size);
+    LOG(ERROR) << StringPrintf("%s: Requested size(%d) is invalid", __func__,
+                               size);
     android_errorWriteLog(0x534e4554, "205729183");
 #ifndef DYN_ALLOC
     abort();
@@ -277,8 +278,9 @@ void* GKI_getbuf(uint16_t size) {
 #endif
   p_hdr = (BUFFER_HDR_T*)GKI_os_malloc(total_sz);
   if (!p_hdr) {
-    LOG(ERROR) << StringPrintf("unable to allocate buffer!!!!!");
-    LOG(ERROR) << StringPrintf("total_sz:%zu size:%d", total_sz, size);
+    LOG(ERROR) << StringPrintf("%s: unable to allocate buffer!!!!!", __func__);
+    LOG(ERROR) << StringPrintf("%s: total_sz=%zu size=%d", __func__, total_sz,
+                               size);
     abort();
   }
 
@@ -300,9 +302,9 @@ void* GKI_getbuf(uint16_t size) {
   if (++Q->cur_cnt > Q->max_cnt) Q->max_cnt = Q->cur_cnt;
   GKI_enable();
 
-  LOG(VERBOSE) << StringPrintf("%s %p %d:%d", __func__,
-                             ((uint8_t*)p_hdr + BUFFER_HDR_SIZE), Q->cur_cnt,
-                             Q->max_cnt);
+  LOG(VERBOSE) << StringPrintf("%s: %p %d:%d", __func__,
+                               ((uint8_t*)p_hdr + BUFFER_HDR_SIZE), Q->cur_cnt,
+                               Q->max_cnt);
   UNUSED(gki_alloc_free_queue);
   return (void*)((uint8_t*)p_hdr + BUFFER_HDR_SIZE);
 #else
@@ -336,14 +338,14 @@ void* GKI_getbuf(uint16_t size) {
     Q = &p_cb->freeq[p_cb->pool_list[i]];
     if (Q->cur_cnt < Q->total) {
       if (Q->p_first == nullptr && gki_alloc_free_queue(i) != true) {
-        LOG(ERROR) << StringPrintf("out of buffer");
+        LOG(ERROR) << StringPrintf("%s: out of buffer", __func__);
         GKI_enable();
         return nullptr;
       }
 
       if (Q->p_first == nullptr) {
         /* gki_alloc_free_queue() failed to alloc memory */
-        LOG(ERROR) << StringPrintf("fail alloc free queue");
+        LOG(ERROR) << StringPrintf("%s: fail alloc free queue", __func__);
         GKI_enable();
         return nullptr;
       }
@@ -366,7 +368,7 @@ void* GKI_getbuf(uint16_t size) {
     }
   }
 
-  LOG(ERROR) << StringPrintf("unable to allocate buffer!!!!!");
+  LOG(ERROR) << StringPrintf("%s: unable to allocate buffer!!!!!", __func__);
 
   GKI_enable();
 
@@ -406,7 +408,7 @@ void* GKI_getpoolbuf(uint8_t pool_id) {
       break;
 
     default:
-      LOG(ERROR) << StringPrintf("Unknown pool ID: %d", pool_id);
+      LOG(ERROR) << StringPrintf("%s: Unknown pool ID=%d", __func__, pool_id);
 #ifndef DYN_ALLOC
       abort();
 #else
@@ -433,7 +435,7 @@ void* GKI_getpoolbuf(uint8_t pool_id) {
 
     if (Q->p_first == nullptr) {
       /* gki_alloc_free_queue() failed to alloc memory */
-      LOG(ERROR) << StringPrintf("fail alloc free queue");
+      LOG(ERROR) << StringPrintf("%s: fail alloc free queue", __func__);
       return nullptr;
     }
 
@@ -575,7 +577,7 @@ bool gki_chk_buf_damage(void* p_buf) {
 
   if (*magic == MAGIC_NO) return false;
 
-  LOG(ERROR) << StringPrintf("%s 0x%x %p", __func__, *magic, p_buf);
+  LOG(ERROR) << StringPrintf("%s: 0x%x %p", __func__, *magic, p_buf);
   return true;
 
 #else
@@ -1322,7 +1324,7 @@ uint16_t GKI_get_pool_bufsize(uint8_t pool_id) {
       /* Here could be more pool ids, but they are not used in the current
        * implementation */
     default:
-      LOG(ERROR) << StringPrintf("Unknown pool ID: %d", pool_id);
+      LOG(ERROR) << StringPrintf("%s: Unknown pool ID=%d", __func__, pool_id);
       return (0);
       break;
   }
