@@ -1368,7 +1368,7 @@ static jboolean nfcManager_setObserveMode(JNIEnv* e, jobject o,
     startRfDiscovery(false);
     reenbleDiscovery = true;
   }
-  bool useOldCommand  = needToTurnOffRadio || !usePerTechObserveModeCommand(e, o);
+  bool useOldCommand  = needToTurnOffRadio;
   uint8_t cmd[] = {
       static_cast<uint8_t>(
         useOldCommand
