@@ -614,6 +614,8 @@ public class HostEmulationManager {
                         }
                         if (serviceInfo.getShouldAutoTransact(dataStr)) {
                             if (mStatsdUtils != null) {
+                                mStatsdUtils.logAutoTransactReported(
+                                    StatsdUtils.PROCESSOR_HOST, data);
                                 mStatsdUtils.setNextObserveModeTriggerSource(
                                     StatsdUtils.TRIGGER_SOURCE_AUTO_TRANSACT);
                             }
