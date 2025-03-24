@@ -80,7 +80,7 @@ _PAYMENT_SERVICE_1 = _SERVICE_PACKAGE + ".PaymentService1"
 class NfcExitFrameMultiDeviceTestCases(base_test.BaseTestClass):
     def _set_up_emulator(self, *args, start_emulator_fun=None, service_list=[],
                  expected_service=None, is_payment=False, preferred_service=None,
-                 payment_default_service=None):
+                 payment_default_service=None, should_disable_services_on_destroy=True):
         """
         Sets up emulator device for multidevice tests.
         :param is_payment: bool
@@ -107,8 +107,9 @@ class NfcExitFrameMultiDeviceTestCases(base_test.BaseTestClass):
             start_emulator_fun(*args)
         else:
             if preferred_service is None:
-                self.emulator.nfc_emulator.startSimpleEmulatorActivity(service_list,
-                                                                       expected_service, is_payment)
+                self.emulator.nfc_emulator.startSimpleEmulatorActivity(
+                            service_list, expected_service, is_payment,
+                            should_disable_services_on_destroy)
             else:
                 self.emulator.nfc_emulator.startSimpleEmulatorActivityWithPreferredService(
                     service_list, expected_service, preferred_service, is_payment
@@ -203,17 +204,6 @@ class NfcExitFrameMultiDeviceTestCases(base_test.BaseTestClass):
                 self._setup_failure_reason = 'Failed to connect to PN532 board.'
                 self.pn532 = pn532.PN532(pn532_serial_path)
                 self.pn532.mute()
-                self._setup_failure_reason = (
-                    'Cannot load reader snippet. Is NfcReaderTestApp.apk '
-                    'installed on the reader?'
-                )
-                self.reader.load_snippet('nfc_reader', 'com.android.nfc.reader')
-                self.reader.adb.shell(['svc', 'nfc', 'enable'])
-                self.reader.debug_tag = 'reader'
-                if not self.reader.nfc_reader.isNfcSupported():
-                    self._setup_failure_reason = f'NFC is not supported on {self.reader}'
-                    self._setup_failure_should_block_tests = False
-                    return
         except Exception as e:
             _LOG.warning('setup_class failed with error %s', e)
             return
@@ -237,9 +227,6 @@ class NfcExitFrameMultiDeviceTestCases(base_test.BaseTestClass):
                                            " ***")
         self.emulator.nfc_emulator.turnScreenOn()
         self.emulator.nfc_emulator.pressMenu()
-        if not self.pn532:
-            self.reader.nfc_reader.turnScreenOn()
-            self.reader.nfc_reader.pressMenu()
 
     """Tests the autotransact functionality.
 
