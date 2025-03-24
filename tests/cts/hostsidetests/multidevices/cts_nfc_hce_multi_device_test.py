@@ -437,7 +437,11 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         ps = (self.emulator.adb.shell(["ps", "|", "grep", "com.android.nfc.emulator.payment"])
               .decode("utf-8"))
         pid = ps.split()[1]
-        self.emulator.adb.shell(["kill", "-9", pid])
+        try:
+            self.emulator.adb.shell(["kill", "-9", pid])
+        except adb.AdbError:
+            _LOG.info(f"Could not kill pid {pid} through adb.")
+            self.emulator.nfc_emulator.killProcess(pid)
 
         self._set_up_reader_and_assert_transaction(expected_service=_PAYMENT_SERVICE_1)
 
