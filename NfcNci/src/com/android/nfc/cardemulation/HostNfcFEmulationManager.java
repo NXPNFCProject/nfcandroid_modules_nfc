@@ -21,7 +21,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.nfc.cardemulation.CardEmulation;
 import android.nfc.cardemulation.HostNfcFService;
 import android.nfc.cardemulation.NfcFServiceInfo;
 import android.nfc.cardemulation.Utils;
@@ -31,10 +30,12 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
-import android.sysprop.NfcProperties;
 import android.os.UserHandle;
+import android.sysprop.NfcProperties;
 import android.util.Log;
 import android.util.proto.ProtoOutputStream;
+
+import androidx.annotation.VisibleForTesting;
 
 import com.android.nfc.NfcService;
 import com.android.nfc.NfcStatsLog;
@@ -44,7 +45,6 @@ import com.android.nfc.flags.Flags;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
-import androidx.annotation.VisibleForTesting;
 
 public class HostNfcFEmulationManager {
     static final String TAG = "HostNfcFEmulationManager";

@@ -18,9 +18,10 @@ package com.android.nfc;
 
 import android.content.Context;
 import android.os.Handler;
-import android.provider.DeviceConfig;
 import android.os.SystemProperties;
+import android.provider.DeviceConfig;
 import android.text.TextUtils;
+
 import androidx.annotation.VisibleForTesting;
 
 /**
@@ -142,14 +143,34 @@ public class DeviceConfigFacade {
         return mAntennaBlockedAlertEnabled;
     }
 
-    public boolean getNfcDefaultState(){ return mNfcDefaultState; }
-    public boolean isReaderOptionCapable() { return mReaderOptionSupport; }
-    public boolean getDefaultReaderOption() { return mReaderOptionDefault; }
-    public boolean isSecureNfcCapable() {return mSecureNfcCapable; }
-    public boolean getDefaultSecureNfcState() { return mSecureNfcDefault; }
-    public String getDefaultRoute() { return mDefaultRoute; }
-    public String getDefaultIsoDepRoute() { return mDefaultIsoDepRoute; }
-    public String getDefaultOffHostRoute() { return mDefaultOffHostRoute; }
-    public String getDefaultScRoute() { return mDefaultScRoute; }
-    public int getSlowTapThresholdMillis() { return mSlowTapThresholdMillis; }
+    public boolean getNfcDefaultState() {
+        return mNfcDefaultState;
+    }
+    public boolean isReaderOptionCapable() {
+        return mReaderOptionSupport;
+    }
+    public boolean getDefaultReaderOption() {
+        return mReaderOptionDefault;
+    }
+    public boolean isSecureNfcCapable() {
+        return mSecureNfcCapable;
+    }
+    public boolean getDefaultSecureNfcState() {
+        return mSecureNfcDefault;
+    }
+    public String getDefaultRoute() {
+        return mDefaultRoute;
+    }
+    public String getDefaultIsoDepRoute() {
+        return mDefaultIsoDepRoute;
+    }
+    public String getDefaultOffHostRoute() {
+        return mDefaultOffHostRoute;
+    }
+    public String getDefaultScRoute() {
+        return mDefaultScRoute;
+    }
+    public int getSlowTapThresholdMillis() {
+        return mSlowTapThresholdMillis;
+    }
 }

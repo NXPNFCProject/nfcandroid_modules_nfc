@@ -131,7 +131,7 @@ public class RoutingTableParser {
         if ((mask & 0x20) != 0) {
             prefix_subset_str += "Subset";
         }
-        if (prefix_subset_str.equals("")){
+        if (prefix_subset_str.equals("")) {
             return "Exact";
         }
         return prefix_subset_str;

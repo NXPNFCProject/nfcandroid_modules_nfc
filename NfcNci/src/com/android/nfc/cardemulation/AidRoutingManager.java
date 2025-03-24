@@ -118,9 +118,9 @@ public class AidRoutingManager {
     }
 
     public boolean supportsAidPrefixRouting() {
-        return mAidMatchingSupport == AID_MATCHING_EXACT_OR_PREFIX ||
-                mAidMatchingSupport == AID_MATCHING_PREFIX_ONLY ||
-                 mAidMatchingSupport == AID_MATCHING_EXACT_OR_SUBSET_OR_PREFIX;
+        return mAidMatchingSupport == AID_MATCHING_EXACT_OR_PREFIX
+                || mAidMatchingSupport == AID_MATCHING_PREFIX_ONLY
+                || mAidMatchingSupport == AID_MATCHING_EXACT_OR_SUBSET_OR_PREFIX;
     }
 
     public boolean supportsAidSubsetRouting() {
@@ -131,10 +131,10 @@ public class AidRoutingManager {
         // TAG + ROUTE + LENGTH_BYTE + POWER
         int AID_HDR_LENGTH = 0x04;
         int routeTableSize = 0x00;
-        for(Map.Entry<String, AidEntry> aidEntry : routeCache.entrySet()) {
+        for (Map.Entry<String, AidEntry> aidEntry : routeCache.entrySet()) {
             String aid = aidEntry.getKey();
             // removing prefix length
-            if(aid.endsWith("*")) {
+            if (aid.endsWith("*")) {
                 routeTableSize += ((aid.length() - 0x01) / 0x02) + AID_HDR_LENGTH;
             } else {
                 routeTableSize += (aid.length() / 0x02)+ AID_HDR_LENGTH;
@@ -154,8 +154,8 @@ public class AidRoutingManager {
     private boolean isAidEntryUpdated(HashMap<String, Integer> currRouteForAid,
                                                 Map.Entry<String, Integer> aidEntry,
                                                 HashMap<String, Integer> prevPowerForAid) {
-        if(!Objects.equals(currRouteForAid.get(aidEntry.getKey()), aidEntry.getValue()) ||
-            !Objects.equals(
+        if (!Objects.equals(currRouteForAid.get(aidEntry.getKey()), aidEntry.getValue())
+                || !Objects.equals(
                 mPowerForAid.get(aidEntry.getKey()),
                 prevPowerForAid.get(aidEntry.getKey()))) {
             return true;
@@ -170,10 +170,10 @@ public class AidRoutingManager {
     private boolean checkUnrouteAid(HashMap<String, Integer> prevRouteForAid,
                                      HashMap<String, Integer> prevPowerForAid) {
         for (Map.Entry<String, Integer> aidEntry : prevRouteForAid.entrySet())  {
-            if((aidEntry.getValue() != mDefaultRoute) &&
-                (!mRouteForAid.containsKey(aidEntry.getKey()) ||
-                isAidEntryUpdated(mRouteForAid, aidEntry, prevPowerForAid))){
-                    return true;
+            if ((aidEntry.getValue() != mDefaultRoute)
+                    && (!mRouteForAid.containsKey(aidEntry.getKey())
+                    || isAidEntryUpdated(mRouteForAid, aidEntry, prevPowerForAid))) {
+                return true;
             }
         }
         return false;
@@ -184,12 +184,12 @@ public class AidRoutingManager {
     //mRouteForAid & mPowerForAid respectively. previously registered AID entries &
     //power states are part of input argument prevRouteForAid & prevPowerForAid respectively.
     private boolean checkRouteAid(HashMap<String, Integer> prevRouteForAid,
-                                   HashMap<String, Integer> prevPowerForAid){
+                                   HashMap<String, Integer> prevPowerForAid) {
         for (Map.Entry<String, Integer> aidEntry : mRouteForAid.entrySet())  {
-            if((aidEntry.getValue() != mDefaultRoute) &&
-                (!prevRouteForAid.containsKey(aidEntry.getKey())||
-                isAidEntryUpdated(prevRouteForAid, aidEntry, prevPowerForAid))){
-                    return true;
+            if ((aidEntry.getValue() != mDefaultRoute)
+                    && (!prevRouteForAid.containsKey(aidEntry.getKey())
+                    || isAidEntryUpdated(prevRouteForAid, aidEntry, prevPowerForAid))) {
+                return true;
             }
         }
         return false;
@@ -335,9 +335,9 @@ public class AidRoutingManager {
             if (DBG) Log.d(TAG, "mMaxAidRoutingTableSize: " + mMaxAidRoutingTableSize);
 
             //calculate AidRoutingTableSize for existing route destination
-            for(int index = 0; index < seList.size(); index ++) {
+            for (int index = 0; index < seList.size(); index++) {
                 mDefaultRoute = seList.get(index);
-                if(index != 0) {
+                if (index != 0) {
                     if (DBG) {
                         Log.d(TAG, "AidRoutingTable is full, try to switch mDefaultRoute to 0x" + Integer.toHexString(mDefaultRoute));
                     }
@@ -523,7 +523,7 @@ public class AidRoutingManager {
     }
 
     private int commit(HashMap<String, AidEntry> routeCache, boolean isOverrideOrRecover) {
-        if(routeCache != null) {
+        if (routeCache != null) {
             for (Map.Entry<String, AidEntry> aidEntry : routeCache.entrySet())  {
                 int route = aidEntry.getValue().route;
                 int aidType = aidEntry.getValue().aidInfo;

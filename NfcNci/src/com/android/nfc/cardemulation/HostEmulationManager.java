@@ -69,7 +69,6 @@ import com.android.nfc.NfcStatsLog;
 import com.android.nfc.PerfettoTrigger;
 import com.android.nfc.cardemulation.RegisteredAidCache.AidResolveInfo;
 import com.android.nfc.cardemulation.util.StatsdUtils;
-import com.android.nfc.cardemulation.util.StatsdUtilsContext;
 import com.android.nfc.flags.Flags;
 import com.android.nfc.proto.NfcEventProto;
 
@@ -1345,7 +1344,7 @@ public class HostEmulationManager {
             try {
                 mNfcOemExtensionCallback.onLaunchHceTapAgainActivity(service, category);
                 return;
-            } catch(RemoteException e){
+            } catch (RemoteException e) {
                 Log.e(TAG, "onLaunchHceTapAgainActivity failed",e);
             }
         }
@@ -1364,7 +1363,7 @@ public class HostEmulationManager {
                 mNfcOemExtensionCallback.onLaunchHceAppChooserActivity(
                     selectedAid, services, failedComponent, category);
                 return;
-            }catch (RemoteException e){
+            } catch (RemoteException e) {
                 Log.e(TAG, "onLaunchHceAppChooserActivity failed",e);
             }
         }
@@ -1781,22 +1780,22 @@ public class HostEmulationManager {
     }
 
     @VisibleForTesting
-    public int getState(){
+    public int getState() {
         return mState;
     }
 
     @VisibleForTesting
-    public ServiceConnection getServiceConnection(){
+    public ServiceConnection getServiceConnection() {
         return mConnection;
     }
 
     @VisibleForTesting
-    public ServiceConnection getPaymentConnection(){
+    public ServiceConnection getPaymentConnection() {
         return mPaymentConnection;
     }
 
     @VisibleForTesting
-    public IBinder getMessenger(){
+    public IBinder getMessenger() {
         if (mActiveService != null) {
             return mActiveService.getBinder();
         }
@@ -1809,7 +1808,7 @@ public class HostEmulationManager {
     }
 
     @VisibleForTesting
-    public ComponentName getServiceName(){
+    public ComponentName getServiceName() {
         return mLastBoundPaymentServiceName;
     }
 

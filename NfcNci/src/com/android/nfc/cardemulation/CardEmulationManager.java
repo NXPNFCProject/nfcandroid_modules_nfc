@@ -18,7 +18,6 @@ package com.android.nfc.cardemulation;
 import static android.content.pm.PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION;
 import static android.nfc.cardemulation.CardEmulation.SET_SERVICE_ENABLED_STATUS_FAILURE_FEATURE_UNSUPPORTED;
 
-import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.app.ActivityManager;
@@ -281,7 +280,7 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
     }
 
     public void onHostCardEmulationActivated(int technology) {
-        if(mNfcOemExtensionCallback != null) {
+        if (mNfcOemExtensionCallback != null) {
             try {
                 mNfcOemExtensionCallback.onHceEventReceived(NfcOemExtension.HCE_ACTIVATE);
             } catch (RemoteException e) {
@@ -308,7 +307,7 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
     }
 
     public void onHostCardEmulationData(int technology, byte[] data) {
-        if(mNfcOemExtensionCallback != null) {
+        if (mNfcOemExtensionCallback != null) {
             try {
                 mNfcOemExtensionCallback.onHceEventReceived(NfcOemExtension.HCE_DATA_TRANSFERRED);
             } catch (RemoteException e) {
@@ -338,7 +337,7 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
             mNfcFServicesCache.onHostEmulationDeactivated();
             mEnabledNfcFServices.onHostEmulationDeactivated();
         }
-        if(mNfcOemExtensionCallback != null) {
+        if (mNfcOemExtensionCallback != null) {
             try {
                 mNfcOemExtensionCallback.onHceEventReceived(NfcOemExtension.HCE_DEACTIVATE);
             } catch (RemoteException e) {
@@ -1589,7 +1588,7 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         String response =
                 mTelephonyUtils.updateSwpStatusForEuicc(getSimTypeById(preferredSubscriptionId));
         Log.d(TAG, "response: " + response);
-        if(response.length() >= 4) {
+        if (response.length() >= 4) {
             String statusWord = response.substring(response.length() - 4);
             if (!TextUtils.equals(statusWord, "9000")) {
                 Log.e(TAG, "ASSIGN_SWP(LSE) Command is fail: " + statusWord);

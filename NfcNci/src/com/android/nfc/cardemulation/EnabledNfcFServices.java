@@ -27,11 +27,12 @@ import android.sysprop.NfcProperties;
 import android.util.Log;
 import android.util.proto.ProtoOutputStream;
 
+import androidx.annotation.VisibleForTesting;
+
 import com.android.nfc.ForegroundUtils;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
-import androidx.annotation.VisibleForTesting;
 
 public class EnabledNfcFServices implements com.android.nfc.ForegroundUtils.Callback {
     static final String TAG = "EnabledNfcFCardEmulationServices";
@@ -89,7 +90,7 @@ public class EnabledNfcFServices implements com.android.nfc.ForegroundUtils.Call
                     !mForegroundRequested.equals(mForegroundComponent))) {
                 mForegroundComponent = mForegroundRequested;
                 changed = true;
-            } else if (mForegroundRequested == null && mForegroundComponent != null){
+            } else if (mForegroundRequested == null && mForegroundComponent != null) {
                 mForegroundComponent = mForegroundRequested;
                 changed = true;
             }
@@ -135,7 +136,7 @@ public class EnabledNfcFServices implements com.android.nfc.ForegroundUtils.Call
                 }
             }
             if (service.equals(mForegroundRequested) && mForegroundUid == callingUid) {
-                Log.e(TAG, "The servcie is already requested to the foreground service.");
+                Log.e(TAG, "The service is already requested to the foreground service.");
                 return true;
             }
             if (mForegroundUtils.registerUidToBackgroundCallback(this, callingUid)) {

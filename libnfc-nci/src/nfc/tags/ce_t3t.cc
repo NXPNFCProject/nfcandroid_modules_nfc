@@ -287,8 +287,8 @@ void ce_t3t_handle_update_cmd(tCE_CB* p_ce_cb, NFC_HDR* p_cmd_msg) {
           }
         }
       } else {
-        LOG(VERBOSE) << StringPrintf("CE: Udpate sc 0x%04x block %i.",
-                                   service_code, block_number);
+        LOG(VERBOSE) << StringPrintf("CE: Update sc 0x%04x block %i.",
+                                     service_code, block_number);
 
         /* Verify that block_number is within NDEF memory */
         if (block_number > p_cb->ndef_info.nmaxb) {
@@ -673,7 +673,7 @@ void ce_t3t_data_cback(tNFC_DATA_CEVT* p_data) {
         /* Validate num_services */
         if (p_cb->cur_cmd.num_services > T3T_MSG_SERVICE_LIST_MAX) {
           LOG(ERROR) << StringPrintf(
-              "CE: recieved num_services (%i) exceeds maximum (%i)",
+              "CE: received num_services (%i) exceeds maximum (%i)",
               p_cb->cur_cmd.num_services, T3T_MSG_SERVICE_LIST_MAX);
         } else {
           /* Calculate offset of block-list-start */

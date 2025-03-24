@@ -21,9 +21,10 @@ import android.util.Log;
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
 
+import androidx.annotation.VisibleForTesting;
+
 import java.util.ArrayList;
 import java.util.List;
-import androidx.annotation.VisibleForTesting;
 
 public class ForegroundUtils implements ActivityManager.OnUidImportanceListener {
     static final boolean VDBG = false;
