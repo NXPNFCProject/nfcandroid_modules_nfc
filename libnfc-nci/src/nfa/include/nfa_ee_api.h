@@ -102,6 +102,7 @@ typedef uint8_t tNFA_EE_PWR_STATE;
 #define NFA_EE_STATUS_ACTIVE NFC_NFCEE_STATUS_ACTIVE
 /* NFCEE removed                */
 #define NFA_EE_STATUS_REMOVED NFC_NFCEE_STATUS_REMOVED
+
 /* waiting for response from NFCC */
 #define NFA_EE_STATUS_PENDING 0x10
 typedef uint8_t tNFA_EE_STATUS;
@@ -252,6 +253,21 @@ extern tNFA_STATUS NFA_EeDiscover(tNFA_EE_CBACK* p_cback);
 **
 *******************************************************************************/
 extern tNFA_STATUS NFA_EeGetInfo(uint8_t* p_num_nfcee, tNFA_EE_INFO* p_info);
+
+/*******************************************************************************
+**
+** Function         NFA_EeGetMepInfo
+**
+** Description      This function retrieves the MEP NFCEE information from NFA.
+**                  The actual number of NFCEE is returned in p_num_nfcee
+**                  and NFCEE information is returned in p_info
+**
+** Returns          NFA_STATUS_OK if information is retrieved successfully
+**                  NFA_STATUS_FAILED If wrong state (retry later)
+**                  NFA_STATUS_INVALID_PARAM If bad parameter
+**
+*******************************************************************************/
+extern tNFA_STATUS NFA_EeGetMepInfo(uint8_t* p_num_nfcee, tNFA_EE_INFO* p_info);
 
 /*******************************************************************************
 **

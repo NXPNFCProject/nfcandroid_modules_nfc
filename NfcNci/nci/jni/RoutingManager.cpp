@@ -256,20 +256,37 @@ RoutingManager& RoutingManager::getInstance() {
  *******************************************************************************/
 bool RoutingManager::isTypeATypeBTechSupportedInEe(tNFA_HANDLE eeHandle) {
   static const char fn[] = "RoutingManager::isTypeATypeBTechSupportedInEe";
-  uint8_t mActualNumEe = MAX_NUM_EE;
-  tNFA_EE_INFO eeInfo[mActualNumEe];
-  memset(&eeInfo, 0, mActualNumEe * sizeof(tNFA_EE_INFO));
-  tNFA_STATUS nfaStat = NFA_EeGetInfo(&mActualNumEe, eeInfo);
+  uint8_t actualNbEe = MAX_NUM_EE;
+  tNFA_EE_INFO eeInfo[actualNbEe];
+
+  memset(&eeInfo, 0, actualNbEe * sizeof(tNFA_EE_INFO));
+  tNFA_STATUS nfaStat = NFA_EeGetInfo(&actualNbEe, eeInfo);
   if (nfaStat != NFA_STATUS_OK) {
     return false;
   }
-  for (auto i = 0; i < mActualNumEe; i++) {
+  for (auto i = 0; i < actualNbEe; i++) {
     if (eeHandle == eeInfo[i].ee_handle) {
       if (eeInfo[i].la_protocol || eeInfo[i].lb_protocol) {
         return true;
       }
     }
   }
+
+  if (mEuiccMepMode) {
+    memset(&eeInfo, 0, MAX_NUM_EE * sizeof(tNFA_EE_INFO));
+    nfaStat = NFA_EeGetMepInfo(&actualNbEe, eeInfo);
+    if (nfaStat != NFA_STATUS_OK) {
+      return false;
+    }
+    for (auto i = 0; i < actualNbEe; i++) {
+      if (eeHandle == eeInfo[i].ee_handle) {
+        if (eeInfo[i].la_protocol || eeInfo[i].lb_protocol) {
+          return true;
+        }
+      }
+    }
+  }
+
   LOG(WARNING) << StringPrintf(
       "%s; Route does not support A/B, using DH as default", fn);
   return false;
