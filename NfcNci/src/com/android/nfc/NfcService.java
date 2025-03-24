@@ -25,6 +25,7 @@ import static com.android.nfc.ScreenStateHelper.SCREEN_STATE_ON_UNLOCKED;
 
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
+import android.annotation.Nullable;
 import android.app.ActivityManager;
 import android.app.AlarmManager;
 import android.app.Application;
@@ -528,6 +529,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     private final FeatureFlags mFeatureFlags;
     private final Set<INfcWlcStateListener> mWlcStateListener =
             Collections.synchronizedSet(new HashSet<>());
+    @Nullable
     private final StatsdUtils mStatsdUtils;
     private final boolean mCheckDisplayStateForScreenState;
 
@@ -6135,8 +6137,14 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             timeoutBytes[1] = (byte) (timeoutMs >> 8);
         }
 
-        return mDeviceHost.setFirmwareExitFrameTable(exitFrames.toArray(ExitFrame[]::new),
+        boolean result = mDeviceHost.setFirmwareExitFrameTable(exitFrames.toArray(ExitFrame[]::new),
                 timeoutBytes);
+
+        if (result && mStatsdUtils != null) {
+            mStatsdUtils.logExitFrameTableChanged(exitFrames.size(), timeoutMs);
+        }
+
+        return result;
     }
 }
 

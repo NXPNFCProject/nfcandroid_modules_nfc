@@ -320,6 +320,16 @@ public class StatsdUtils {
         mStatsdUtilsContext.setObserveModeTriggerSource(null);
     }
 
+    /**
+     * Log when the exit frame table is changed.
+     *
+     * @param tableSize the number of entries in the exit frame table
+     * @param timeoutMs the timeout, in milliseconds, chosen to restore observe mode
+     */
+    public void logExitFrameTableChanged(int tableSize, int timeoutMs) {
+        NfcStatsLog.write(NfcStatsLog.NFC_EXIT_FRAME_TABLE_CHANGED, tableSize, timeoutMs);
+    }
+
     private final HashMap<String, PollingFrameLog> pollingFrameMap = new HashMap<>();
 
     public void tallyPollingFrame(String frameDataHex, PollingFrame frame) {
