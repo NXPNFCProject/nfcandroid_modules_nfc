@@ -109,7 +109,7 @@ public class CardEmulationTest {
     }
 
     @Before
-    public void setUp() throws NoSuchFieldException, RemoteException {
+    public void setUp() throws NoSuchFieldException, RemoteException, InterruptedException {
         assumeTrue("Device must support NFC HCE", supportsHardware());
         mContext = InstrumentationRegistry.getContext();
         mAdapter = NfcAdapter.getDefaultAdapter(mContext);
@@ -119,6 +119,8 @@ public class CardEmulationTest {
 
     @After
     public void tearDown() throws Exception {
+        Assert.assertTrue("Failed to enable NFC in test cleanup",
+            NfcUtils.enableNfc(mAdapter, mContext));
         sCurrentPollLoopReceiver = null;
     }
 
