@@ -228,7 +228,7 @@ class NfcExitFrameMultiDeviceTestCases(base_test.BaseTestClass):
         self.emulator.nfc_emulator.turnScreenOn()
         self.emulator.nfc_emulator.pressMenu()
 
-    """Tests the autotransact functionality.
+    """Tests the autotransact functionality with exit frames.
 
     Test Steps:
         1. Start emulator activity and set up payment HCE Service.
@@ -239,16 +239,14 @@ class NfcExitFrameMultiDeviceTestCases(base_test.BaseTestClass):
 
         Verifies:
         1. Observe mode is disabled and a transaction occurs.
-        2. After the first transaction, verifies that observe mode is reenabled.
-        3. After observe mode is reenabled, verifies that the tag is not
+        2. Verify correct exit frame was used for transaction.
+        3. After the first transaction, verifies that observe mode is reenabled.
+        4. After observe mode is reenabled, verifies that the tag is not
         detected.
-
-        TODO(johnrjohn) Add methods to register unique polling frames so we can
-        test different filters
     """
-    def test_exit_frames(self):
+    def test_exit_frames_manifest_filter(self):
         self._set_up_emulator(
-            "41fbc7b9",
+            "41fbc7b9", [], True,
             start_emulator_fun=self.emulator.nfc_emulator.startExitFrameActivity,
             service_list=[_PAYMENT_SERVICE_1],
             expected_service=_PAYMENT_SERVICE_1,
@@ -290,11 +288,347 @@ class NfcExitFrameMultiDeviceTestCases(base_test.BaseTestClass):
                 self.pn532, command_apdus, response_apdus)
         asserts.assert_false(
                     tag_detected,
-                    "Reader detected emulator even though observemode was enabled."
+                    "Reader detected emulator even though observe mode was enabled."
                 )
 
         self.emulator.nfc_emulator.setObserveModeEnabled(False)
 
+    """Tests the autotransact functionality with exit frames.
+
+    Test Steps:
+        1. Start emulator activity and set up payment HCE Service.
+        2. Enable observe mode.
+        3. Poll with a broadcast frame, and attempt to transact.
+        4. Wait for observe mode to be reenabled.
+        5. Poll again and verify that the tag is not detected.
+
+        Verifies:
+        1. Observe mode is disabled and a transaction occurs.
+        2. Verify correct exit frame was used for transaction.
+        3. After the first transaction, verifies that observe mode is reenabled.
+        4. After observe mode is reenabled, verifies that the tag is not
+        detected.
+    """
+    def test_exit_frames_registered_filters(self):
+        self._set_up_emulator(
+            "12345678", ["12345678", "aaaa"], True,
+            start_emulator_fun=self.emulator.nfc_emulator.startExitFrameActivity,
+            service_list=[_PAYMENT_SERVICE_1],
+            expected_service=_PAYMENT_SERVICE_1,
+            is_payment=True,
+            payment_default_service=_PAYMENT_SERVICE_1
+        )
+        asserts.skip_if(
+                    not self.emulator.nfc_emulator.isObserveModeSupported(),
+                    f"{self.emulator} observe mode not supported",
+                )
+        asserts.assert_true(
+            self.emulator.nfc_emulator.setObserveModeEnabled(True),
+            f"{self.emulator} could not set observe mode",
+        )
+
+        command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator,
+                                                      _PAYMENT_SERVICE_1)
+        test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
+            'ExitFrameListenerSuccess'
+        )
+        tag_detected, transacted = poll_and_transact(
+                self.pn532, command_apdus, response_apdus, "12345678")
+        asserts.assert_true(
+            tag_detected, _FAILED_TAG_MSG
+        )
+        asserts.assert_true(transacted, _FAILED_TRANSACTION_MSG)
+        test_pass_handler.waitAndGet('ExitFrameListenerSuccess', _NFC_TIMEOUT_SEC)
+
+
+        time.sleep(_NFC_TIMEOUT_SEC)
+
+        # Poll again and see if tag is detected, observe mode should be enabled
+        # by now.
+        asserts.assert_true(
+                    self.emulator.nfc_emulator.isObserveModeEnabled(),
+                    f"{self.emulator} isObserveModeEnabled did not return True",
+                )
+        tag_detected, _ = poll_and_transact(
+                self.pn532, command_apdus, response_apdus)
+        asserts.assert_false(
+                    tag_detected,
+                    "Reader detected emulator even though observe mode was enabled."
+                )
+
+        self.emulator.nfc_emulator.setObserveModeEnabled(False)
+
+    """Tests the autotransact functionality with exit frames.
+
+    Test Steps:
+        1. Start emulator activity and set up payment HCE Service.
+        2. Enable observe mode.
+        3. Poll with a broadcast frame, and attempt to transact.
+        4. Wait for observe mode to be reenabled.
+        5. Poll again and verify that the tag is not detected.
+
+        Verifies:
+        1. Observe mode is disabled and a transaction occurs.
+        2. Verify correct exit frame was used for transaction.
+        3. After the first transaction, verifies that observe mode is reenabled.
+        4. After observe mode is reenabled, verifies that the tag is not
+        detected.
+    """
+    def test_exit_frames_prefix_match(self):
+        self._set_up_emulator(
+            "dd1234", ["12345678", "dd.*", "ee.*", "ff.."], True,
+            start_emulator_fun=self.emulator.nfc_emulator.startExitFrameActivity,
+            service_list=[_PAYMENT_SERVICE_1],
+            expected_service=_PAYMENT_SERVICE_1,
+            is_payment=True,
+            payment_default_service=_PAYMENT_SERVICE_1
+        )
+        asserts.skip_if(
+                    not self.emulator.nfc_emulator.isObserveModeSupported(),
+                    f"{self.emulator} observe mode not supported",
+                )
+        asserts.assert_true(
+            self.emulator.nfc_emulator.setObserveModeEnabled(True),
+            f"{self.emulator} could not set observe mode",
+        )
+
+        command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator,
+                                                      _PAYMENT_SERVICE_1)
+        test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
+            'ExitFrameListenerSuccess'
+        )
+        tag_detected, transacted = poll_and_transact(
+                self.pn532, command_apdus, response_apdus, "dd1234")
+        asserts.assert_true(
+            tag_detected, _FAILED_TAG_MSG
+        )
+        asserts.assert_true(transacted, _FAILED_TRANSACTION_MSG)
+        test_pass_handler.waitAndGet('ExitFrameListenerSuccess', _NFC_TIMEOUT_SEC)
+
+
+        time.sleep(_NFC_TIMEOUT_SEC)
+
+        # Poll again and see if tag is detected, observe mode should be enabled
+        # by now.
+        asserts.assert_true(
+                    self.emulator.nfc_emulator.isObserveModeEnabled(),
+                    f"{self.emulator} isObserveModeEnabled did not return True",
+                )
+        tag_detected, _ = poll_and_transact(
+                self.pn532, command_apdus, response_apdus)
+        asserts.assert_false(
+                    tag_detected,
+                    "Reader detected emulator even though observe mode was enabled."
+                )
+
+        self.emulator.nfc_emulator.setObserveModeEnabled(False)
+
+    """Tests the autotransact functionality with exit frames.
+
+    Test Steps:
+        1. Start emulator activity and set up payment HCE Service.
+        2. Enable observe mode.
+        3. Poll with a broadcast frame, and attempt to transact.
+        4. Wait for observe mode to be reenabled.
+        5. Poll again and verify that the tag is not detected.
+
+        Verifies:
+        1. Observe mode is disabled and a transaction occurs.
+        2. Verify correct exit frame was used for transaction.
+        3. After the first transaction, verifies that observe mode is reenabled.
+        4. After observe mode is reenabled, verifies that the tag is not
+        detected.
+    """
+    def test_exit_frames_mask_match(self):
+        self._set_up_emulator(
+            "ff11", ["12345678", "ff.."], True,
+            start_emulator_fun=self.emulator.nfc_emulator.startExitFrameActivity,
+            service_list=[_PAYMENT_SERVICE_1],
+            expected_service=_PAYMENT_SERVICE_1,
+            is_payment=True,
+            payment_default_service=_PAYMENT_SERVICE_1
+        )
+        asserts.skip_if(
+                    not self.emulator.nfc_emulator.isObserveModeSupported(),
+                    f"{self.emulator} observe mode not supported",
+                )
+        asserts.assert_true(
+            self.emulator.nfc_emulator.setObserveModeEnabled(True),
+            f"{self.emulator} could not set observe mode",
+        )
+
+        command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator,
+                                                      _PAYMENT_SERVICE_1)
+        test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
+            'ExitFrameListenerSuccess'
+        )
+        tag_detected, transacted = poll_and_transact(
+                self.pn532, command_apdus, response_apdus, "ff11")
+        asserts.assert_true(
+            tag_detected, _FAILED_TAG_MSG
+        )
+        asserts.assert_true(transacted, _FAILED_TRANSACTION_MSG)
+        test_pass_handler.waitAndGet('ExitFrameListenerSuccess', _NFC_TIMEOUT_SEC)
+
+
+        time.sleep(_NFC_TIMEOUT_SEC)
+
+        # Poll again and see if tag is detected, observe mode should be enabled
+        # by now.
+        asserts.assert_true(
+                    self.emulator.nfc_emulator.isObserveModeEnabled(),
+                    f"{self.emulator} isObserveModeEnabled did not return True",
+                )
+        tag_detected, _ = poll_and_transact(
+                self.pn532, command_apdus, response_apdus)
+        asserts.assert_false(
+                    tag_detected,
+                    "Reader detected emulator even though observe mode was enabled."
+                )
+
+        self.emulator.nfc_emulator.setObserveModeEnabled(False)
+
+    """Tests the autotransact functionality with exit frames.
+
+    Test Steps:
+        1. Start emulator activity and set up payment HCE Service.
+        2. Enable observe mode.
+        3. Poll with a broadcast frame, and attempt to transact.
+        4. Wait for observe mode to be reenabled.
+        5. Poll again and verify that the tag is not detected.
+
+        Verifies:
+        1. Observe mode is disabled and a transaction occurs.
+        2. Verify correct exit frame was used for transaction.
+        3. After the first transaction, verifies that observe mode is reenabled.
+        4. After observe mode is reenabled, verifies that the tag is not
+        detected.
+    """
+    def test_exit_frames_mask_and_prefix_match(self):
+        self._set_up_emulator(
+            "ddfe1134", ["12345678", "dd..11.*", "ee.*", "ff.."], True,
+            start_emulator_fun=self.emulator.nfc_emulator.startExitFrameActivity,
+            service_list=[_PAYMENT_SERVICE_1],
+            expected_service=_PAYMENT_SERVICE_1,
+            is_payment=True,
+            payment_default_service=_PAYMENT_SERVICE_1
+        )
+        asserts.skip_if(
+                    not self.emulator.nfc_emulator.isObserveModeSupported(),
+                    f"{self.emulator} observe mode not supported",
+                )
+        asserts.assert_true(
+            self.emulator.nfc_emulator.setObserveModeEnabled(True),
+            f"{self.emulator} could not set observe mode",
+        )
+
+        command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator,
+                                                      _PAYMENT_SERVICE_1)
+        test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
+            'ExitFrameListenerSuccess'
+        )
+        tag_detected, transacted = poll_and_transact(
+                self.pn532, command_apdus, response_apdus, "ddfe1134")
+        asserts.assert_true(
+            tag_detected, _FAILED_TAG_MSG
+        )
+        asserts.assert_true(transacted, _FAILED_TRANSACTION_MSG)
+        test_pass_handler.waitAndGet('ExitFrameListenerSuccess', _NFC_TIMEOUT_SEC)
+
+
+        time.sleep(_NFC_TIMEOUT_SEC)
+
+        # Poll again and see if tag is detected, observe mode should be enabled
+        # by now.
+        asserts.assert_true(
+                    self.emulator.nfc_emulator.isObserveModeEnabled(),
+                    f"{self.emulator} isObserveModeEnabled did not return True",
+                )
+        tag_detected, _ = poll_and_transact(
+                self.pn532, command_apdus, response_apdus)
+        asserts.assert_false(
+                    tag_detected,
+                    "Reader detected emulator even though observe mode was enabled."
+                )
+
+        self.emulator.nfc_emulator.setObserveModeEnabled(False)
+
+    """Tests the autotransact functionality with exit frames.
+
+    Test Steps:
+        1. Start emulator activity and set up payment HCE Service.
+        2. Enable observe mode.
+        3. Poll with a broadcast frame, don't transact though.
+        4. Wait for observe mode to be reenabled.
+        5. Poll again and verify that the tag is not detected.
+
+        Verifies:
+        1. Observe mode is disabled.
+        2. Verify correct exit frame was used for transaction.
+        3. After the first transaction, verifies that observe mode is reenabled.
+        4. After observe mode is reenabled, verifies that the tag is not
+        detected.
+    """
+    def test_exit_frames_no_transaction_observe_mode_reenabled(self):
+        self._set_up_emulator(
+            "12345678", ["12345678", "aaaa"], False,
+            start_emulator_fun=self.emulator.nfc_emulator.startExitFrameActivity,
+            service_list=[_PAYMENT_SERVICE_1],
+            expected_service=_PAYMENT_SERVICE_1,
+            is_payment=True,
+            payment_default_service=_PAYMENT_SERVICE_1
+        )
+        asserts.skip_if(
+                    not self.emulator.nfc_emulator.isObserveModeSupported(),
+                    f"{self.emulator} observe mode not supported",
+                )
+        asserts.assert_true(
+            self.emulator.nfc_emulator.setObserveModeEnabled(True),
+            f"{self.emulator} could not set observe mode",
+        )
+
+        command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator,
+                                                      _PAYMENT_SERVICE_1)
+        test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
+            'ExitFrameListenerSuccess'
+        )
+        tag_detected, transacted = poll_and_transact(
+                self.pn532, [], [], "12345678")
+        asserts.assert_true(
+            tag_detected, _FAILED_TAG_MSG
+        )
+        test_pass_handler.waitAndGet('ExitFrameListenerSuccess', _NFC_TIMEOUT_SEC)
+
+
+        time.sleep(_NFC_TIMEOUT_SEC)
+
+        # Poll again and see if tag is detected, observe mode should be enabled
+        # by now.
+        asserts.assert_true(
+                    self.emulator.nfc_emulator.isObserveModeEnabled(),
+                    f"{self.emulator} isObserveModeEnabled did not return True",
+                )
+        tag_detected, _ = poll_and_transact(
+                self.pn532, [], [])
+        asserts.assert_false(
+                    tag_detected,
+                    "Reader detected emulator even though observe mode was enabled."
+                )
+
+        self.emulator.nfc_emulator.setObserveModeEnabled(False)
+
+    def teardown_test(self):
+        if hasattr(self, 'emulator') and hasattr(self.emulator, 'nfc_emulator'):
+            self.emulator.nfc_emulator.closeActivity()
+            self.emulator.nfc_emulator.logInfo(
+                "*** TEST END: " + self.current_test_info.name + " ***")
+        self.pn532.reset_buffers()
+        self.pn532.mute()
+        param_list = [[self.emulator]]
+        utils.concurrent_exec(lambda d: d.services.create_output_excerpts_all(
+            self.current_test_info),
+                              param_list=param_list,
+                              raise_on_exception=True)
 
 if __name__ == '__main__':
     # Take test args

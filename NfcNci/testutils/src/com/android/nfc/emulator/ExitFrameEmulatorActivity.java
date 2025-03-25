@@ -22,32 +22,44 @@ import android.os.Bundle;
 import android.util.Log;
 
 import com.android.nfc.service.PaymentService1;
-import com.android.nfc.service.TransportService1;
 
+import java.util.ArrayList;
 import java.util.HexFormat;
+import java.util.List;
+import java.util.regex.Pattern;
 
 public class ExitFrameEmulatorActivity extends BaseEmulatorActivity {
     private static final String TAG = "ExitFrameEmulatorActivity";
 
     public static final String EXIT_FRAME_KEY = "EXIT_FRAME";
+    public static final String REGISTER_PATTERNS_KEY = "REGISTER_PATTERNS";
+    public static final String WAIT_FOR_TRANSACTION_KEY = "WAIT_FOR_TRANSACTION";
 
     private String mReceivedExitFrame = null;
     private String mIntendedExitFrameData = null;
+    private final List<String> mRegisteredPatterns = new ArrayList<>();
+    private boolean mWaitForTransaction = true;
+    private ComponentName mServiceName = null;
 
     private final CardEmulation.NfcEventCallback mEventListener =
             new CardEmulation.NfcEventCallback() {
-        public void onObserveModeDisabledInFirmware(PollingFrame exitFrame) {
-            if (exitFrame != null) {
-                mReceivedExitFrame = HexFormat.of().formatHex(exitFrame.getData());
-                Log.d(TAG, "Received exit frame: " + mReceivedExitFrame);
-            }
-        }
-    };
+                public void onObserveModeDisabledInFirmware(PollingFrame exitFrame) {
+                    if (exitFrame != null) {
+                        mReceivedExitFrame = HexFormat.of().formatHex(exitFrame.getData());
+                        Log.d(TAG, "Received exit frame: " + mReceivedExitFrame);
+                    }
+
+                    if (!mWaitForTransaction) {
+                        verifyExitFrameAndPassTest();
+                    }
+                }
+            };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mIntendedExitFrameData = getIntent().getStringExtra(EXIT_FRAME_KEY);
+        mWaitForTransaction = getIntent().getBooleanExtra(WAIT_FOR_TRANSACTION_KEY, true);
 
         setupServices(PaymentService1.COMPONENT);
         makeDefaultWalletRoleHolder();
@@ -55,29 +67,38 @@ public class ExitFrameEmulatorActivity extends BaseEmulatorActivity {
 
     public void onResume() {
         super.onResume();
-        ComponentName serviceName =
+        mServiceName =
                 new ComponentName(this.getApplicationContext(), PaymentService1.class);
-        mCardEmulation.setPreferredService(this, serviceName);
+        mCardEmulation.setPreferredService(this, mServiceName);
         waitForPreferredService();
 
         mReceivedExitFrame = null;
         registerEventListener(mEventListener);
+
+        if (getIntent().hasExtra(REGISTER_PATTERNS_KEY)) {
+            getIntent().getStringArrayListExtra(REGISTER_PATTERNS_KEY).forEach(
+                    plpf -> {
+                        mCardEmulation.registerPollingLoopPatternFilterForService(mServiceName,
+                                plpf, true);
+                        mRegisteredPatterns.add(plpf);
+                    }
+            );
+        }
     }
 
     @Override
     public void onPause() {
         super.onPause();
 
+        mRegisteredPatterns.forEach(
+                plpf -> mCardEmulation.removePollingLoopPatternFilterForService(mServiceName,
+                        plpf));
         mCardEmulation.unsetPreferredService(this);
     }
 
     @Override
     public void onApduSequenceComplete(ComponentName component, long duration) {
-        boolean success = mIntendedExitFrameData.equals(mReceivedExitFrame);
-
-        if (success) {
-            setTestPassed();
-        }
+        verifyExitFrameAndPassTest();
     }
 
     @Override
@@ -87,7 +108,20 @@ public class ExitFrameEmulatorActivity extends BaseEmulatorActivity {
     }
 
     @Override
-    public ComponentName getPreferredServiceComponent(){
-        return TransportService1.COMPONENT;
+    public ComponentName getPreferredServiceComponent() {
+        return PaymentService1.COMPONENT;
+    }
+
+    private void verifyExitFrameAndPassTest() {
+        if (mIntendedExitFrameData == null || mReceivedExitFrame == null) {
+            return;
+        }
+
+        boolean success =
+                Pattern.compile(mIntendedExitFrameData).matcher(mReceivedExitFrame).matches();
+
+        if (success) {
+            setTestPassed();
+        }
     }
 }

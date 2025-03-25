@@ -1266,6 +1266,9 @@ public class RegisteredServicesCache {
                 Log.e(TAG, "removePollingLoopFilterForService: UID mismatch");
                 return false;
             }
+            DynamicSettings dynamicSettings =
+                    getOrCreateSettings(services, componentName, serviceInfo.getUid());
+            dynamicSettings.pollingLoopFilters.remove(pollingLoopFilter);
             serviceInfo.removePollingLoopFilter(pollingLoopFilter);
             newServices = new ArrayList<ApduServiceInfo>(services.services.values());
         }
@@ -1328,6 +1331,9 @@ public class RegisteredServicesCache {
                 Log.e(TAG, "removePollingLoopPatternFilterForService: UID mismatch");
                 return false;
             }
+            DynamicSettings dynamicSettings =
+                    getOrCreateSettings(services, componentName, serviceInfo.getUid());
+            dynamicSettings.pollingLoopPatternFilters.remove(pollingLoopPatternFilter);
             serviceInfo.removePollingLoopPatternFilter(pollingLoopPatternFilter);
             newServices = new ArrayList<ApduServiceInfo>(services.services.values());
         }
