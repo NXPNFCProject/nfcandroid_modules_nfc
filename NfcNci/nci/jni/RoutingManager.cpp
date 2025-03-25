@@ -72,6 +72,7 @@ static const uint16_t DEFAULT_SYS_CODE = 0xFEFE;
 static const uint8_t AID_ROUTE_QUAL_PREFIX = 0x10;
 
 static Mutex sEeInfoMutex;
+static Mutex sEeInfoChangedMutex;
 
 /*******************************************************************************
 **
@@ -226,7 +227,7 @@ bool RoutingManager::initialize(nfc_jni_native_data* native) {
     LOG(ERROR) << fn << ": Failed to register wildcard AID for DH";
 
   // Trigger RT update
-  mEeInfoChanged = true;
+  setEeInfoChangedFlag();
   mDefaultAidRouteAdded = false;
 
   return true;
@@ -397,13 +398,16 @@ bool RoutingManager::removeAidRouting(const uint8_t* aid, uint8_t aidLen) {
 tNFA_STATUS RoutingManager::commitRouting() {
   static const char fn[] = "RoutingManager::commitRouting";
   tNFA_STATUS nfaStat = 0;
-  if (mAidRoutingConfigured || mEeInfoChanged) {
+  sEeInfoChangedMutex.lock();
+  bool eeChanged = mEeInfoChanged;
+  mEeInfoChanged = false;
+  sEeInfoChangedMutex.unlock();
+  if (eeChanged) {
+    clearRoutingEntry(CLEAR_PROTOCOL_ENTRIES | CLEAR_TECHNOLOGY_ENTRIES);
+    updateRoutingTable();
+  }
+  if (mAidRoutingConfigured || eeChanged) {
     LOG(DEBUG) << StringPrintf("%s: RT update needed", fn);
-    if (mEeInfoChanged) {
-      clearRoutingEntry(CLEAR_PROTOCOL_ENTRIES | CLEAR_TECHNOLOGY_ENTRIES);
-      updateRoutingTable();
-      mEeInfoChanged = false;
-    }
     {
       SyncEventGuard guard(mEeUpdateEvent);
       nfaStat = NFA_EeUpdateNow();
@@ -830,7 +834,7 @@ void RoutingManager::updateRoutingTable() {
 void RoutingManager::updateIsoDepProtocolRoute(int route) {
   static const char fn[] = "RoutingManager::updateIsoDepProtocolRoute";
   LOG(DEBUG) << StringPrintf("%s:  New default ISO-DEP route=0x%x", fn, route);
-  mEeInfoChanged = true;
+  setEeInfoChangedFlag();
   mDefaultIsoDepRoute = route;
 }
 
@@ -846,7 +850,7 @@ void RoutingManager::updateIsoDepProtocolRoute(int route) {
 void RoutingManager::updateSystemCodeRoute(int route) {
   static const char fn[] = "RoutingManager::updateSystemCodeRoute";
   LOG(DEBUG) << StringPrintf("%s:  New default SC route=0x%x", fn, route);
-  mEeInfoChanged = true;
+  setEeInfoChangedFlag();
   mDefaultSysCodeRoute = route;
   updateDefaultRoute();
 }
@@ -1217,7 +1221,7 @@ void RoutingManager::nfaEeCallback(tNFA_EE_EVT event,
       sEeInfoMutex.unlock();
       if (!routingManager.mIsRFDiscoveryOptimized) {
         if (routingManager.mReceivedEeInfo && !routingManager.mDeinitializing) {
-          routingManager.mEeInfoChanged = true;
+          routingManager.setEeInfoChangedFlag();
           routingManager.notifyEeUpdated();
         }
       }
@@ -1231,7 +1235,7 @@ void RoutingManager::nfaEeCallback(tNFA_EE_EVT event,
           eventData->discover_req.status, eventData->discover_req.num_ee);
       if (routingManager.mIsRFDiscoveryOptimized) {
         if (routingManager.mReceivedEeInfo && !routingManager.mDeinitializing) {
-          routingManager.mEeInfoChanged = true;
+          routingManager.setEeInfoChangedFlag();
           routingManager.notifyEeUpdated();
         }
       }
@@ -1353,7 +1357,7 @@ int RoutingManager::registerT3tIdentifier(uint8_t* t3tId, uint8_t t3tIdLen) {
       return NFA_HANDLE_INVALID;
     }
     LOG(DEBUG) << StringPrintf("%s: Succeed to register system code on DH", fn);
-    mEeInfoChanged = true;
+    setEeInfoChangedFlag();
     // add handle and system code pair to the map
     mMapScbrHandle.emplace(mNfcFOnDhHandle, systemCode);
   } else {
@@ -1399,7 +1403,7 @@ void RoutingManager::deregisterT3tIdentifier(int handle) {
         tNFA_STATUS nfaStat = NFA_EeRemoveSystemCodeRouting(systemCode);
         if (nfaStat == NFA_STATUS_OK) {
           mRoutingEvent.wait();
-          mEeInfoChanged = true;
+          setEeInfoChangedFlag();
           LOG(DEBUG) << StringPrintf(
               "%s: Succeeded in deregistering system Code on DH", fn);
         } else {
@@ -1567,7 +1571,7 @@ void RoutingManager::setEeTechRouteUpdateRequired() {
 
   // Setting flag for Ee info changed so that
   // routing table can be updated
-  mEeInfoChanged = true;
+  setEeInfoChangedFlag();
 }
 
 /*******************************************************************************
@@ -1582,6 +1586,23 @@ void RoutingManager::setEeTechRouteUpdateRequired() {
 void RoutingManager::deinitialize() {
   onNfccShutdown();
   NFA_EeDeregister(nfaEeCallback);
+}
+
+/*******************************************************************************
+**
+** Function:        setEeInfoChangedFlag
+**
+** Description:     .
+**
+** Returns:         None
+**
+*******************************************************************************/
+void RoutingManager::setEeInfoChangedFlag() {
+  static const char fn[] = "RoutingManager::setEeInfoChangedFlag";
+  LOG(DEBUG) << StringPrintf("%s", fn);
+  sEeInfoChangedMutex.lock();
+  mEeInfoChanged = true;
+  sEeInfoChangedMutex.unlock();
 }
 
 /*******************************************************************************
