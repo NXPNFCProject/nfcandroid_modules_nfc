@@ -443,41 +443,34 @@ public class AidRoutingManager {
                     }
                 }
 
-                // register default route in below cases:
-                // 1. mDefaultRoute is different with mDefaultIsoDepRoute
-                // 2. mDefaultRoute and mDefaultIsoDepRoute all equal to ROUTE_HOST
-                //    , which is used for screen off HCE scenarios
-                if (mDefaultRoute != mDefaultIsoDepRoute || mDefaultIsoDepRoute == ROUTE_HOST) {
-                    if (NfcService.getInstance().getNciVersion()
-                            >= NfcService.getInstance().NCI_VERSION_2_0) {
-                        String emptyAid = "";
-                        AidEntry entry = new AidEntry();
-                        int default_route_power_state;
-                        entry.route = mDefaultRoute;
-                        if (mDefaultRoute == ROUTE_HOST) {
-                            entry.isOnHost = true;
-                            default_route_power_state = RegisteredAidCache.POWER_STATE_SWITCH_ON
-                                    | RegisteredAidCache.POWER_STATE_SCREEN_ON_LOCKED;
-                            Set<String> aidsForDefaultRoute = mAidRoutingTable.get(mDefaultRoute);
-                            if (aidsForDefaultRoute != null) {
-                                for (String aid : aidsForDefaultRoute) {
-                                    default_route_power_state |= aidMap.get(aid).power;
-                                }
+                if (NfcService.getInstance().getNciVersion()
+                        >= NfcService.getInstance().NCI_VERSION_2_0) {
+                    String emptyAid = "";
+                    AidEntry entry = new AidEntry();
+                    int default_route_power_state;
+                    entry.route = mDefaultRoute;
+                    if (mDefaultRoute == ROUTE_HOST) {
+                        entry.isOnHost = true;
+                        default_route_power_state = RegisteredAidCache.POWER_STATE_SWITCH_ON
+                                | RegisteredAidCache.POWER_STATE_SCREEN_ON_LOCKED;
+                        Set<String> aidsForDefaultRoute = mAidRoutingTable.get(mDefaultRoute);
+                        if (aidsForDefaultRoute != null) {
+                            for (String aid : aidsForDefaultRoute) {
+                                default_route_power_state |= aidMap.get(aid).power;
                             }
-                        } else {
-                            entry.isOnHost = false;
-                            default_route_power_state = RegisteredAidCache.POWER_STATE_ALL;
                         }
-                        if (mPowerEmptyAid != default_route_power_state) {
-                            isPowerStateUpdated = true;
-                        }
-                        mPowerEmptyAid = default_route_power_state;
-                        entry.aidInfo = RegisteredAidCache.AID_ROUTE_QUAL_PREFIX;
-                        entry.power = default_route_power_state;
-
-                        aidRoutingTableCache.put(emptyAid, entry);
-                        if (DBG) Log.d(TAG, "configureRouting: Add emptyAid into AidRoutingTable");
+                    } else {
+                        entry.isOnHost = false;
+                        default_route_power_state = RegisteredAidCache.POWER_STATE_ALL;
                     }
+                    if (mPowerEmptyAid != default_route_power_state) {
+                        isPowerStateUpdated = true;
+                    }
+                    mPowerEmptyAid = default_route_power_state;
+                    entry.aidInfo = RegisteredAidCache.AID_ROUTE_QUAL_PREFIX;
+                    entry.power = default_route_power_state;
+                    aidRoutingTableCache.put(emptyAid, entry);
+                    if (DBG) Log.d(TAG, "configureRouting: Add emptyAid into AidRoutingTable");
                 }
 
                 // Register additional offhost AIDs when their support power states are
