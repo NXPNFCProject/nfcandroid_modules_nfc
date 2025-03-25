@@ -405,6 +405,9 @@ public class CardEmulationManagerTest {
     @Test
     public void testOnServicesUpdated_walletEnabledPollingLoopEnabled() {
         when(mWalletRoleObserver.isWalletRoleFeatureEnabled()).thenReturn(true);
+        when(Flags.exitFrames()).thenReturn(true);
+        when(mNfcService.isFirmwareExitFramesSupported()).thenReturn(true);
+        when(mNfcService.getNumberOfFirmwareExitFramesSupported()).thenReturn(5);
 
         mCardEmulationManager.onServicesUpdated(USER_ID, UPDATED_SERVICES, false);
 
@@ -413,6 +416,7 @@ public class CardEmulationManagerTest {
         verify(mPreferredServices).onServicesUpdated();
         verify(mHostEmulationManager)
                 .updatePollingLoopFilters(eq(USER_ID), mServiceListCaptor.capture());
+        verify(mNfcService).setFirmwareExitFrameTable(any(), anyInt());
         verify(mNfcService).onPreferredPaymentChanged(eq(NfcAdapter.PREFERRED_PAYMENT_UPDATED));
         assertEquals(UPDATED_SERVICES, mServiceListCaptor.getAllValues().getFirst());
         assertEquals(UPDATED_SERVICES, mServiceListCaptor.getAllValues().getLast());
@@ -2678,164 +2682,4 @@ public class CardEmulationManagerTest {
         assertThat(frames).hasSize(5);
     }
 
-    @Test
-    public void registerPollingLoopFilterForService_roleService_setsExitFrames() throws Exception {
-        when(Flags.exitFrames()).thenReturn(true);
-        when(mNfcService.isFirmwareExitFramesSupported()).thenReturn(true);
-        when(mNfcService.getNumberOfFirmwareExitFramesSupported()).thenReturn(5);
-        when(mRegisteredServicesCache.hasService(eq(USER_ID), any())).thenReturn(true);
-        when(mRegisteredServicesCache.registerPollingLoopFilterForService(anyInt(), anyInt(), any(),
-                any(), anyBoolean())).thenReturn(true);
-        when(mRegisteredAidCache.isDefaultOrAssociatedWalletPackage(
-                eq(WALLET_PAYMENT_SERVICE.getPackageName()), eq(USER_ID))).thenReturn(true);
-        when(mRegisteredServicesCache.getServices(USER_ID)).thenReturn(List.of());
-
-        mCardEmulationManager.getNfcCardEmulationInterface().registerPollingLoopFilterForService(
-                USER_ID, WALLET_PAYMENT_SERVICE, "aa", true);
-
-        verify(mNfcService).setFirmwareExitFrameTable(any(), anyInt());
-    }
-
-    @Test
-    public void registerPollingLoopFilterForService_notRoleService_doesNotSetExitFrames()
-            throws Exception {
-        when(Flags.exitFrames()).thenReturn(true);
-        when(mNfcService.isFirmwareExitFramesSupported()).thenReturn(true);
-        when(mNfcService.getNumberOfFirmwareExitFramesSupported()).thenReturn(5);
-        when(mRegisteredServicesCache.hasService(eq(USER_ID), any())).thenReturn(true);
-        when(mRegisteredServicesCache.registerPollingLoopFilterForService(anyInt(), anyInt(), any(),
-                any(), anyBoolean())).thenReturn(true);
-        when(mRegisteredAidCache.isDefaultOrAssociatedWalletPackage(
-                eq("com.android.test"), eq(USER_ID))).thenReturn(false);
-        when(mRegisteredServicesCache.getServices(USER_ID)).thenReturn(List.of());
-
-        mCardEmulationManager.getNfcCardEmulationInterface().registerPollingLoopFilterForService(
-                USER_ID, new ComponentName("com.android.test", "com.android.test.Service"), "aa",
-                true);
-
-        verify(mNfcService, never()).setFirmwareExitFrameTable(any(), anyInt());
-    }
-
-    @Test
-    public void removePollingLoopFilterForService_roleService_setsExitFrames()
-            throws Exception {
-        when(Flags.exitFrames()).thenReturn(true);
-        when(mNfcService.isFirmwareExitFramesSupported()).thenReturn(true);
-        when(mNfcService.getNumberOfFirmwareExitFramesSupported()).thenReturn(5);
-        when(mRegisteredServicesCache.hasService(eq(USER_ID), any())).thenReturn(true);
-        when(mRegisteredServicesCache.removePollingLoopFilterForService(anyInt(), anyInt(), any(),
-                any())).thenReturn(true);
-        when(mRegisteredAidCache.isDefaultOrAssociatedWalletPackage(
-                eq(WALLET_PAYMENT_SERVICE.getPackageName()), eq(USER_ID))).thenReturn(true);
-        when(mRegisteredServicesCache.getServices(USER_ID)).thenReturn(List.of());
-
-        mCardEmulationManager.getNfcCardEmulationInterface().removePollingLoopFilterForService(
-                USER_ID, WALLET_PAYMENT_SERVICE, "aa");
-
-        verify(mNfcService).setFirmwareExitFrameTable(any(), anyInt());
-    }
-
-    @Test
-    public void removePollingLoopFilterForService_notRoleService_doesNotSetExitFrames()
-            throws Exception {
-        when(Flags.exitFrames()).thenReturn(true);
-        when(mNfcService.isFirmwareExitFramesSupported()).thenReturn(true);
-        when(mNfcService.getNumberOfFirmwareExitFramesSupported()).thenReturn(5);
-        when(mRegisteredServicesCache.hasService(eq(USER_ID), any())).thenReturn(true);
-        when(mRegisteredServicesCache.removePollingLoopFilterForService(anyInt(), anyInt(), any(),
-                any())).thenReturn(true);
-        when(mRegisteredAidCache.isDefaultOrAssociatedWalletPackage(
-                eq("com.android.test"), eq(USER_ID))).thenReturn(false);
-        when(mRegisteredServicesCache.getServices(USER_ID)).thenReturn(List.of());
-
-        mCardEmulationManager.getNfcCardEmulationInterface().removePollingLoopFilterForService(
-                USER_ID, new ComponentName("com.android.test", "com.android.test.Service"), "aa");
-
-        verify(mNfcService, never()).setFirmwareExitFrameTable(any(), anyInt());
-    }
-
-    @Test
-    public void registerPollingLoopPatternFilterForService_roleService_setsExitFrames()
-            throws Exception {
-        when(Flags.exitFrames()).thenReturn(true);
-        when(mNfcService.isFirmwareExitFramesSupported()).thenReturn(true);
-        when(mNfcService.getNumberOfFirmwareExitFramesSupported()).thenReturn(5);
-        when(mRegisteredServicesCache.hasService(eq(USER_ID), any())).thenReturn(true);
-        when(mRegisteredServicesCache.registerPollingLoopPatternFilterForService(anyInt(), anyInt(),
-                any(), any(), anyBoolean())).thenReturn(true);
-        when(mRegisteredAidCache.isDefaultOrAssociatedWalletPackage(
-                eq(WALLET_PAYMENT_SERVICE.getPackageName()), eq(USER_ID))).thenReturn(true);
-        when(mRegisteredServicesCache.getServices(USER_ID)).thenReturn(List.of());
-
-        mCardEmulationManager.getNfcCardEmulationInterface()
-                .registerPollingLoopPatternFilterForService(
-                        USER_ID, WALLET_PAYMENT_SERVICE, "aa", true);
-
-        verify(mNfcService).setFirmwareExitFrameTable(any(), anyInt());
-    }
-
-    @Test
-    public void registerPollingLoopPatternFilterForService_notRoleService_doesNotSetExitFrames()
-            throws Exception {
-        when(Flags.exitFrames()).thenReturn(true);
-        when(mNfcService.isFirmwareExitFramesSupported()).thenReturn(true);
-        when(mNfcService.getNumberOfFirmwareExitFramesSupported()).thenReturn(5);
-        when(mRegisteredServicesCache.hasService(eq(USER_ID), any())).thenReturn(true);
-        when(mRegisteredServicesCache.registerPollingLoopPatternFilterForService(anyInt(), anyInt(),
-                any(), any(), anyBoolean())).thenReturn(true);
-        when(mRegisteredAidCache.isDefaultOrAssociatedWalletPackage(
-                eq("com.android.test"), eq(USER_ID))).thenReturn(false);
-        when(mRegisteredServicesCache.getServices(USER_ID)).thenReturn(List.of());
-
-        mCardEmulationManager.getNfcCardEmulationInterface()
-                .registerPollingLoopPatternFilterForService(
-                        USER_ID,
-                        new ComponentName("com.android.test", "com.android.test.Service"),
-                        "aa",
-                        true);
-
-        verify(mNfcService, never()).setFirmwareExitFrameTable(any(), anyInt());
-    }
-
-    @Test
-    public void removePollingLoopPatternFilterForService_roleService_setsExitFrames()
-            throws Exception {
-        when(Flags.exitFrames()).thenReturn(true);
-        when(mNfcService.isFirmwareExitFramesSupported()).thenReturn(true);
-        when(mNfcService.getNumberOfFirmwareExitFramesSupported()).thenReturn(5);
-        when(mRegisteredServicesCache.hasService(eq(USER_ID), any())).thenReturn(true);
-        when(mRegisteredServicesCache.removePollingLoopPatternFilterForService(anyInt(), anyInt(),
-                any(), any())).thenReturn(true);
-        when(mRegisteredAidCache.isDefaultOrAssociatedWalletPackage(
-                eq(WALLET_PAYMENT_SERVICE.getPackageName()), eq(USER_ID))).thenReturn(true);
-        when(mRegisteredServicesCache.getServices(USER_ID)).thenReturn(List.of());
-
-        mCardEmulationManager.getNfcCardEmulationInterface()
-                .removePollingLoopPatternFilterForService(
-                        USER_ID, WALLET_PAYMENT_SERVICE, "aa");
-
-        verify(mNfcService).setFirmwareExitFrameTable(any(), anyInt());
-    }
-
-    @Test
-    public void removePollingLoopPatternFilterForService_notRoleService_doesNotSetExitFrames()
-            throws Exception {
-        when(Flags.exitFrames()).thenReturn(true);
-        when(mNfcService.isFirmwareExitFramesSupported()).thenReturn(true);
-        when(mNfcService.getNumberOfFirmwareExitFramesSupported()).thenReturn(5);
-        when(mRegisteredServicesCache.hasService(eq(USER_ID), any())).thenReturn(true);
-        when(mRegisteredServicesCache.removePollingLoopPatternFilterForService(anyInt(), anyInt(),
-                any(), any())).thenReturn(true);
-        when(mRegisteredAidCache.isDefaultOrAssociatedWalletPackage(
-                eq("com.android.test"), eq(USER_ID))).thenReturn(false);
-        when(mRegisteredServicesCache.getServices(USER_ID)).thenReturn(List.of());
-
-        mCardEmulationManager.getNfcCardEmulationInterface()
-                .removePollingLoopPatternFilterForService(
-                        USER_ID,
-                        new ComponentName("com.android.test", "com.android.test.Service"),
-                        "aa");
-
-        verify(mNfcService, never()).setFirmwareExitFrameTable(any(), anyInt());
-    }
  }

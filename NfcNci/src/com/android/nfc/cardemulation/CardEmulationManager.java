@@ -904,11 +904,6 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
                                     .setPollingLoopFilter(pollingLoopFilter)
                                     .build())
                             .build());
-            if (Flags.exitFrames()
-                    && mAidCache.isDefaultOrAssociatedWalletPackage(service.getPackageName(),
-                    userId)) {
-                updateFirmwareExitFramesForWalletRole(userId);
-            }
             return true;
         }
 
@@ -944,11 +939,6 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
                                     .setPollingLoopFilter(pollingLoopFilter)
                                     .build())
                             .build());
-            if (Flags.exitFrames()
-                    && mAidCache.isDefaultOrAssociatedWalletPackage(service.getPackageName(),
-                    userId)) {
-                updateFirmwareExitFramesForWalletRole(userId);
-            }
             return true;
         }
 
@@ -984,11 +974,6 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
                                     .setPollingLoopFilter(pollingLoopPatternFilter)
                                     .build())
                             .build());
-            if (Flags.exitFrames()
-                    && mAidCache.isDefaultOrAssociatedWalletPackage(service.getPackageName(),
-                    userId)) {
-                updateFirmwareExitFramesForWalletRole(userId);
-            }
             return true;
         }
 
@@ -1024,11 +1009,6 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
                                     .setPollingLoopFilter(pollingLoopPatternFilter)
                                     .build())
                             .build());
-            if (Flags.exitFrames()
-                    && mAidCache.isDefaultOrAssociatedWalletPackage(service.getPackageName(),
-                    userId)) {
-                updateFirmwareExitFramesForWalletRole(userId);
-            }
             return true;
         }
 
