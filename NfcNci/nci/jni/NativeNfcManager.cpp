@@ -2075,6 +2075,35 @@ static jboolean nfcManager_doDeinitialize(JNIEnv*, jobject) {
 
   LOG(DEBUG) << StringPrintf("%s: deregister VS callbacks", __func__);
   NFA_RegVSCback(false, &nfaVSCallback);
+  // abort any active waits
+  {
+    SyncEventGuard guard(sNfaSetPowerSubState);
+    sNfaSetPowerSubState.notifyOne();
+  }
+  {
+    SyncEventGuard guard(sNfaEnableDisablePollingEvent);
+    sNfaEnableDisablePollingEvent.notifyOne();
+  }
+  {
+    SyncEventGuard guard(gNfaSetConfigEvent);
+    gNfaSetConfigEvent.notifyOne();
+  }
+  {
+    SyncEventGuard guard(gNfaGetConfigEvent);
+    gNfaGetConfigEvent.notifyOne();
+  }
+  {
+    SyncEventGuard guard(gNfaVsCommand);
+    gNfaVsCommand.notifyOne();
+  }
+  {
+    SyncEventGuard guard(gSendRawVsCmdEvent);
+    gSendRawVsCmdEvent.notifyOne();
+  }
+  {
+    SyncEventGuard guard(gNfaRemoveEpEvent);
+    gNfaRemoveEpEvent.notifyOne();
+  }
 
   NfcAdaptation& theInstance = NfcAdaptation::GetInstance();
   theInstance.Finalize();
