@@ -24,6 +24,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.annotation.NonNull;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.Instrumentation;
 import android.app.KeyguardManager;
 import android.content.BroadcastReceiver;
@@ -2481,6 +2482,10 @@ public class CardEmulationTest {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         Activity activity = InstrumentationRegistry.getInstrumentation().startActivitySync(intent);
         InstrumentationRegistry.getInstrumentation().callActivityOnResume(activity);
+        ComponentName topComponentName = mContext.getSystemService(ActivityManager.class)
+                .getRunningTasks(1).get(0).topActivity;
+        Assert.assertEquals("Foreground activity not in the foreground",
+                NfcFCardEmulationActivity.class.getName(), topComponentName.getClassName());
         return activity;
     }
 }

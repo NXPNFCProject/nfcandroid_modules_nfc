@@ -25,6 +25,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.PendingIntent;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
@@ -1198,6 +1199,10 @@ public class NfcAdapterTest {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         Activity activity = InstrumentationRegistry.getInstrumentation().startActivitySync(intent);
         InstrumentationRegistry.getInstrumentation().callActivityOnResume(activity);
+        ComponentName topComponentName = mContext.getSystemService(ActivityManager.class)
+                .getRunningTasks(1).get(0).topActivity;
+        Assert.assertEquals("Foreground activity not in the foreground",
+                NfcFCardEmulationActivity.class.getName(), topComponentName.getClassName());
         return activity;
     }
 
