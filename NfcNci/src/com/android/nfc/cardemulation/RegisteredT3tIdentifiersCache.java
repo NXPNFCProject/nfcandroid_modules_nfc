@@ -181,10 +181,10 @@ public class RegisteredT3tIdentifiersCache {
         mRoutingManager.configureRouting(t3tIdentifiers);
     }
 
-    public void onSecureNfcToggled() {
+    public void onTriggerRoutingTableUpdate() {
         synchronized(mLock) {
             updateRoutingLocked(true);
-      }
+        }
     }
 
     public void onServicesUpdated(int userId, List<NfcFServiceInfo> services) {

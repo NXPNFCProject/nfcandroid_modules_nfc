@@ -394,9 +394,10 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         mEnabledNfcFServices.onNfcDisabled();
     }
 
-    public void onSecureNfcToggled() {
-        mAidCache.onSecureNfcToggled();
-        mT3tIdentifiersCache.onSecureNfcToggled();
+    public void onTriggerRoutingTableUpdate() {
+        if (DBG) Log.d(TAG, "onTriggerRoutingTableUpdate");
+        mAidCache.onTriggerRoutingTableUpdate();
+        mT3tIdentifiersCache.onTriggerRoutingTableUpdate();
     }
 
     public void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
