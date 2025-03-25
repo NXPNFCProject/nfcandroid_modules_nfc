@@ -52,7 +52,6 @@ import android.os.RemoteException;
 import android.os.UserHandle;
 import android.util.Log;
 
-import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
@@ -624,7 +623,6 @@ public final class NfcAdapter {
     final Object mLock;
     final NfcOemExtension mNfcOemExtension;
 
-    ITagRemovedCallback mTagRemovedListener; // protected by mLock
 
     /**
      * A callback to be invoked when the system finds a tag while the foreground activity is
@@ -942,7 +940,6 @@ public final class NfcAdapter {
         mContext = context;
         mNfcActivityManager = new NfcActivityManager(this);
         mNfcUnlockHandlers = new HashMap<NfcUnlockHandler, INfcUnlockHandler>();
-        mTagRemovedListener = null;
         mLock = new Object();
         mControllerAlwaysOnListener = new NfcControllerAlwaysOnListener();
         mNfcWlcStateListener = new NfcWlcStateListener(getService());
@@ -2217,14 +2214,8 @@ public final class NfcAdapter {
                     } else {
                         tagRemovedListener.onTagRemoved();
                     }
-                    synchronized (mLock) {
-                        mTagRemovedListener = null;
-                    }
                 }
             };
-        }
-        synchronized (mLock) {
-            mTagRemovedListener = iListener;
         }
         final ITagRemovedCallback.Stub passedListener = iListener;
         return callServiceReturn(() ->
