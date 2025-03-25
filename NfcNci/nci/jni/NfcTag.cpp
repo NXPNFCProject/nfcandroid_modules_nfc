@@ -776,7 +776,11 @@ void NfcTag::fillNativeNfcTagMembers3(JNIEnv* e, jclass tag_cls, jobject tag,
       pollBytes.reset(e->NewByteArray(2));
       e->SetByteArrayRegion(pollBytes.get(), 0, 2, (jbyte*)data);
     } else {
-      LOG(ERROR) << StringPrintf("%s: tech unknown ????", fn);
+      if (NFC_DISCOVERY_TYPE_POLL_KOVIO == mTechParams[i].mode) {
+        LOG(DEBUG) << StringPrintf("%s: Thinfilm", fn);
+      } else {
+        LOG(ERROR) << StringPrintf("%s: tech unknown ????", fn);
+      }
       pollBytes.reset(e->NewByteArray(0));
     }  // switch: every type of technology
     e->SetObjectArrayElement(techPollBytes.get(), i, pollBytes.get());
