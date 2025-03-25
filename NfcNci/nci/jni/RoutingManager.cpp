@@ -466,6 +466,27 @@ void RoutingManager::onNfccShutdown() {
   } else {
     LOG(DEBUG) << fn << ": No active EEs found";
   }
+  //release waits
+  {
+    SyncEventGuard guard(mEeRegisterEvent);
+    mEeRegisterEvent.notifyOne();
+  }
+  {
+    SyncEventGuard guard(mRoutingEvent);
+    mRoutingEvent.notifyOne();
+  }
+  {
+    SyncEventGuard guard(mEeSetModeEvent);
+    mEeSetModeEvent.notifyOne();
+  }
+  {
+    SyncEventGuard guard(mEePwrAndLinkCtrlEvent);
+    mEePwrAndLinkCtrlEvent.notifyOne();
+  }
+  {
+    SyncEventGuard guard(mAidAddRemoveEvent);
+    mAidAddRemoveEvent.notifyOne();
+  }
 }
 
 /*******************************************************************************
