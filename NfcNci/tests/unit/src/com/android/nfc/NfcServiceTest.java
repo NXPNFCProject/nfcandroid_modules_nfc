@@ -2068,7 +2068,7 @@ public final class NfcServiceTest {
         verify(mBackupManager).dataChanged();
         verify(mDeviceHost).setNfcSecure(true);
         verify(mNfcEventLog, times(2)).logEvent(any());
-        verify(mCardEmulationManager).onSecureNfcToggled();
+        verify(mCardEmulationManager).onTriggerRoutingTableUpdate();
     }
 
     @Test

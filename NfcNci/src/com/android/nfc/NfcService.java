@@ -777,8 +777,10 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         mRtUpdateScheduledTask =
                 mRtUpdateScheduler.schedule(
                     () -> {
-                        if (DBG) Log.d(TAG, "onEeUpdated: ApplyRoutingTask");
-                        new ApplyRoutingTask().execute();
+                        if (mIsHceCapable) {
+                            if (DBG) Log.d(TAG, "onEeUpdated: trigger routing table update");
+                            mCardEmulationManager.onTriggerRoutingTableUpdate();
+                        }
                     },
                     50,
                     TimeUnit.MILLISECONDS);
@@ -2496,7 +2498,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 }
                 if (mIsHceCapable) {
                     // update HCE/HCEF routing and commitRouting if Nfc is enabled
-                    mCardEmulationManager.onSecureNfcToggled();
+                    mCardEmulationManager.onTriggerRoutingTableUpdate();
                 } else if (isNfcEnabled()) {
                     // commit only tech/protocol route without HCE support
                     mDeviceHost.commitRouting();

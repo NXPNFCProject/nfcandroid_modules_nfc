@@ -1516,7 +1516,7 @@ public class RegisteredAidCache {
         }
     }
 
-    public void onSecureNfcToggled() {
+    public void onTriggerRoutingTableUpdate() {
         synchronized (mLock) {
             updateRoutingLocked(true, false);
         }

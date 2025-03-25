@@ -71,7 +71,6 @@ import com.android.nfc.NfcEventLog;
 import com.android.nfc.NfcInjector;
 import com.android.nfc.NfcPermissions;
 import com.android.nfc.NfcService;
-import com.android.nfc.R;
 import com.android.nfc.flags.Flags;
 
 import org.junit.After;
@@ -397,10 +396,10 @@ public class CardEmulationManagerTest {
 
     @Test
     public void testOnSecureNfcToggled() {
-        mCardEmulationManager.onSecureNfcToggled();
+        mCardEmulationManager.onTriggerRoutingTableUpdate();
 
-        verify(mRegisteredAidCache).onSecureNfcToggled();
-        verify(mRegisteredT3tIdentifiersCache).onSecureNfcToggled();
+        verify(mRegisteredAidCache).onTriggerRoutingTableUpdate();
+        verify(mRegisteredT3tIdentifiersCache).onTriggerRoutingTableUpdate();
     }
 
     @Test
