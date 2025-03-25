@@ -1086,7 +1086,7 @@ void NfcTag::resetTechnologies() {
   memset(mTechParams, 0, sizeof(mTechParams));
   mIsDynamicTagId = false;
   mIsFelicaLite = false;
-  resetAllTransceiveTimeouts();
+  resetAllTransceiveTimeouts(true);
 }
 
 /*******************************************************************************
@@ -1596,11 +1596,13 @@ bool NfcTag::isDynamicTagId() {
 ** Returns:         none
 **
 *******************************************************************************/
-void NfcTag::resetAllTransceiveTimeouts() {
+void NfcTag::resetAllTransceiveTimeouts(bool includeType4) {
   mTechnologyTimeoutsTable[TARGET_TYPE_ISO14443_3A] = 618;   // NfcA
   mTechnologyTimeoutsTable[TARGET_TYPE_ISO14443_3B] = 1000;  // NfcB
-  mTechnologyTimeoutsTable[TARGET_TYPE_ISO14443_4] = 618;    // ISO-DEP
   mTechnologyTimeoutsTable[TARGET_TYPE_FELICA] = 255;        // Felica
+  if (includeType4) {
+    mTechnologyTimeoutsTable[TARGET_TYPE_ISO14443_4] = 618;  // ISO-DEP
+  }
   mTechnologyTimeoutsTable[TARGET_TYPE_V] = 1000;            // NfcV
   mTechnologyTimeoutsTable[TARGET_TYPE_NDEF] = 1000;
   mTechnologyTimeoutsTable[TARGET_TYPE_NDEF_FORMATABLE] = 1000;
