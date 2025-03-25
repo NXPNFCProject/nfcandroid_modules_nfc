@@ -133,7 +133,8 @@ public class NfcProprietaryCapsTest {
                 "passiveObserveMode=SUPPORT_WITHOUT_RF_DEACTIVATION, " +
                 "isPollingFrameNotificationSupported=true, " +
                 "isPowerSavingModeSupported=false, " +
-                "isAutotransactPollingLoopFilterSupported=true}";
+                "isAutotransactPollingLoopFilterSupported=true, " +
+                "mIsReaderModeAnnotationSupported=false}";
 
         assertEquals(expected, caps.toString());
     }
