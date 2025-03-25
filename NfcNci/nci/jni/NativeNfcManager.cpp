@@ -1789,25 +1789,19 @@ static bool isReaderModeAnnotationSupported(JNIEnv* e, jobject o) {
 }
 
 static tNFA_STATUS setTechAPollingLoopAnnotation(JNIEnv* env, jobject o,
-                                          jbyteArray tech_a_polling_loop_annotation) {
+                                                  const uint8_t* annotation_data,
+                                                  size_t annotation_size) {
     std::vector<uint8_t> command;
     command.push_back(NCI_ANDROID_SET_TECH_A_POLLING_LOOP_ANNOTATION);
-    if (tech_a_polling_loop_annotation == NULL) {
-      // Annotation is null, setting 0 annotations
+    if (annotation_data == NULL || annotation_size == 0) {
+      // Annotation is null or size is 0, setting 0 annotations
       command.push_back(0x00);
     } else {
-      ScopedByteArrayRO annotationBytes(env, tech_a_polling_loop_annotation);
-      if (annotationBytes.size() > 0) {
-        command.push_back(0x01);
-        command.push_back(0x00);
-        command.push_back(annotationBytes.size() + 3);
-        command.push_back(0x0a);
-        command.insert(command.end(), &annotationBytes[0],
-                      &annotationBytes[annotationBytes.size()]);
-      } else {
-        // Annotation is zero length, setting 0 annotations"
-        command.push_back(0x00);
-      }
+      command.push_back(0x01);
+      command.push_back(0x00);
+      command.push_back(annotation_size + 3);
+      command.push_back(0x0a);
+      command.insert(command.end(), annotation_data, annotation_data + annotation_size);
     }
     command.push_back(0x00);
     command.push_back(0x00);
@@ -1874,7 +1868,19 @@ static void nfcManager_enableDiscovery(JNIEnv* e, jobject o,
   if (tech_mask != 0) {
     stopPolling_rfDiscoveryDisabled();
     if (isReaderModeAnnotationSupported(e, o)) {
-      setTechAPollingLoopAnnotation(e, o, tech_a_polling_loop_annotation);
+      if (reader_mode) {
+        if (tech_a_polling_loop_annotation == NULL) {
+          setTechAPollingLoopAnnotation(e, o, NULL, 0);
+        } else {
+          ScopedByteArrayRO annotationBytes(e, tech_a_polling_loop_annotation);
+          setTechAPollingLoopAnnotation(e, o,
+                                        (const uint8_t*)annotationBytes.get(),
+                                        annotationBytes.size());
+        }
+      } else {
+        uint8_t ignoreFrame[] = {0x6a, 0x01, 0xcf, 0x00, 0x00};
+        setTechAPollingLoopAnnotation(e, 0, ignoreFrame, 5);
+      }
     }
 
     startPolling_rfDiscoveryDisabled(tech_mask);
