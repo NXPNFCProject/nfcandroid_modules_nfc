@@ -953,20 +953,18 @@ void RoutingManager::updateDefaultRoute() {
       defaultAidRoute = NFC_DH_ID;
     }
 
-    // Default AID route should be added only if different from ISO-DEP route
-    if ((defaultAidRoute != mDefaultIsoDepRoute) ||
-        (mDefaultIsoDepRoute == NFC_DH_ID)) {
-      removeAidRouting(nullptr, 0);
-      uint8_t powerState = 0x01;
-      if (!mSecureNfcEnabled)
-        powerState =
-            (defaultAidRoute != 0x00) ? mOffHostAidRoutingPowerState : 0x11;
-      nfaStat = NFA_EeAddAidRouting(defaultAidRoute, 0, NULL, powerState,
-                                    AID_ROUTE_QUAL_PREFIX);
-      if (nfaStat != NFA_STATUS_OK)
-        LOG(ERROR) << fn << ": failed to register zero length AID";
-      else
-        mDefaultAidRouteAdded = true;
+    removeAidRouting(nullptr, 0);
+    uint8_t powerState = 0x01;
+    if (!mSecureNfcEnabled) {
+      powerState =
+          (defaultAidRoute != 0x00) ? mOffHostAidRoutingPowerState : 0x11;
+    }
+    nfaStat = NFA_EeAddAidRouting(defaultAidRoute, 0, NULL, powerState,
+                                  AID_ROUTE_QUAL_PREFIX);
+    if (nfaStat != NFA_STATUS_OK) {
+      LOG(ERROR) << fn << ": failed to register zero length AID";
+    } else {
+      mDefaultAidRouteAdded = true;
     }
   }
 }
