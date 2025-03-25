@@ -126,7 +126,7 @@ public final class NfcUtils {
 
         public boolean awaitStateChange() {
             try {
-                boolean success = mCountDownLatch.await(2000, TimeUnit.MILLISECONDS);
+                boolean success = mCountDownLatch.await(20, TimeUnit.SECONDS);
 
                 if (!success) {
                     Log.e( TAG, "Timeout waiting for NFC to be "
