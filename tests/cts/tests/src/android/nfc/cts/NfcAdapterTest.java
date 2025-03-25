@@ -107,11 +107,10 @@ public class NfcAdapterTest {
         MockitoAnnotations.initMocks(this);
         mContext = spy(new ContextWrapper(InstrumentationRegistry.getContext()));
         assumeTrue("Device must support NFC", supportsHardware());
-        // Backup the original service. It is being overridden
-        // when creating a mocked adapter.
+
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
-        Assume.assumeNotNull("NFC Adapter is null", adapter);
-        assumeTrue("NFC Adapter could not be enabled", NfcUtils.enableNfc(adapter, mContext));
+        assertNotNull("NFC Adapter is null", adapter);
+        assertTrue("NFC Adapter could not be enabled", NfcUtils.enableNfc(adapter, mContext));
     }
 
     @Test
