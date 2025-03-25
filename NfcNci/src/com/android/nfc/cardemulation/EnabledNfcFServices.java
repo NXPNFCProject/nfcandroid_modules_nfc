@@ -245,7 +245,7 @@ public class EnabledNfcFServices implements com.android.nfc.ForegroundUtils.Call
      * {@link ProtoOutputStream#end(long)} after.
      * Never reuse a proto field number. When removing a field, mark it as reserved.
      */
-    void dumpDebug(ProtoOutputStream proto) {
+    public void dumpDebug(ProtoOutputStream proto) {
         synchronized (mLock) {
             if (mForegroundComponent != null) {
                 Utils.dumpDebugComponentName(
