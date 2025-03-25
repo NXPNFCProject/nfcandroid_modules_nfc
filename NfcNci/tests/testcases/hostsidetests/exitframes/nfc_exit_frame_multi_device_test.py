@@ -157,7 +157,7 @@ class NfcExitFrameMultiDeviceTestCases(base_test.BaseTestClass):
         self._setup_failure_should_block_tests = True
 
         try:
-            devices = self.register_controller(android_device)[:2]
+            devices = self.register_controller(android_device)[:1]
             if len(devices) == 1:
                 self.emulator = devices[0]
             else:

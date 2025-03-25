@@ -3028,6 +3028,11 @@ static jboolean nfcManager_setFirmwareExitFrameTable(JNIEnv* env, jobject o,
     LOG(ERROR) << "Setting firmware exit frame table";
     std::vector<uint8_t> command;
     command.push_back(NCI_ANDROID_SET_PASSIVE_OBSERVER_EXIT_FRAME);
+    // TODO(b/380455428)
+    // Support more than 5 exit frames if firmware allows it. If we do so, might   eed to send second
+    // NCI command if one is too large.
+    uint8_t more = 0x00;
+    command.push_back(more);
 
     uint8_t timeout_len = env->GetArrayLength(timeout);
     auto* timeout_arr = (uint8_t *) env->GetByteArrayElements(timeout, nullptr);
@@ -3038,6 +3043,12 @@ static jboolean nfcManager_setFirmwareExitFrameTable(JNIEnv* env, jobject o,
     env->ReleaseByteArrayElements(timeout, (jbyte *) timeout_arr, JNI_ABORT);
 
     uint8_t num_exit_frames = env->GetArrayLength(exit_frames);
+    if (num_exit_frames > 5) {
+        LOG(INFO)
+          << "Truncating exit frame table to 5 frames so it fits in a single CI command. "
+          << "Original size was " << num_exit_frames;
+        num_exit_frames = 5;
+    }
     command.push_back(num_exit_frames);
 
     if (num_exit_frames > 0) {
