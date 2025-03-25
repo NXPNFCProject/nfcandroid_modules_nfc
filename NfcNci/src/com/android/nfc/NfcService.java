@@ -4717,6 +4717,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
     public int commitRouting(boolean isOverrideOrRecover) {
         if (!isOverrideOrRecover) {
+            // Clear the Handler queue, only last commit_msg is relevant
+            mHandler.removeMessages(MSG_COMMIT_ROUTING);
             mHandler.sendEmptyMessage(MSG_COMMIT_ROUTING);
             return STATUS_OK;
         }
