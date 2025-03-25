@@ -412,6 +412,19 @@ public class NfcEmulatorDeviceSnippet extends NfcSnippet {
         mActivity = (EventListenerEmulatorActivity) instrumentation.startActivitySync(intent);
     }
 
+    @Rpc(description = "Opens the Exit Frame Activity")
+    public void startExitFrameActivity(String intendedExitFrame) {
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setClassName(instrumentation.getTargetContext(),
+                ExitFrameEmulatorActivity.class.getName());
+        intent.putExtra(ExitFrameEmulatorActivity.EXIT_FRAME_KEY, intendedExitFrame);
+
+        mActivity = (ExitFrameEmulatorActivity) instrumentation.startActivitySync(intent);
+    }
+
     /** Registers receiver that waits for RF field broadcast */
     @AsyncRpc(description = "Waits for RF field detected broadcast")
     public void asyncWaitForRfOnBroadcast(String callbackId, String eventName) {

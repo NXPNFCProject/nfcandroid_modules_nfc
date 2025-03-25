@@ -208,6 +208,7 @@ public class HostEmulationManager {
 
     boolean mEnableObserveModeAfterTransaction = false;
     boolean mEnableObserveModeOnFieldOff = false;
+    PollingFrame mFirmwareExitFrame = null;
     ComponentName mPaymentServiceName = null;
     @UserIdInt int mPaymentServiceUserId; // The userId of the payment service
     ComponentName mLastBoundPaymentServiceName;
@@ -619,7 +620,16 @@ public class HostEmulationManager {
                                 mStatsdUtils.setNextObserveModeTriggerSource(
                                     StatsdUtils.TRIGGER_SOURCE_AUTO_TRANSACT);
                             }
-                            allowOneTransaction();
+                            if (mFirmwareExitFrame != null && Arrays.equals(
+                                    mFirmwareExitFrame.getData(), pollingFrame.getData())) {
+                                mFirmwareExitFrame = null;
+                                mEnableObserveModeAfterTransaction = true;
+                                Log.d(TAG,
+                                        "Polling frame matches exit frame, leaving observe mode "
+                                                + "disabled");
+                            } else {
+                                allowOneTransaction();
+                            }
                             pollingFrame.setTriggeredAutoTransact(true);
                         }
                         UserHandle user = UserHandle.getUserHandleForUid(serviceInfo.getUid());
@@ -649,6 +659,7 @@ public class HostEmulationManager {
                     mStatsdUtils.logPollingFrames();
                 }
             }
+            mFirmwareExitFrame = null;
 
             if (mPollingLoopState == PollingLoopState.EVALUATING_POLLING_LOOP) {
                 if (mPendingPollingLoopFrames.size() >= 3) {
@@ -710,6 +721,15 @@ public class HostEmulationManager {
         mEnableObserveModeAfterTransaction = true;
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         mHandler.post(() -> adapter.setObserveModeEnabled(false));
+    }
+
+    /**
+     * Observe mode was disabled in firmware, we shouldn't autotransact on the next frame.
+     *
+     * This assumes the exit frame will be in the next batch of processed polling frames.
+     */
+    public void onObserveModeDisabledInFirmware(PollingFrame exitFrame) {
+        mFirmwareExitFrame = exitFrame;
     }
 
     /**

@@ -77,6 +77,9 @@ public class NativeNfcManager implements DeviceHost {
     private static final int NCI_OID_INDEX = 1;
     private static final int OP_CODE_INDEX = 3;
 
+    private static final int OBSERVE_MODE_SUSPENDED_FRAME_TYPE_A = 0x00;
+    private static final int OBSERVE_MODE_SUSPENDED_FRAME_TYPE_B = 0x01;
+
     private void loadLibrary() {
         System.loadLibrary("nfc_nci_jni");
     }
@@ -627,6 +630,22 @@ public class NativeNfcManager implements DeviceHost {
         }
         mListener.onPollingLoopDetected(frames);
         Trace.endSection();
+    }
+
+    private void onObserveModeEnabledInFirmware() {
+        mListener.onObserveModeEnabledInFirmware();
+    }
+
+    private void onObserveModeDisabledInFirmware(int type, byte[] data) {
+        int pollingFrameType = PollingFrame.POLLING_LOOP_TYPE_UNKNOWN;
+        if (type == OBSERVE_MODE_SUSPENDED_FRAME_TYPE_A) {
+            pollingFrameType = PollingFrame.POLLING_LOOP_TYPE_A;
+        } else if (type == OBSERVE_MODE_SUSPENDED_FRAME_TYPE_B) {
+            pollingFrameType = PollingFrame.POLLING_LOOP_TYPE_B;
+        }
+
+        mListener.onObserveModeDisabledInFirmware(
+                new PollingFrame(pollingFrameType, data, -1, -1, true));
     }
 
     private native boolean doDetectEpRemoval(int waiting_time_int);
