@@ -126,7 +126,8 @@ public class NfcProprietaryCapsTest {
                 true,
                 false,
                 true,
-                5
+                5,
+                false
         );
         String expected = "NfcProprietaryCaps{" +
                 "passiveObserveMode=SUPPORT_WITHOUT_RF_DEACTIVATION, " +

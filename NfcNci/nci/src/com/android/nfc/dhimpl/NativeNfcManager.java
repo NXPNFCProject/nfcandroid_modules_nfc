@@ -706,6 +706,15 @@ public class NativeNfcManager implements DeviceHost {
             != NfcProprietaryCaps.PassiveObserveMode.NOT_SUPPORTED;
     }
 
+    private  boolean isReaderModeAnnotationSupportedCaps() {
+        return mProprietaryCaps.isReaderModeAnnotationSupported();
+    }
+
+    @Override
+    public  boolean isReaderModeAnnotationSupported() {
+        return isReaderModeAnnotationSupportedCaps();
+    }
+
     private static void logProprietaryCaps(NfcProprietaryCaps proprietaryCaps) {
         int observeModeStatsd = CAPS_OBSERVE_MODE_UNKNOWN;
 

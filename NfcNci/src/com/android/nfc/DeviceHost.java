@@ -268,6 +268,8 @@ public interface DeviceHost {
 
     public boolean setNfcSecure(boolean enable);
 
+    public boolean isReaderModeAnnotationSupported();
+
     public boolean isObserveModeSupported();
 
     public boolean setObserveMode(boolean enable);
