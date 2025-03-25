@@ -16,22 +16,18 @@
 
 #include "NfcVendorExtn.h"
 
+#include <android-base/file.h>
 #include <android-base/logging.h>
+#include <android-base/properties.h>
 #include <android-base/stringprintf.h>
 #include <android/log.h>
 #include <dlfcn.h>
 #include <error.h>
 #include <log/log.h>
+#include <string>
 
 using android::base::StringPrintf;
 #define UNUSED_PROP(X) (void)(X);
-
-std::string mLibName = "libnfc_vendor_extn.so";
-#if (defined(__arm64__) || defined(__aarch64__) || defined(_M_ARM64))
-std::string mLibPathName = "/system/lib64/" + mLibName;
-#else
-std::string mLibPathName = "/system/lib/" + mLibName;
-#endif
 
 const std::string vendor_nfc_init_name = "vendor_nfc_init";
 const std::string vendor_nfc_de_init_name = "vendor_nfc_de_init";
@@ -53,8 +49,46 @@ fp_extn_handle_nfc_event_t fp_extn_handle_nfc_event = NULL;
 fp_extn_on_config_update_t fp_extn_on_config_update = NULL;
 
 NfcExtEventData_t mNfcExtEventData;
+std::string mLibPathName = "";
 
 void* p_oem_extn_handle = NULL;
+
+namespace {
+  std::string searchLibPath(std::string file_name) {
+    const std::vector<std::string> search_path = {
+        "/system/lib/", "/system/lib64/"
+    };
+    for (std::string path : search_path) {
+      path.append(file_name);
+      struct stat file_stat;
+      if (stat(path.c_str(), &file_stat) != 0) continue;
+      if (S_ISREG(file_stat.st_mode)) return path;
+    }
+    return "";
+  }
+  // Extension library file Search sequence
+  // 1. If prop_lib_file_name is defined.(where prop_config_file_name is the
+  //   value of the property persist.nfc_vendor_extn.lib_file_name)
+  //   Search a file matches prop_lib_file_name.
+  // 2. If SKU is defined (where SKU is the value of the property
+  //   ro.boot.product.hardware.sku)
+  //   Search a file matches libnfc_vendor_extn-SKU.so
+  // 3. If none of 1,2 is defined, search a default file name "libnfc_vendor_extn.so".
+  std::string findLibPath() {
+    std::string f_path = searchLibPath(
+        android::base::GetProperty("persist.nfc_vendor_extn.lib_file_name", ""));
+    if (!f_path.empty()) return f_path;
+
+    // Search for libnfc_vendor_extn-SKU.so
+    f_path = searchLibPath(
+        "libnfc_vendor_extn-" +
+        android::base::GetProperty("ro.boot.product.hardware.sku", "") + ".so");
+    if (!f_path.empty()) return f_path;
+
+    // load default file if the desired file not found.
+    return searchLibPath("libnfc_vendor_extn.so");
+  }
+}  // namespace
 
 NfcVendorExtn::NfcVendorExtn() {}
 
@@ -79,6 +113,12 @@ void NfcExtn_LibInit() {
 
 bool NfcExtn_LibSetup() {
   LOG(VERBOSE) << __func__;
+  mLibPathName = findLibPath();
+  if (mLibPathName.empty()) {
+    LOG(ERROR) << StringPrintf("%s: Failed to find %s !!", __func__,
+                               mLibPathName.c_str());
+    return false;
+  }
   p_oem_extn_handle = dlopen(mLibPathName.c_str(), RTLD_NOW);
   if (p_oem_extn_handle == NULL) {
     LOG(DEBUG) << StringPrintf(
@@ -210,7 +250,7 @@ void phNfcExtn_LibClose() {
     }
   }
   if (p_oem_extn_handle != NULL) {
-    LOG(DEBUG) << StringPrintf("%s: Closing %s!!", __func__, mLibName.c_str());
+    LOG(DEBUG) << StringPrintf("%s: Closing %s!!", __func__, mLibPathName.c_str());
     dlclose(p_oem_extn_handle);
     p_oem_extn_handle = NULL;
   }
