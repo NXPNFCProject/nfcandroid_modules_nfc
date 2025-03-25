@@ -359,18 +359,20 @@ class NfcDispatcher {
                 String pkgName = activityInfo.packageName;
                 String appName = context.getPackageManager().getApplicationLabel(
                         activityInfo.applicationInfo).toString();
-                if (DBG) Log.d(TAG, "checkPrefList: activityInfo.packageName= " + pkgName);
                 Map<String, Boolean> preflist =
                         mNfcAdapter.getTagIntentAppPreferenceForUser(userId);
                 if (preflist.containsKey(pkgName)) {
                     if (!preflist.get(pkgName)) {
-                        if (DBG) Log.d(TAG, "checkPrefList: mute pkg:" + pkgName);
+                        if (DBG) Log.d(TAG, "checkPrefList: mute:" + pkgName);
                         muteAppCount++;
                         filtered.remove(resolveInfo);
                         logMuteApp(activityInfo.applicationInfo.uid);
+                    } else {
+                        if (DBG) Log.d(TAG, "checkPrefList: allow:" + pkgName);
                     }
                 } else {
                     // Default sets allow to the preference list
+                    if (DBG) Log.d(TAG, "checkPrefList: add:" + pkgName);
                     mNfcAdapter.setTagIntentAppPreferenceForUser(userId, pkgName, true);
                     if (Flags.nfcAlertTagAppLaunch()) {
                         notifyAppNames.add(appName);
@@ -1074,12 +1076,17 @@ class NfcDispatcher {
                                 matches.add(info.resolveInfo);
                                 if (!preflist.containsKey(pkgName)) {
                                     // Default sets allow to the preference list
+                                    if (DBG) Log.d(TAG, "tryTech: add:" + pkgName);
                                     mNfcAdapter.setTagIntentAppPreferenceForUser(userId,
                                             pkgName, true);
                                     if (Flags.nfcAlertTagAppLaunch()) {
                                         notifyAppNames.add(appName);
                                     }
+                                } else {
+                                    if (DBG) Log.d(TAG, "tryTech: allow:" + pkgName);
                                 }
+                            } else {
+                                if (DBG) Log.d(TAG, "tryTech: mute:" + pkgName);
                             }
                         }
                     }
