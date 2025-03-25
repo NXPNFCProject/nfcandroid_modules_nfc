@@ -113,8 +113,10 @@ jmethodID gCachedNfcManagerNotifyEeAidSelected;
 jmethodID gCachedNfcManagerNotifyEeProtocolSelected;
 jmethodID gCachedNfcManagerNotifyEeTechSelected;
 jmethodID gCachedNfcManagerNotifyEeListenActivated;
-jmethodID gCachedNfcManagerNotifyEndpointRemoved;
 jmethodID gCachedNfcManagerOnRestartRfDiscovery;
+jmethodID gCachedNfcManagerOnObserveModeDisabledInFirmware;
+jmethodID gCachedNfcManagerOnObserveModeEnabledInFirmware;
+jmethodID gCachedNfcManagerNotifyEndpointRemoved;
 const char* gNativeNfcTagClassName = "com/android/nfc/dhimpl/NativeNfcTag";
 const char* gNativeNfcManagerClassName =
     "com/android/nfc/dhimpl/NativeNfcManager";
@@ -821,6 +823,12 @@ static jboolean nfcManager_initNativeStruc(JNIEnv* e, jobject o) {
   gCachedNfcManagerOnRestartRfDiscovery =
       e->GetMethodID(cls.get(), "onRestartRfDiscovery", "()V");
 
+  gCachedNfcManagerOnObserveModeDisabledInFirmware =
+      e->GetMethodID(cls.get(), "onObserveModeDisabledInFirmware", "(I[B)V");
+
+  gCachedNfcManagerOnObserveModeEnabledInFirmware =
+      e->GetMethodID(cls.get(), "onObserveModeEnabledInFirmware", "()V");
+
   if (nfc_jni_cache_object(e, gNativeNfcTagClassName, &(nat->cached_NfcTag)) ==
       -1) {
     LOG(ERROR) << StringPrintf("%s: fail cache NativeNfcTag", __func__);
@@ -1224,7 +1232,64 @@ void static nfaVSCallback(uint8_t event, uint16_t param_len, uint8_t* p_param) {
           e->CallVoidMethod(nat->manager,
                             android::gCachedNfcManagerNotifyPollingLoopFrame,
                             (jint)param_len, dataJavaArray.get());
-
+        } break;
+        case NCI_ANDROID_PASSIVE_OBSERVER_SUSPENDED_NTF: {
+          LOG(INFO) << "Observe mode suspended NTF received";
+          gObserveModeEnabled = false;
+          struct nfc_jni_native_data* nat = getNative(NULL, NULL);
+          if (!nat) {
+              LOG(ERROR) << StringPrintf("cached nat is null");
+              return;
+          }
+          JNIEnv* e = NULL;
+          ScopedAttach attach(nat->vm, &e);
+          if (e == NULL) {
+              LOG(ERROR) << StringPrintf("jni env is null");
+              return;
+          }
+          if (param_len <= 2) {
+              LOG(ERROR) <<
+                    "Cannot parse exit frame from NCI_ANDROID_PASSIVE_OBSERVER_SUSPENDED_NTF";
+              return;
+          }
+          jint exit_frame_type = (jint) p_param[4];
+          uint16_t exit_frame_len = p_param[5];
+          ScopedLocalRef<jobject> dataJavaArray(e, e->NewByteArray(exit_frame_len));
+          if (dataJavaArray.get() == NULL) {
+              LOG(ERROR) << "fail allocate array";
+              return;
+          }
+          if (exit_frame_len > 0) {
+              e->SetByteArrayRegion((jbyteArray)dataJavaArray.get(), 0, exit_frame_len,
+                                    (jbyte*)(p_param + 6));
+              if (e->ExceptionCheck()) {
+                  e->ExceptionClear();
+                  LOG(ERROR) << "failed to fill array";
+                  return;
+              }
+          }
+          e->CallVoidMethod(nat->manager,
+                            android::gCachedNfcManagerOnObserveModeDisabledInFirmware,
+                            exit_frame_type, dataJavaArray.get());
+          return;
+        } break;
+        case NCI_ANDROID_PASSIVE_OBSERVER_RESUMED_NTF: {
+          LOG(INFO) << "Observe mode resumed NTF received";
+          gObserveModeEnabled = true;
+          struct nfc_jni_native_data *nat = getNative(NULL, NULL);
+          if (!nat) {
+              LOG(ERROR) << StringPrintf("cached nat is null");
+              return;
+          }
+          JNIEnv *e = NULL;
+          ScopedAttach attach(nat->vm, &e);
+          if (e == NULL) {
+              LOG(ERROR) << StringPrintf("jni env is null");
+              return;
+          }
+          e->CallVoidMethod(nat->manager,
+                            android::gCachedNfcManagerOnObserveModeEnabledInFirmware);
+          return;
         } break;
         case NCI_ANDROID_RESTART_RF_DISCOVERY_REQUEST_NTF: {
                 struct nfc_jni_native_data* nat = getNative(NULL, NULL);

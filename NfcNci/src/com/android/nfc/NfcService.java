@@ -849,6 +849,17 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     }
 
     @Override
+    public void onObserveModeDisabledInFirmware(PollingFrame exitFrame) {
+        mCardEmulationManager.onObserveModeDisabledInFirmware(exitFrame);
+        onObserveModeStateChanged(false);
+    }
+
+    @Override
+    public void onObserveModeEnabledInFirmware() {
+        onObserveModeStateChanged(true);
+    }
+
+    @Override
     public void onEeListenActivated(boolean isActivated) {
         mEeListenActivated = isActivated;
         mCardEmulationManager.onEeListenActivated(isActivated);
