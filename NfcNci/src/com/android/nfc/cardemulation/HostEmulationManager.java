@@ -252,7 +252,12 @@ public class HostEmulationManager {
                 @Override
                 public void run() {
                     synchronized (mLock) {
-                        unbindInactiveServicesLocked();
+                        if (isHostCardEmulationActivated()) {
+                            // Skip in active state
+                            rescheduleInactivityChecks();
+                        } else {
+                            unbindInactiveServicesLocked();
+                        }
                     }
                 }
 
