@@ -1195,6 +1195,21 @@ public final class NfcAdapter {
         callService(() -> sService.pausePolling(timeoutInMs));
     }
 
+    /**
+     * Returns whether the device supports setting annotation frames when enabling reader
+     * mode by passing an extras bundle that includes a
+     * {@link #EXTRA_READER_TECH_A_POLLING_LOOP_ANNOTATION} key to
+     * {@link #enableReaderMode(Activity, ReaderCallback, int, Bundle)}. These annotations frames
+     * will be reported as unknown frames via
+     * {@link android.nfc.cardemulation.HostApduService#processPollingFrames(List)} on another
+     * Android device that has set enabled observe mode by passing true to
+     * {@link #setObserveModeEnabled(boolean)} .
+     * @return true if the mode is supported, false otherwise.
+     */
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_READER_MODE_ANNOTATIONS)
+    public boolean isReaderModeAnnotationSupported() {
+        return callServiceReturn(() ->  sService.isReaderModeAnnotationSupported(), false);
+    }
 
     /**
      * Returns whether the device supports observe mode or not. When observe mode is enabled, the

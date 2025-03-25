@@ -1716,6 +1716,13 @@ static void nfcManager_configNfccConfigControl(bool flag) {
     }
 }
 
+static bool isReaderModeAnnotationSupported(JNIEnv* e, jobject o) {
+  ScopedLocalRef<jclass> cls(e, e->GetObjectClass(o));
+  jmethodID isSupported =
+      e->GetMethodID(cls.get(), "isReaderModeAnnotationSupportedCaps", "()Z");
+  return e->CallBooleanMethod(o, isSupported);
+}
+
 static tNFA_STATUS setTechAPollingLoopAnnotation(JNIEnv* env, jobject o,
                                           jbyteArray tech_a_polling_loop_annotation) {
     if (tech_a_polling_loop_annotation == NULL) {
@@ -1796,7 +1803,9 @@ static void nfcManager_enableDiscovery(JNIEnv* e, jobject o,
   // Check polling configuration
   if (tech_mask != 0) {
     stopPolling_rfDiscoveryDisabled();
-    setTechAPollingLoopAnnotation(e, o, tech_a_polling_loop_annotation);
+    if (isReaderModeAnnotationSupported(e, o)) {
+      setTechAPollingLoopAnnotation(e, o, tech_a_polling_loop_annotation);
+    }
 
     startPolling_rfDiscoveryDisabled(tech_mask);
 

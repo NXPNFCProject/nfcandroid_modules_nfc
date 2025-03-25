@@ -2292,6 +2292,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         }
 
         @Override
+        public boolean isReaderModeAnnotationSupported() {
+            return mDeviceHost.isReaderModeAnnotationSupported();
+        }
+
+        @Override
         public boolean isObserveModeSupported() {
             if (!isNfcEnabled()) {
                 Log.e(TAG, "isObserveModeSupported: NFC must be enabled but is: " + mState);
@@ -2790,6 +2795,12 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             // Only allow to disable polling for specific callers
             if (disablePolling && !(privilegedCaller && mPollingDisableAllowed)) {
                 Log.e(TAG, "setReaderMode: called with invalid flag parameter.");
+                return;
+            }
+            if (extras != null
+                    && extras.containsKey(NfcAdapter.EXTRA_READER_TECH_A_POLLING_LOOP_ANNOTATION)
+                    && !isReaderModeAnnotationSupported()) {
+                Log.e(TAG, "setReaderMode() called with annotation on an unsupported device.");
                 return;
             }
             synchronized (NfcService.this) {
