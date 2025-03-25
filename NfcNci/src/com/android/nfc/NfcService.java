@@ -5717,7 +5717,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 try {
                     applyRouting(false);
                 } finally {
-                    mRoutingWakeLock.release();
+                    if (mRoutingWakeLock.isHeld()) {
+                        mRoutingWakeLock.release();
+                    }
                 }
                 return null;
             }
@@ -5786,8 +5788,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     }
 
     class AppInActivityHandlerTask extends TimerTask {
-        public void run()
-        {
+        public void run() {
             Log.d(TAG, "run: App Inactivity detected, Requesting to Start Removal "
                     + "Detection Procedure");
             if (isTagPresent()) {
