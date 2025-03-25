@@ -435,6 +435,7 @@ static void nfaConnectionCallback(uint8_t connEvent,
 
     case NFA_ACTIVATED_EVT:  // NFC link/protocol activated
     {
+      bool notListen = !isListenMode(eventData->activated);
       LOG(DEBUG) << StringPrintf(
           "%s: NFA_ACTIVATED_EVT: gIsSelectingRfInterface=%d, sIsDisabling=%d",
           __func__, gIsSelectingRfInterface, sIsDisabling);
@@ -457,47 +458,48 @@ static void nfaConnectionCallback(uint8_t connEvent,
         nativeNfcTag_setActivatedRfProtocol(activatedProtocol);
         nativeNfcTag_setActivatedRfMode(activatedMode);
       }
-      NfcTag::getInstance().setActive(true);
+      NfcTag::getInstance().setActive(notListen);
       if (sIsDisabling || !sIsNfaEnabled) break;
       gActivated = true;
 
-      updateNfcID0Param(
-          eventData->activated.activate_ntf.rf_tech_param.param.pb.nfcid0);
-      NfcTag::getInstance().setActivationState();
-      if (gIsSelectingRfInterface) {
-        nativeNfcTag_doConnectStatus(true);
-        break;
-      }
-
-      nativeNfcTag_resetPresenceCheck();
-      if (!isListenMode(eventData->activated) &&
-          (prevScreenState == NFA_SCREEN_STATE_OFF_LOCKED ||
-           prevScreenState == NFA_SCREEN_STATE_OFF_UNLOCKED)) {
-        if (!sIsAlwaysPolling) {
-          NFA_Deactivate(FALSE);
+      if (notListen) {
+        updateNfcID0Param(
+            eventData->activated.activate_ntf.rf_tech_param.param.pb.nfcid0);
+        NfcTag::getInstance().setActivationState();
+        if (gIsSelectingRfInterface) {
+          nativeNfcTag_doConnectStatus(true);
+          break;
         }
-      }
 
-      NfcTag::getInstance().connectionEventHandler(connEvent, eventData);
-      if (NfcTag::getInstance().getNumDiscNtf()) {
-        /*If its multiprotocol tag, deactivate tag with current selected
-        protocol to sleep . Select tag with next supported protocol after
-        deactivation event is received*/
-        if (((tNFA_INTF_TYPE)eventData->activated.activate_ntf.intf_param
-                 .type == NFA_INTERFACE_FRAME)) {
-          uint8_t RW_TAG_SLP_REQ[] = {0x50, 0x00};
-          SyncEvent waitSome;
-          SyncEventGuard g(waitSome);
-          NFA_SendRawFrame(RW_TAG_SLP_REQ, sizeof(RW_TAG_SLP_REQ), 0);
-          waitSome.wait(4);
+        nativeNfcTag_resetPresenceCheck();
+        if (!isListenMode(eventData->activated) &&
+            (prevScreenState == NFA_SCREEN_STATE_OFF_LOCKED ||
+             prevScreenState == NFA_SCREEN_STATE_OFF_UNLOCKED)) {
+          if (!sIsAlwaysPolling) {
+            NFA_Deactivate(FALSE);
+          }
         }
-        NFA_Deactivate(true);
-      }
 
-      // If it activated in
-      // listen mode then it is likely for an SE transaction.
-      // Send the RF Event.
-      if (isListenMode(eventData->activated)) {
+        NfcTag::getInstance().connectionEventHandler(connEvent, eventData);
+        if (NfcTag::getInstance().getNumDiscNtf()) {
+          /*If its multiprotocol tag, deactivate tag with current selected
+          protocol to sleep . Select tag with next supported protocol after
+          deactivation event is received*/
+          if (((tNFA_INTF_TYPE)eventData->activated.activate_ntf.intf_param
+                   .type == NFA_INTERFACE_FRAME)) {
+            uint8_t RW_TAG_SLP_REQ[] = {0x50, 0x00};
+            SyncEvent waitSome;
+            SyncEventGuard g(waitSome);
+            NFA_SendRawFrame(RW_TAG_SLP_REQ, sizeof(RW_TAG_SLP_REQ), 0);
+            waitSome.wait(4);
+          }
+          NFA_Deactivate(true);
+        }
+
+      } else {
+        // If it activated in
+        // listen mode then it is likely for an SE transaction.
+        // Send the RF Event.
         sSeRfActive = true;
         struct nfc_jni_native_data* nat = getNative(NULL, NULL);
         if (!nat) {
