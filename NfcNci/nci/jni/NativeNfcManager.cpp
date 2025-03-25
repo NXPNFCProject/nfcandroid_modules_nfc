@@ -1802,9 +1802,9 @@ static tNFA_STATUS setTechAPollingLoopAnnotation(JNIEnv* env, jobject o,
       command.push_back(annotation_size + 3);
       command.push_back(0x0a);
       command.insert(command.end(), annotation_data, annotation_data + annotation_size);
+      command.push_back(0x00);
+      command.push_back(0x00);
     }
-    command.push_back(0x00);
-    command.push_back(0x00);
     SyncEventGuard guard(gNfaVsCommand);
     tNFA_STATUS status =
         NFA_SendVsCommand(NCI_MSG_PROP_ANDROID, command.size(), command.data(), nfaVSCallback);
