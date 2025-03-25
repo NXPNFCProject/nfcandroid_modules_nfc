@@ -140,6 +140,8 @@ public class NfcProprietaryCaps {
                 + mIsPowerSavingModeSupported
                 + ", isAutotransactPollingLoopFilterSupported="
                 + mIsAutotransactPollingLoopFilterSupported
+                + ", mIsReaderModeAnnotationSupported="
+                + mIsReaderModeAnnotationSupported
                 + '}';
     }
 }
