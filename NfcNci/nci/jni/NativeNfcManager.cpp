@@ -1725,21 +1725,24 @@ static bool isReaderModeAnnotationSupported(JNIEnv* e, jobject o) {
 
 static tNFA_STATUS setTechAPollingLoopAnnotation(JNIEnv* env, jobject o,
                                           jbyteArray tech_a_polling_loop_annotation) {
-    if (tech_a_polling_loop_annotation == NULL) {
-      LOG(WARNING) << __func__ << ": annotation is null, returning early";
-      return STATUS_SUCCESS;
-    }
     std::vector<uint8_t> command;
     command.push_back(NCI_ANDROID_SET_TECH_A_POLLING_LOOP_ANNOTATION);
-    command.push_back(0x01);
-    command.push_back(0x00);
-
-    ScopedByteArrayRO annotationBytes(env, tech_a_polling_loop_annotation);
-    command.push_back(annotationBytes.size() + 3);
-    command.push_back(0x0a);
-    if (annotationBytes.size() > 0) {
-      command.insert(command.end(), &annotationBytes[0],
-                    &annotationBytes[annotationBytes.size()]);
+    if (tech_a_polling_loop_annotation == NULL) {
+      // Annotation is null, setting 0 annotations
+      command.push_back(0x00);
+    } else {
+      ScopedByteArrayRO annotationBytes(env, tech_a_polling_loop_annotation);
+      if (annotationBytes.size() > 0) {
+        command.push_back(0x01);
+        command.push_back(0x00);
+        command.push_back(annotationBytes.size() + 3);
+        command.push_back(0x0a);
+        command.insert(command.end(), &annotationBytes[0],
+                      &annotationBytes[annotationBytes.size()]);
+      } else {
+        // Annotation is zero length, setting 0 annotations"
+        command.push_back(0x00);
+      }
     }
     command.push_back(0x00);
     command.push_back(0x00);
@@ -1753,6 +1756,8 @@ static tNFA_STATUS setTechAPollingLoopAnnotation(JNIEnv* env, jobject o,
             __FUNCTION__);
         gVSCmdStatus = NFA_STATUS_FAILED;
       }
+    } else {
+      gVSCmdStatus = status;
     }
     return gVSCmdStatus;
 }
