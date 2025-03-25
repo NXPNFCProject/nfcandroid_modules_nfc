@@ -18,6 +18,10 @@ package android.nfc.cts;
 
 import static android.Manifest.permission.WRITE_SECURE_SETTINGS;
 
+import static com.android.compatibility.common.util.PropertyUtil.getVsrApiLevel;
+
+import static org.junit.Assume.assumeTrue;
+
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.content.BroadcastReceiver;
@@ -25,6 +29,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.nfc.NfcAdapter;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
@@ -135,5 +140,14 @@ public final class NfcUtils {
                 return false;
             }
         }
+    }
+
+    public static void assumeObserveModeSupported(@NonNull NfcAdapter adapter) {
+        assumeTrue("Observe mode must be supported", adapter.isObserveModeSupported());
+    }
+
+    public static void assumeVsrApiGreaterThanUdc() {
+        assumeTrue("Device VSR API level must be greater than UDC",
+            getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
     }
 }
