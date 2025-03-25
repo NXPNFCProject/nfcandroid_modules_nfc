@@ -881,7 +881,7 @@ jboolean nativeNfcTag_doDisconnect(JNIEnv*, jobject) {
     return JNI_FALSE;
   }
   sIsDisconnecting = true;
-  NfcTag::getInstance().resetAllTransceiveTimeouts();
+  NfcTag::getInstance().resetAllTransceiveTimeouts(false);
   sReselectTagIdle = false;
 
   if (NfcTag::getInstance().getActivationState() != NfcTag::Active &&

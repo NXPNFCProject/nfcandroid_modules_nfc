@@ -358,7 +358,7 @@ class NfcTag {
   ** Returns:         none
   **
   *******************************************************************************/
-  void resetAllTransceiveTimeouts();
+  void resetAllTransceiveTimeouts(bool includeType4);
 
   /*******************************************************************************
   **

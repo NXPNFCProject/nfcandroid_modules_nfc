@@ -2189,7 +2189,7 @@ static jboolean nfcManager_doDownload(JNIEnv*, jobject) {
 static void nfcManager_doResetTimeouts(JNIEnv*, jobject) {
   if (sIsShuttingDown) return;
   LOG(DEBUG) << StringPrintf("%s", __func__);
-  NfcTag::getInstance().resetAllTransceiveTimeouts();
+  NfcTag::getInstance().resetAllTransceiveTimeouts(true);
 }
 
 /*******************************************************************************
