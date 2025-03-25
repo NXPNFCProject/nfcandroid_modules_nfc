@@ -65,6 +65,7 @@ import android.telephony.SubscriptionManager;
 import android.util.Pair;
 
 import com.android.dx.mockito.inline.extended.ExtendedMockito;
+import com.android.nfc.DeviceConfigFacade;
 import com.android.nfc.ExitFrame;
 import com.android.nfc.ForegroundUtils;
 import com.android.nfc.NfcEventLog;
@@ -155,6 +156,8 @@ public class CardEmulationManagerTest {
     @Mock private NfcAdapter mNfcAdapter;
     @Mock private NfcEventLog mNfcEventLog;
     @Mock private PreferredSubscriptionService mPreferredSubscriptionService;
+    @Mock
+    private DeviceConfigFacade mDeviceConfigFacade;
     @Captor private ArgumentCaptor<List<PollingFrame>> mPollingLoopFrameCaptor;
     @Captor private ArgumentCaptor<byte[]> mDataCaptor;
     @Captor private ArgumentCaptor<List<ApduServiceInfo>> mServiceListCaptor;
@@ -186,7 +189,7 @@ public class CardEmulationManagerTest {
         when(mContext.createContextAsUser(any(), anyInt())).thenReturn(mContext);
         when(mContext.getResources()).thenReturn(mResources);
         when(mContext.getSystemService(eq(UserManager.class))).thenReturn(mUserManager);
-        when(mResources.getBoolean(R.bool.indicate_user_activity_for_hce)).thenReturn(true);
+        when(mDeviceConfigFacade.getIndicateUserActivityForHce()).thenReturn(true);
         when(android.nfc.Flags.nfcEventListener()).thenReturn(true);
         when(android.nfc.Flags.enableCardEmulationEuicc()).thenReturn(true);
         mCardEmulationManager = createInstanceWithMockParams();
@@ -1470,7 +1473,7 @@ public class CardEmulationManagerTest {
     @Test
     public void testCardEmulationSetServiceEnabledForCategoryOther_resourceTrue()
             throws RemoteException {
-        when(mResources.getBoolean(R.bool.enable_service_for_category_other)).thenReturn(true);
+        when(mDeviceConfigFacade.getEnableServiceOther()).thenReturn(true);
         when(mRegisteredServicesCache.registerOtherForService(anyInt(), any(), anyBoolean()))
                 .thenReturn(SET_SERVICE_ENABLED_STATUS_OK);
 
@@ -1493,7 +1496,7 @@ public class CardEmulationManagerTest {
     @Test
     public void testCardEmulationSetServiceEnabledForCategoryOther_resourceFalse()
             throws RemoteException {
-        when(mResources.getBoolean(R.bool.enable_service_for_category_other)).thenReturn(false);
+        when(mDeviceConfigFacade.getEnableServiceOther()).thenReturn(false);
         when(mRegisteredServicesCache.registerOtherForService(anyInt(), any(), anyBoolean()))
                 .thenReturn(SET_SERVICE_ENABLED_STATUS_OK);
 
@@ -2235,7 +2238,8 @@ public class CardEmulationManagerTest {
                 mRoutingOptionManager,
                 mPowerManager,
                 mNfcEventLog,
-                mPreferredSubscriptionService);
+                mPreferredSubscriptionService,
+                mDeviceConfigFacade);
     }
 
     @Test
@@ -2484,8 +2488,7 @@ public class CardEmulationManagerTest {
         assertThat(iNfcCardEmulation).isNotNull();
         ComponentName componentName = ComponentName
                 .unflattenFromString("com.android.test.component/.Component");
-        when(mResources.getBoolean(R.bool.enable_service_for_category_other))
-                .thenReturn(true);
+        when(mDeviceConfigFacade.getEnableServiceOther()).thenReturn(true);
         when(mRegisteredServicesCache.registerOtherForService(1,
                 componentName, true)).thenReturn(1);
         int result = iNfcCardEmulation
