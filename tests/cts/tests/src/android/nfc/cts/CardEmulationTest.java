@@ -55,6 +55,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.testing.PollingCheck;
+import android.util.Log;
 import android.view.KeyEvent;
 
 import androidx.test.InstrumentationRegistry;
@@ -120,8 +121,12 @@ public class CardEmulationTest {
 
     @After
     public void tearDown() throws Exception {
-        Assert.assertTrue("Failed to enable NFC in test cleanup",
-            NfcUtils.enableNfc(mAdapter, mContext));
+        if (mAdapter != null && mContext != null) {
+            Assert.assertTrue("Failed to enable NFC in test cleanup",
+                NfcUtils.enableNfc(mAdapter, mContext));
+        } else {
+            Log.w("CardEmulationTest", "mAdapter or mContext is null");
+        }
         sCurrentPollLoopReceiver = null;
     }
 
