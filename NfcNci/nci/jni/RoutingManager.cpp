@@ -71,6 +71,7 @@ static const uint16_t DEFAULT_SYS_CODE = 0xFEFE;
 
 static const uint8_t AID_ROUTE_QUAL_PREFIX = 0x10;
 
+static Mutex sEeInfoMutex;
 
 /*******************************************************************************
 **
@@ -999,7 +1000,13 @@ tNFA_TECHNOLOGY_MASK RoutingManager::updateEeTechRouteSetting() {
   static const char fn[] = "RoutingManager::updateEeTechRouteSetting";
   tNFA_TECHNOLOGY_MASK allSeTechMask = 0x00, hostTechMask = 0x00;
 
-  LOG(DEBUG) << StringPrintf("%s:  Default route A/B=0x%x", fn,
+  // Get content of mEeInfo as it can change if a NTF is received during update
+  // of RT
+  sEeInfoMutex.lock();
+  tNFA_EE_DISCOVER_REQ localEeInfo;
+  memcpy(&localEeInfo, &mEeInfo, sizeof(mEeInfo));
+  sEeInfoMutex.unlock();
+  LOG(DEBUG) << StringPrintf("%s: Default route A/B: 0x%x", fn,
                              mDefaultOffHostRoute);
   LOG(DEBUG) << StringPrintf("%s:  Default route F=0x%x", fn,
                              mDefaultFelicaRoute);
@@ -1008,31 +1015,31 @@ tNFA_TECHNOLOGY_MASK RoutingManager::updateEeTechRouteSetting() {
 
   tNFA_STATUS nfaStat;
 
-  for (uint8_t i = 0; i < mEeInfo.num_ee; i++) {
-    tNFA_HANDLE eeHandle = mEeInfo.ee_disc_info[i].ee_handle;
+  for (uint8_t i = 0; i < localEeInfo.num_ee; i++) {
+    tNFA_HANDLE eeHandle = localEeInfo.ee_disc_info[i].ee_handle;
     tNFA_TECHNOLOGY_MASK seTechMask = 0;
 
     LOG(DEBUG) << StringPrintf(
-        "%s   EE[%u] Handle=0x%04x  techA=0x%02x  techB=0x%02x  techF=0x%02x  "
-        "techBprime=0x%02x",
-        fn, i, eeHandle, mEeInfo.ee_disc_info[i].la_protocol,
-        mEeInfo.ee_disc_info[i].lb_protocol,
-        mEeInfo.ee_disc_info[i].lf_protocol,
-        mEeInfo.ee_disc_info[i].lbp_protocol);
+        "%s:   EE[%u] Handle=0x%04x  techA=0x%02x  techB="
+        "0x%02x  techF=0x%02x  techBprime=0x%02x",
+        fn, i, eeHandle, localEeInfo.ee_disc_info[i].la_protocol,
+        localEeInfo.ee_disc_info[i].lb_protocol,
+        localEeInfo.ee_disc_info[i].lf_protocol,
+        localEeInfo.ee_disc_info[i].lbp_protocol);
 
     if ((mDefaultOffHostRoute != NFC_DH_ID) &&
         (eeHandle == (mDefaultOffHostRoute | NFA_HANDLE_GROUP_EE))) {
-      if (mEeInfo.ee_disc_info[i].la_protocol != 0) {
+      if (localEeInfo.ee_disc_info[i].la_protocol != 0) {
         seTechMask |= NFA_TECHNOLOGY_MASK_A;
       }
-      if (mEeInfo.ee_disc_info[i].lb_protocol != 0) {
+      if (localEeInfo.ee_disc_info[i].lb_protocol != 0) {
         seTechMask |= NFA_TECHNOLOGY_MASK_B;
       }
     }
 
     if ((mDefaultFelicaRoute != NFC_DH_ID) &&
         (eeHandle == (mDefaultFelicaRoute | NFA_HANDLE_GROUP_EE))) {
-      if (mEeInfo.ee_disc_info[i].lf_protocol != 0) {
+      if (localEeInfo.ee_disc_info[i].lf_protocol != 0) {
         seTechMask |= NFA_TECHNOLOGY_MASK_F;
       }
     }
@@ -1195,17 +1202,19 @@ void RoutingManager::nfaEeCallback(tNFA_EE_EVT event,
 
     case NFA_EE_DISCOVER_REQ_EVT: {
       SyncEventGuard guard(routingManager.mEeInfoEvent);
+      sEeInfoMutex.lock();
       memcpy(&routingManager.mEeInfo, &eventData->discover_req,
              sizeof(routingManager.mEeInfo));
       for (int i = 0; i < eventData->discover_req.num_ee; i++) {
         LOG(DEBUG) << StringPrintf(
-            "%s; NFA_EE_DISCOVER_REQ_EVT; nfceeId=0x%X; la_proto=0x%X, "
+            "%s: NFA_EE_DISCOVER_REQ_EVT; nfceeId=0x%X; la_proto=0x%X, "
             "lb_proto=0x%x, lf_proto=0x%x",
             fn, eventData->discover_req.ee_disc_info[i].ee_handle,
             eventData->discover_req.ee_disc_info[i].la_protocol,
             eventData->discover_req.ee_disc_info[i].lb_protocol,
             eventData->discover_req.ee_disc_info[i].lf_protocol);
       }
+      sEeInfoMutex.unlock();
       if (!routingManager.mIsRFDiscoveryOptimized) {
         if (routingManager.mReceivedEeInfo && !routingManager.mDeinitializing) {
           routingManager.mEeInfoChanged = true;
