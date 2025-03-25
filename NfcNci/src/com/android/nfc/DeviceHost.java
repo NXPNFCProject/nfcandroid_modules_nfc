@@ -64,7 +64,7 @@ public interface DeviceHost {
 
         public void onEeListenActivated(boolean isActivated);
 
-        public void onSeSelected();
+        public void onSeSelected(int type);
 
         public void onCommandTimeout();
 

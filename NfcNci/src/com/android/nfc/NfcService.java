@@ -257,6 +257,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     static final int TASK_ENABLE_ALWAYS_ON = 4;
     static final int TASK_DISABLE_ALWAYS_ON = 5;
 
+    // SE selected types
+    public static final int SE_SELECTED_AID = 0x01;
+    public static final int SE_SELECTED_TECH = 0x02;
+    public static final int SE_SELECTED_PROTOCOL = 0x04;
+
     // Polling technology masks
     static final int NFC_POLL_A = 0x01;
     static final int NFC_POLL_B = 0x02;
@@ -887,8 +892,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     }
 
     @Override
-    public void onSeSelected() {
-        sendMessage(MSG_SE_SELECTED_EVENT, null);
+    public void onSeSelected(int type) {
+        sendMessage(MSG_SE_SELECTED_EVENT, type);
     }
 
     @Override
@@ -5242,7 +5247,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
                 case MSG_SE_SELECTED_EVENT:
                     Log.d(TAG, "handleMessage: MSG_SE_SELECTED_EVENT");
-                    if (mCardEmulationManager != null) {
+                    int type = (int) msg.obj;
+                    if (mCardEmulationManager != null && type == SE_SELECTED_AID) {
                         mCardEmulationManager.onOffHostAidSelected();
                     }
                     break;

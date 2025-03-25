@@ -1375,7 +1375,7 @@ public final class NfcServiceTest {
 
     @Test
     public void testOnSeSelected() {
-        mNfcService.onSeSelected();
+        mNfcService.onSeSelected(NfcService.SE_SELECTED_AID);
         mLooper.dispatchAll();
         verify(mCardEmulationManager).onOffHostAidSelected();
     }
