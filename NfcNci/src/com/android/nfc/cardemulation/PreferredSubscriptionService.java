@@ -15,7 +15,6 @@
  */
 package com.android.nfc.cardemulation;
 
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -32,13 +31,12 @@ public class PreferredSubscriptionService implements TelephonyUtils.Callback {
     static final String TAG = "PreferredSubscriptionService";
     static final String PREF_SUBSCRIPTION = "SubscriptionPref";
     static final String PREF_PREFERRED_SUB_ID = "pref_sub_id";
-    private SharedPreferences mSubscriptionPrefs = null;;
+    private SharedPreferences mSubscriptionPrefs = null;
 
     Context mContext;
     Callback mCallback;
 
     int mDefaultSubscriptionId = TelephonyUtils.SUBSCRIPTION_ID_UNKNOWN;
-    private final ContentResolver mContentResolver;
     boolean mIsEuiccCapable;
     boolean mIsUiccCapable;
     TelephonyUtils mTelephonyUtils;
@@ -51,7 +49,6 @@ public class PreferredSubscriptionService implements TelephonyUtils.Callback {
 
     public PreferredSubscriptionService(Context context, Callback callback) {
         mContext = context;
-        mContentResolver = mContext.getContentResolver();
         mCallback = callback;
 
         mIsUiccCapable = context.getPackageManager().hasSystemFeature(
@@ -59,7 +56,7 @@ public class PreferredSubscriptionService implements TelephonyUtils.Callback {
         mIsEuiccCapable = mContext.getResources().getBoolean(R.bool.enable_euicc_support);
 
         mTelephonyUtils = TelephonyUtils.getInstance(context);
-        mSubscriptionPrefs =  mContext.getSharedPreferences(
+        mSubscriptionPrefs = mContext.getSharedPreferences(
                 PREF_SUBSCRIPTION, Context.MODE_PRIVATE);
 
         // Initialize default subscription to UICC if there is no preference
@@ -84,7 +81,7 @@ public class PreferredSubscriptionService implements TelephonyUtils.Callback {
         Log.d(TAG, "getPreferredSubscriptionId: " + mDefaultSubscriptionId);
         return mSubscriptionPrefs.getInt(
                 PREF_PREFERRED_SUB_ID, TelephonyUtils.SUBSCRIPTION_ID_UNKNOWN);
-        }
+    }
 
     public void setPreferredSubscriptionId(int subscriptionId, boolean force) {
         Log.d(TAG, "setPreferredSubscriptionId: " + subscriptionId);
@@ -93,7 +90,7 @@ public class PreferredSubscriptionService implements TelephonyUtils.Callback {
             mSubscriptionPrefs.edit().putInt(PREF_PREFERRED_SUB_ID, subscriptionId).commit();
             if (force) {
                 onDefaultSubscriptionChanged();
-    }
+            }
         }
     }
 
@@ -112,8 +109,7 @@ public class PreferredSubscriptionService implements TelephonyUtils.Callback {
         if (isActivationStateChanged) {
             mCallback.onPreferredSubscriptionChanged(mDefaultSubscriptionId,
                     mActiveSubscriptoinState == TelephonyUtils.SUBSCRIPTION_STATE_ACTIVATE);
-        }
-        else {
+        } else {
             Log.i(TAG, "onActiveSubscriptionsUpdated: Active Subscription is not changed");
         }
     }
@@ -123,8 +119,8 @@ public class PreferredSubscriptionService implements TelephonyUtils.Callback {
             Log.d(TAG, "isSubscriptionActivated: get active subscriptions is "
                     + "list because it's null");
             mActiveSubscriptions = mTelephonyUtils.getActiveSubscriptions().stream().filter(
-                    TelephonyUtils.SUBSCRIPTION_ACTIVE_CONDITION_FOR_UICC.or(
-                            TelephonyUtils.SUBSCRIPTION_ACTIVE_CONDITION_FOR_EUICC))
+                            TelephonyUtils.SUBSCRIPTION_ACTIVE_CONDITION_FOR_UICC.or(
+                                    TelephonyUtils.SUBSCRIPTION_ACTIVE_CONDITION_FOR_EUICC))
                     .collect(Collectors.toList());
         }
         boolean isEuiccSubscription = mTelephonyUtils.isEuiccSubscription(subscriptionId);
@@ -135,8 +131,8 @@ public class PreferredSubscriptionService implements TelephonyUtils.Callback {
     private boolean checkSubscriptionStateChanged(List<SubscriptionInfo> activeSubscriptionList) {
         // filtered subscriptions
         mActiveSubscriptions = activeSubscriptionList.stream().filter(
-                TelephonyUtils.SUBSCRIPTION_ACTIVE_CONDITION_FOR_UICC.or(
-                        TelephonyUtils.SUBSCRIPTION_ACTIVE_CONDITION_FOR_EUICC))
+                        TelephonyUtils.SUBSCRIPTION_ACTIVE_CONDITION_FOR_UICC.or(
+                                TelephonyUtils.SUBSCRIPTION_ACTIVE_CONDITION_FOR_EUICC))
                 .collect(Collectors.toList());
         int previousActiveSubscriptionState = mActiveSubscriptoinState;
         int currentActiveSubscriptionState = isSubscriptionActivated(mDefaultSubscriptionId) ?
@@ -148,7 +144,6 @@ public class PreferredSubscriptionService implements TelephonyUtils.Callback {
             mActiveSubscriptoinState = currentActiveSubscriptionState;
             return true;
         }
-
         return false;
     }
 }
