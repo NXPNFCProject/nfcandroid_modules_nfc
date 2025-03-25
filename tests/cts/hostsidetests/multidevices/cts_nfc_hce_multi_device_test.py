@@ -235,10 +235,6 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             )
             self.emulator.adb.shell(['svc', 'nfc', 'enable'])
             self.emulator.debug_tag = 'emulator'
-            if not self.emulator.nfc_emulator.isNfcHceSupported():
-                self._setup_failure_reason = f'NFC HCE is not supported on {self.emulator}'
-                self._setup_failure_should_block_tests = False
-                return
 
             if (
                 hasattr(self.emulator, 'dimensions')
