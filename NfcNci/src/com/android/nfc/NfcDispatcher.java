@@ -115,6 +115,7 @@ class NfcDispatcher {
     private final Handler mMessageHandler = new MessageHandler();
     private final Messenger mMessenger = new Messenger(mMessageHandler);
     private final AtomicBoolean mBluetoothEnabledByNfc;
+    private final DeviceConfigFacade mDeviceConfigFacade;
 
     // Locked on this
     private PendingIntent mOverrideIntent;
@@ -131,7 +132,7 @@ class NfcDispatcher {
     NfcDispatcher(Context context,
                   HandoverDataParser handoverDataParser,
                   NfcInjector nfcInjector,
-                  boolean provisionOnly) {
+                  boolean provisionOnly, DeviceConfigFacade deviceConfigFacade) {
         mContext = context;
         mTechListFilters = new RegisteredComponentCache(mContext,
                 NfcAdapter.ACTION_TECH_DISCOVERED, NfcAdapter.ACTION_TECH_DISCOVERED);
@@ -144,6 +145,7 @@ class NfcDispatcher {
         mForegroundUid = Process.INVALID_UID;
         mForegroundUtils = ForegroundUtils.getInstance(
                 context.getSystemService(ActivityManager.class));
+        mDeviceConfigFacade = deviceConfigFacade;
         synchronized (this) {
             mProvisioningOnly = provisionOnly;
         }
@@ -596,8 +598,7 @@ class NfcDispatcher {
         boolean screenUnlocked = false;
         if (!provisioningOnly &&
                 mScreenStateHelper.checkScreenState(
-                        mContext.getResources().getBoolean(
-                                R.bool.check_display_state_for_screen_state))
+                        mDeviceConfigFacade.getCheckDisplayStateForScreenState())
                         == ScreenStateHelper.SCREEN_STATE_ON_LOCKED) {
             screenUnlocked = handleNfcUnlock(tag);
             if (!screenUnlocked)

@@ -1154,8 +1154,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
         mAlarmManager = mContext.getSystemService(AlarmManager.class);
 
-        mCheckDisplayStateForScreenState =
-                mContext.getResources().getBoolean(R.bool.check_display_state_for_screen_state);
+        mCheckDisplayStateForScreenState = mDeviceConfigFacade.getCheckDisplayStateForScreenState();
         if (mInProvisionMode) {
             mScreenState = mScreenStateHelper.checkScreenStateProvisionMode();
         } else {
@@ -1244,13 +1243,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         }
 
         // Polling delay count for switching from stage one to stage two.
-        mPollDelayCountMax =
-                mContext.getResources().getInteger(R.integer.unknown_tag_polling_delay_count_max);
+        mPollDelayCountMax = mDeviceConfigFacade.getUnknownTagPollingDelayMax();
         // Stage one: polling delay time for the first few unknown tag detections
-        mPollDelayTime = mContext.getResources().getInteger(R.integer.unknown_tag_polling_delay);
+        mPollDelayTime = mDeviceConfigFacade.getUnknownTagPollingDelay();
         // Stage two: longer polling delay time after max_poll_delay_count
-        mPollDelayTimeLong =
-                mContext.getResources().getInteger(R.integer.unknown_tag_polling_delay_long);
+        mPollDelayTimeLong = mDeviceConfigFacade.getUnknownTagPollingDelayLong();
         // Polling delay if read error found more than max count.
         mReadErrorCountMax =
                 mContext.getResources().getInteger(R.integer.unknown_tag_read_error_count_max);
@@ -1258,7 +1255,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         mNotifyDispatchFailed = mContext.getResources().getBoolean(R.bool.enable_notify_dispatch_failed);
         mNotifyReadFailed = mContext.getResources().getBoolean(R.bool.enable_notify_read_failed);
 
-        mPollingDisableAllowed = mContext.getResources().getBoolean(R.bool.polling_disable_allowed);
+        mPollingDisableAllowed = mDeviceConfigFacade.getPollingDisableAllowed();
         mAppInActivityDetectionTime =
             mContext.getResources().getInteger(R.integer.inactive_presence_check_allowed_time);
         mTagRemovalDetectionWaitTime =
@@ -1266,8 +1263,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         // Make sure this is only called when object construction is complete.
         mNfcInjector.getNfcManagerRegisterer().register(mNfcAdapter);
 
-        mIsAlwaysOnSupported =
-            mContext.getResources().getBoolean(R.bool.nfcc_always_on_allowed);
+        mIsAlwaysOnSupported = mDeviceConfigFacade.getNfccAlwaysOnAllowed();
 
         mIsTagAppPrefSupported =
             mContext.getResources().getBoolean(R.bool.tag_intent_app_pref_supported);
@@ -1349,8 +1345,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         executeTaskBoot();  // do blocking boot tasks
 
         if ((NFC_SNOOP_LOG_MODE.equals(NfcProperties.snoop_log_mode_values.FULL) ||
-            NFC_VENDOR_DEBUG_ENABLED) && mContext.getResources().getBoolean(
-                    R.bool.enable_developer_option_notification)) {
+            NFC_VENDOR_DEBUG_ENABLED) &&
+                mDeviceConfigFacade.getEnableDeveloperNotification()) {
             new NfcDeveloperOptionNotification(mContext).startNotification();
         }
 
@@ -1364,7 +1360,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     private void executeTaskBoot() {
         // If overlay is set, delay the NFC boot up until the OEM extension indicates it is ready to
         // proceed with NFC bootup.
-        if (mContext.getResources().getBoolean(R.bool.enable_oem_extension)) {
+        if (mDeviceConfigFacade.getEnableOemExtension()) {
             // Send intent for OEM extension to initialize.
             Intent intent = new Intent(NfcOemExtension.ACTION_OEM_EXTENSION_INIT);
             mContext.sendBroadcastAsUser(intent, UserHandle.CURRENT, BIND_NFC_SERVICE);
@@ -5844,8 +5840,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 applyScreenState(mScreenStateHelper.checkScreenState(mCheckDisplayStateForScreenState));
 
                 if ((NFC_SNOOP_LOG_MODE.equals(NfcProperties.snoop_log_mode_values.FULL) ||
-                        NFC_VENDOR_DEBUG_ENABLED) && mContext.getResources().getBoolean(
-                                R.bool.enable_developer_option_notification)) {
+                        NFC_VENDOR_DEBUG_ENABLED) &&
+                        mDeviceConfigFacade.getEnableDeveloperNotification()){
                     new NfcDeveloperOptionNotification(mContext.createContextAsUser(
                             UserHandle.of(ActivityManager.getCurrentUser()), /*flags=*/0))
                             .startNotification();
@@ -5859,8 +5855,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 setPaymentForegroundPreference(userId);
 
                 if ((NFC_SNOOP_LOG_MODE.equals(NfcProperties.snoop_log_mode_values.FULL) ||
-                        NFC_VENDOR_DEBUG_ENABLED) && mContext.getResources().getBoolean(
-                        R.bool.enable_developer_option_notification)) {
+                        NFC_VENDOR_DEBUG_ENABLED) &&
+                        mDeviceConfigFacade.getEnableDeveloperNotification()) {
                     new NfcDeveloperOptionNotification(mContext.createContextAsUser(
                             UserHandle.of(ActivityManager.getCurrentUser()), /*flags=*/0))
                             .startNotification();
