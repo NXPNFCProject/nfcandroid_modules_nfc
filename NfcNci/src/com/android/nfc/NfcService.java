@@ -1212,8 +1212,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             addThermalStatusListener();
         }
 
-        mIsRDCapable = Flags.removalDetection() &&
-                mContext.getResources().getBoolean(R.bool.removal_detection_default);
+        mIsRDCapable = mContext.getResources().getBoolean(R.bool.removal_detection_default);
 
         mIsHceCapable =
                 pm.hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION) ||
