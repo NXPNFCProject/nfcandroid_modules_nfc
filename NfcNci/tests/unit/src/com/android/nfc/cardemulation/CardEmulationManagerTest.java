@@ -78,6 +78,7 @@ import com.android.nfc.NfcEventLog;
 import com.android.nfc.NfcInjector;
 import com.android.nfc.NfcPermissions;
 import com.android.nfc.NfcService;
+import com.android.nfc.cardemulation.util.StatsdUtils;
 import com.android.nfc.cardemulation.util.TelephonyUtils;
 import com.android.nfc.flags.Flags;
 
@@ -2249,6 +2250,7 @@ public class CardEmulationManagerTest {
                 mPowerManager,
                 mNfcEventLog,
                 mPreferredSubscriptionService,
+                mStatsdUtils,
                 mDeviceConfigFacade);
     }
 
@@ -3188,5 +3190,21 @@ public class CardEmulationManagerTest {
         verify(um).getEnabledProfiles();
         verify(mContext).createPackageContextAsUser("android", 0, userHandle);
         verify(pm, never()).getApplicationInfo(anyString(), eq(0));
+    }
+
+    @Test
+    public void testOnObserveModeDisabledInFirmware() {
+        PollingFrame exitFrame = new PollingFrame(
+                PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
+                HexFormat.of().parseHex("42123456"),
+                0,
+                0,
+                true);
+
+        mCardEmulationManager.onObserveModeDisabledInFirmware(exitFrame);
+
+        verify(mHostEmulationManager).onObserveModeDisabledInFirmware(exitFrame);
+        verify(mStatsdUtils).logAutoTransactReported(StatsdUtils.PROCESSOR_NFCC,
+            exitFrame.getData());
     }
 }
