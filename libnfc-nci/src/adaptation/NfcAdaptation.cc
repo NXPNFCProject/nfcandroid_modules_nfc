@@ -30,6 +30,7 @@
 #include <android/hardware/nfc/1.2/INfc.h>
 #include <cutils/properties.h>
 #include <hwbinder/ProcessState.h>
+
 #include <thread>
 
 #include "NfcVendorExtn.h"
@@ -649,17 +650,17 @@ void NfcAdaptation::Initialize() {
         NfcConfig::getUnsigned(NAME_ISO15693_SKIP_GET_SYS_INFO_CMD);
   }
 
-  if (NfcConfig::hasKey(NAME_NFA_EE_ROUTE_DEBOUNCE_TIMER)) {
-    if (NfcConfig::getUnsigned(NAME_NFA_EE_ROUTE_DEBOUNCE_TIMER) == 0x00) {
-      nfa_ee_route_debounce_timer = false;
-    }
-  }
-
   if (NfcConfig::hasKey(NAME_NFA_DM_LISTEN_ACTIVE_DEACT_NTF_TIMEOUT)) {
     unsigned int value =
         NfcConfig::getUnsigned(NAME_NFA_DM_LISTEN_ACTIVE_DEACT_NTF_TIMEOUT);
     if (value > 0) {
       nfa_dm_cfg.deact_ntf_listen_active_timeout = value * 1000;
+    }
+  }
+
+  if (NfcConfig::hasKey(NAME_NFA_EE_ROUTE_DEBOUNCE_TIMER)) {
+    if (NfcConfig::getUnsigned(NAME_NFA_EE_ROUTE_DEBOUNCE_TIMER) == 0x00) {
+      nfa_ee_route_debounce_timer = false;
     }
   }
 
@@ -987,7 +988,7 @@ void NfcAdaptation::HalOpen(tHAL_NFC_CBACK* p_hal_cback,
                             tHAL_NFC_DATA_CBACK* p_data_cback) {
   const char* func = "NfcAdaptation::HalOpen";
   LOG(VERBOSE) << StringPrintf("%s", func);
-  std::thread([p_hal_cback, p_data_cback](){
+  std::thread([p_hal_cback, p_data_cback]() {
     HalOpenInternal(p_hal_cback, p_data_cback);
   }).detach();
 }
@@ -1237,7 +1238,8 @@ void NfcAdaptation::HalDownloadFirmwareCallback(nfc_event_t event,
       break;
     }
   }
-  tNFC_HAL_EVT_MSG* p_msg = (tNFC_HAL_EVT_MSG*)GKI_getbuf(sizeof(tNFC_HAL_EVT_MSG));
+  tNFC_HAL_EVT_MSG* p_msg =
+      (tNFC_HAL_EVT_MSG*)GKI_getbuf(sizeof(tNFC_HAL_EVT_MSG));
   if (p_msg != nullptr) {
     /* Initialize NFC_HDR */
     p_msg->hdr.len = 0;
