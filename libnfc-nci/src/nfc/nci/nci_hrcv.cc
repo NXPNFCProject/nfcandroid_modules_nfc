@@ -31,10 +31,10 @@
 #include "gki.h"
 #include "nci_defs.h"
 #include "nci_hmsgs.h"
+#include "nfa_ee_int.h"
 #include "nfc_api.h"
 #include "nfc_int.h"
 #include "nfc_target.h"
-#include "nfa_ee_int.h"
 
 using android::base::StringPrintf;
 

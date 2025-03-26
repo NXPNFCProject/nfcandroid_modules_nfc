@@ -76,9 +76,9 @@ import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
 import android.nfc.NfcAntennaInfo;
 import android.nfc.NfcOemExtension;
-import android.nfc.T4tNdefNfceeCcFileInfo;
 import android.nfc.OemLogItems;
 import android.nfc.T4tNdefNfcee;
+import android.nfc.T4tNdefNfceeCcFileInfo;
 import android.nfc.Tag;
 import android.nfc.TechListParcel;
 import android.nfc.TransceiveResult;
@@ -159,6 +159,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -169,8 +171,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-import java.util.TimerTask;
-import java.util.Timer;
 
 public class NfcService implements DeviceHostListener, ForegroundUtils.Callback {
     static final boolean DBG = NfcProperties.debug_enabled().orElse(true);
@@ -4925,10 +4925,12 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     break;
                 }
                 case MSG_COMMIT_ROUTING: {
+                    Log.d(TAG, "handleMessage: MSG_COMMIT_ROUTING");
                     synchronized (NfcService.this) {
                         if (mState == NfcAdapter.STATE_OFF
                                 || mState == NfcAdapter.STATE_TURNING_OFF) {
-                            Log.d(TAG, "Skip commit routing when NFCC is off or turning off");
+                            Log.d(TAG, "handleMessage: Skip commit routing when NFCC is off "
+                                    + "or turning off");
                             if (mCommitRoutingCountDownLatch != null) {
                                 mCommitRoutingStatus = STATUS_UNKNOWN_ERROR;
                                 mCommitRoutingCountDownLatch.countDown();
@@ -4938,7 +4940,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                         if (mCurrentDiscoveryParameters.shouldEnableDiscovery()) {
                             if (mNfcOemExtensionCallback != null) {
                                 if (receiveOemCallbackResult(ACTION_ON_ROUTING_CHANGED)) {
-                                    Log.e(TAG, "Oem skip commitRouting");
+                                    Log.e(TAG, "handleMessage: Oem skip commitRouting");
                                     if (mCommitRoutingCountDownLatch != null) {
                                         mCommitRoutingStatus = STATUS_UNKNOWN_ERROR;
                                         mCommitRoutingCountDownLatch.countDown();
@@ -5306,21 +5308,22 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     }
                     break;
                 case MSG_UPDATE_SYSTEM_CODE_ROUTE:
-                    if (DBG) Log.d(TAG, "Update system code");
+                    Log.d(TAG, "handleMessage: MSG_UPDATE_SYSTEM_CODE_ROUTE");
                     mDeviceHost.setSystemCodeRoute((Integer) msg.obj);
-                    break;
-                case MSG_RESTART_DISCOVERY:
-                    mDeviceHost.restartRfDiscovery();
                     break;
 
                 case MSG_PREFERRED_SIM_CHANGED:
                     if (!isNfcEnabled()) break;
-                    if (DBG) Log.d(TAG, "Preferred sim changed");
+                    Log.d(TAG, "handleMessage: MSG_PREFERRED_SIM_CHANGED");
                     new EnableDisableTask().execute(TASK_DISABLE);
                     new EnableDisableTask().execute(TASK_ENABLE);
                     break;
+                case MSG_RESTART_DISCOVERY:
+                    Log.d(TAG, "handleMessage: MSG_RESTART_DISCOVERY");
+                    mDeviceHost.restartRfDiscovery();
+                    break;
                 default:
-                    Log.e(TAG, "Unknown message received");
+                    Log.e(TAG, "handleMessage: Unknown message received");
                     break;
             }
         }

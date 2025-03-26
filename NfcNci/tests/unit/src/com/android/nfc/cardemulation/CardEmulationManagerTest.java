@@ -148,31 +148,56 @@ public class CardEmulationManagerTest {
                     "com.android.test.walletroleholder.WalletRoleHolderApduService");
     private static final String PAYMENT_AID_1 = "A000000004101012";
 
-    @Mock private Context mContext;
-    @Mock private Resources mResources;
-    @Mock private ForegroundUtils mForegroundUtils;
-    @Mock private WalletRoleObserver mWalletRoleObserver;
-    @Mock private RegisteredAidCache mRegisteredAidCache;
-    @Mock private RegisteredT3tIdentifiersCache mRegisteredT3tIdentifiersCache;
-    @Mock private HostEmulationManager mHostEmulationManager;
-    @Mock private HostNfcFEmulationManager mHostNfcFEmulationManager;
-    @Mock private RegisteredServicesCache mRegisteredServicesCache;
-    @Mock private RegisteredNfcFServicesCache mRegisteredNfcFServicesCache;
-    @Mock private PreferredServices mPreferredServices;
-    @Mock private EnabledNfcFServices mEnabledNfcFServices;
-    @Mock private RoutingOptionManager mRoutingOptionManager;
-    @Mock private PowerManager mPowerManager;
-    @Mock private NfcService mNfcService;
-    @Mock private UserManager mUserManager;
-    @Mock private NfcAdapter mNfcAdapter;
-    @Mock private NfcEventLog mNfcEventLog;
-    @Mock private PreferredSubscriptionService mPreferredSubscriptionService;
+    @Mock
+    private Context mContext;
+    @Mock
+    private Resources mResources;
+    @Mock
+    private ForegroundUtils mForegroundUtils;
+    @Mock
+    private WalletRoleObserver mWalletRoleObserver;
+    @Mock
+    private RegisteredAidCache mRegisteredAidCache;
+    @Mock
+    private RegisteredT3tIdentifiersCache mRegisteredT3tIdentifiersCache;
+    @Mock
+    private HostEmulationManager mHostEmulationManager;
+    @Mock
+    private HostNfcFEmulationManager mHostNfcFEmulationManager;
+    @Mock
+    private RegisteredServicesCache mRegisteredServicesCache;
+    @Mock
+    private RegisteredNfcFServicesCache mRegisteredNfcFServicesCache;
+    @Mock
+    private PreferredServices mPreferredServices;
+    @Mock
+    private EnabledNfcFServices mEnabledNfcFServices;
+    @Mock
+    private RoutingOptionManager mRoutingOptionManager;
+    @Mock
+    private PowerManager mPowerManager;
+    @Mock
+    private NfcService mNfcService;
+    @Mock
+    private UserManager mUserManager;
+    @Mock
+    private NfcAdapter mNfcAdapter;
+    @Mock
+    private NfcEventLog mNfcEventLog;
+    @Mock
+    private PreferredSubscriptionService mPreferredSubscriptionService;
+    @Mock
+    private StatsdUtils mStatsdUtils;
     @Mock
     private DeviceConfigFacade mDeviceConfigFacade;
-    @Captor private ArgumentCaptor<List<PollingFrame>> mPollingLoopFrameCaptor;
-    @Captor private ArgumentCaptor<byte[]> mDataCaptor;
-    @Captor private ArgumentCaptor<List<ApduServiceInfo>> mServiceListCaptor;
-    @Captor private ArgumentCaptor<List<NfcFServiceInfo>> mNfcServiceListCaptor;
+    @Captor
+    private ArgumentCaptor<List<PollingFrame>> mPollingLoopFrameCaptor;
+    @Captor
+    private ArgumentCaptor<byte[]> mDataCaptor;
+    @Captor
+    private ArgumentCaptor<List<ApduServiceInfo>> mServiceListCaptor;
+    @Captor
+    private ArgumentCaptor<List<NfcFServiceInfo>> mNfcServiceListCaptor;
     private MockitoSession mStaticMockSession;
     private CardEmulationManager mCardEmulationManager;
 

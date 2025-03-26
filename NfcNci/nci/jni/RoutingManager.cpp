@@ -139,6 +139,8 @@ RoutingManager::RoutingManager()
       NAME_OFFHOST_LISTEN_TECH_MASK,
       NFA_TECHNOLOGY_MASK_A | NFA_TECHNOLOGY_MASK_B | NFA_TECHNOLOGY_MASK_F);
 
+  mEuiccMepMode= NfcConfig::getUnsigned(NAME_EUICC_MEP_MODE, 0x0);
+
   if (NfcConfig::hasKey(NAME_NFCEE_EVENT_RF_DISCOVERY_OPTION)) {
     mIsRFDiscoveryOptimized =
         (NfcConfig::getUnsigned(NAME_NFCEE_EVENT_RF_DISCOVERY_OPTION) == 0x01
@@ -153,8 +155,6 @@ RoutingManager::RoutingManager()
         "%s: NAME_NFCEE_EVENT_RF_DISCOVERY_OPTION not found=%d", fn,
         mIsRFDiscoveryOptimized);
   }
-
-  mEuiccMepMode= NfcConfig::getUnsigned(NAME_EUICC_MEP_MODE, 0x0);
 
   memset(&mEeInfo, 0, sizeof(mEeInfo));
   mReceivedEeInfo = false;
