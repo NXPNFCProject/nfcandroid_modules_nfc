@@ -20,6 +20,7 @@ import static android.nfc.cardemulation.CardEmulation.SET_SERVICE_ENABLED_STATUS
 import static android.nfc.cardemulation.CardEmulation.SET_SERVICE_ENABLED_STATUS_OK;
 
 import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -42,13 +43,17 @@ import static org.mockito.Mockito.when;
 
 import android.app.ActivityManager;
 import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.Context;
-import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.nfc.ComponentNameAndUser;
+import android.nfc.Constants;
 import android.nfc.INfcCardEmulation;
+import android.nfc.INfcOemExtensionCallback;
 import android.nfc.NfcAdapter;
+import android.nfc.NfcOemExtension;
 import android.nfc.PackageAndUser;
 import android.nfc.cardemulation.AidGroup;
 import android.nfc.cardemulation.ApduServiceInfo;
@@ -61,8 +66,9 @@ import android.os.RemoteException;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.provider.Settings;
+import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
-import android.util.Pair;
+import android.util.proto.ProtoOutputStream;
 
 import com.android.dx.mockito.inline.extended.ExtendedMockito;
 import com.android.nfc.DeviceConfigFacade;
@@ -72,6 +78,7 @@ import com.android.nfc.NfcEventLog;
 import com.android.nfc.NfcInjector;
 import com.android.nfc.NfcPermissions;
 import com.android.nfc.NfcService;
+import com.android.nfc.cardemulation.util.TelephonyUtils;
 import com.android.nfc.flags.Flags;
 
 import org.junit.After;
@@ -85,20 +92,23 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.MockitoSession;
 import org.mockito.quality.Strictness;
 
+import java.io.FileDescriptor;
+import java.io.PrintWriter;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 public class CardEmulationManagerTest {
 
     private static final int USER_ID = 0;
     private static final UserHandle USER_HANDLE = UserHandle.of(USER_ID);
-    private static final byte[] TEST_DATA_1 = new byte[] {(byte) 0xd2};
-    private static final byte[] TEST_DATA_2 = new byte[] {(byte) 0xd3};
+    private static final byte[] TEST_DATA_1 = new byte[]{(byte) 0xd2};
+    private static final byte[] TEST_DATA_2 = new byte[]{(byte) 0xd3};
     private static final byte[] PROPER_SKIP_DATA_NDF1_HEADER =
-            new byte[] {
+            new byte[]{
                     0x00,
                     (byte) 0xa4,
                     0x04,
@@ -113,7 +123,7 @@ public class CardEmulationManagerTest {
                     0x00
             };
     private static final byte[] PROPER_SKIP_DATA_NDF2_HEADER =
-            new byte[] {
+            new byte[]{
                     0x00,
                     (byte) 0xa4,
                     0x04,
@@ -2435,7 +2445,7 @@ public class CardEmulationManagerTest {
         INfcCardEmulation iNfcCardEmulation = mCardEmulationManager.getNfcCardEmulationInterface();
         assertThat(iNfcCardEmulation).isNotNull();
         ApduServiceInfo apduServiceInfo = mock(ApduServiceInfo.class);
-        List<ApduServiceInfo> apduServiceInfoList =  new ArrayList<>();
+        List<ApduServiceInfo> apduServiceInfoList = new ArrayList<>();
         apduServiceInfoList.add(apduServiceInfo);
         when(mRegisteredServicesCache.getServicesForCategory(1, "payment"))
                 .thenReturn(apduServiceInfoList);
@@ -2455,7 +2465,7 @@ public class CardEmulationManagerTest {
     }
 
     @Test
-    public void testSupportsAidPrefixRegistration()  throws RemoteException {
+    public void testSupportsAidPrefixRegistration() throws RemoteException {
         INfcCardEmulation iNfcCardEmulation = mCardEmulationManager.getNfcCardEmulationInterface();
         assertThat(iNfcCardEmulation).isNotNull();
         when(mRegisteredAidCache
@@ -2685,4 +2695,498 @@ public class CardEmulationManagerTest {
         assertThat(frames).hasSize(5);
     }
 
- }
+    @Test
+    public void testDump() {
+        FileDescriptor fd = mock(FileDescriptor.class);
+        PrintWriter pw = mock(PrintWriter.class);
+        String[] args = new String[]{"test"};
+
+        mCardEmulationManager.dump(fd, pw, args);
+        verify(mRegisteredServicesCache).dump(fd, pw, args);
+    }
+
+    @Test
+    public void testDumpDebug() {
+        ProtoOutputStream proto = mock(ProtoOutputStream.class);
+        when(proto.start(CardEmulationManagerProto.REGISTERED_SERVICES_CACHE)).thenReturn((long) 1);
+
+        mCardEmulationManager.dumpDebug(proto);
+        verify(mRegisteredServicesCache).dumpDebug(proto);
+    }
+
+    @Test
+    public void testOnPreferredSubscriptionChangedWithSimEuicc1()
+            throws NoSuchFieldException, IllegalAccessException {
+        int subscriptionId = 1;
+        boolean isActive = true;
+        TelephonyUtils telephonyUtils = mock(TelephonyUtils.class);
+        SubscriptionInfo subscriptionInfo = mock(SubscriptionInfo.class);
+        Optional<SubscriptionInfo> optionalInfo = Optional.of(subscriptionInfo);
+        Field field = CardEmulationManager.class.getDeclaredField("mTelephonyUtils");
+        field.setAccessible(true);
+        field.set(mCardEmulationManager, telephonyUtils);
+        when(subscriptionInfo.isEmbedded()).thenReturn(true);
+        when(subscriptionInfo.getPortIndex()).thenReturn(0);
+        when(telephonyUtils.getActiveSubscriptionInfoById(subscriptionId)).thenReturn(optionalInfo);
+        when(mRoutingOptionManager.getSecureElementForRoute(anyInt())).thenReturn("");
+
+        mCardEmulationManager.onPreferredSubscriptionChanged(subscriptionId, isActive);
+        verify(mRoutingOptionManager).onPreferredSimChanged(TelephonyUtils.SIM_TYPE_EUICC_1);
+        verify(mRegisteredAidCache).onPreferredSimChanged(TelephonyUtils.SIM_TYPE_EUICC_1);
+    }
+
+    @Test
+    public void testOnPreferredSubscriptionChangedWithSimEuicc2()
+            throws NoSuchFieldException, IllegalAccessException {
+        int subscriptionId = 1;
+        boolean isActive = true;
+        TelephonyUtils telephonyUtils = mock(TelephonyUtils.class);
+        SubscriptionInfo subscriptionInfo = mock(SubscriptionInfo.class);
+        Optional<SubscriptionInfo> optionalInfo = Optional.of(subscriptionInfo);
+        Field field = CardEmulationManager.class.getDeclaredField("mTelephonyUtils");
+        field.setAccessible(true);
+        field.set(mCardEmulationManager, telephonyUtils);
+        when(subscriptionInfo.isEmbedded()).thenReturn(true);
+        when(subscriptionInfo.getPortIndex()).thenReturn(1);
+        when(telephonyUtils.getActiveSubscriptionInfoById(subscriptionId)).thenReturn(optionalInfo);
+        when(mRoutingOptionManager.getSecureElementForRoute(anyInt())).thenReturn("");
+
+        mCardEmulationManager.onPreferredSubscriptionChanged(subscriptionId, isActive);
+        verify(mRoutingOptionManager).onPreferredSimChanged(TelephonyUtils.SIM_TYPE_EUICC_2);
+        verify(mRegisteredAidCache).onPreferredSimChanged(TelephonyUtils.SIM_TYPE_EUICC_2);
+    }
+
+    @Test
+    public void testOnPreferredSubscriptionChangedWithSimUicc()
+            throws NoSuchFieldException, IllegalAccessException {
+        int subscriptionId = 1;
+        boolean isActive = true;
+        TelephonyUtils telephonyUtils = mock(TelephonyUtils.class);
+        SubscriptionInfo subscriptionInfo = mock(SubscriptionInfo.class);
+        Optional<SubscriptionInfo> optionalInfo = Optional.of(subscriptionInfo);
+        Field field = CardEmulationManager.class.getDeclaredField("mTelephonyUtils");
+        field.setAccessible(true);
+        field.set(mCardEmulationManager, telephonyUtils);
+        when(subscriptionInfo.isEmbedded()).thenReturn(false);
+        when(telephonyUtils.getActiveSubscriptionInfoById(subscriptionId)).thenReturn(optionalInfo);
+        when(mRoutingOptionManager.getSecureElementForRoute(anyInt())).thenReturn("");
+
+        mCardEmulationManager.onPreferredSubscriptionChanged(subscriptionId, isActive);
+        verify(mRoutingOptionManager).onPreferredSimChanged(TelephonyUtils.SIM_TYPE_UICC);
+        verify(mRegisteredAidCache).onPreferredSimChanged(TelephonyUtils.SIM_TYPE_UICC);
+    }
+
+    @Test
+    public void testOnPreferredSubscriptionChangedWithSimUnknown()
+            throws NoSuchFieldException, IllegalAccessException {
+        int subscriptionId = 1;
+        boolean isActive = true;
+        TelephonyUtils telephonyUtils = mock(TelephonyUtils.class);
+        Optional<SubscriptionInfo> optionalInfo = Optional.empty();
+        Field field = CardEmulationManager.class.getDeclaredField("mTelephonyUtils");
+        field.setAccessible(true);
+        field.set(mCardEmulationManager, telephonyUtils);
+        when(telephonyUtils.getActiveSubscriptionInfoById(subscriptionId)).thenReturn(optionalInfo);
+
+        mCardEmulationManager.onPreferredSubscriptionChanged(subscriptionId, isActive);
+        verify(mRoutingOptionManager).onPreferredSimChanged(TelephonyUtils.SIM_TYPE_UNKNOWN);
+        verify(mRegisteredAidCache).onPreferredSimChanged(TelephonyUtils.SIM_TYPE_UNKNOWN);
+    }
+
+    @Test
+    public void testOnPreferredSubscriptionChangedWithSimInActive()
+            throws NoSuchFieldException, IllegalAccessException {
+        int subscriptionId = 1;
+        boolean isActive = false;
+        TelephonyUtils telephonyUtils = mock(TelephonyUtils.class);
+        Field field = CardEmulationManager.class.getDeclaredField("mTelephonyUtils");
+        field.setAccessible(true);
+        field.set(mCardEmulationManager, telephonyUtils);
+
+        mCardEmulationManager.onPreferredSubscriptionChanged(subscriptionId, isActive);
+        verify(mRoutingOptionManager).onPreferredSimChanged(TelephonyUtils.SIM_TYPE_UNKNOWN);
+        verify(mRegisteredAidCache).onPreferredSimChanged(TelephonyUtils.SIM_TYPE_UNKNOWN);
+    }
+
+    @Test
+    public void testOnEeListenActivated() {
+        mCardEmulationManager.onEeListenActivated(false);
+
+        verify(mPreferredServices).onHostEmulationDeactivated();
+    }
+
+    @Test
+    public void testOnFieldChangeDetected() {
+        mCardEmulationManager.onFieldChangeDetected(true);
+        verify(mHostEmulationManager).onFieldChangeDetected(true);
+    }
+
+    @Test
+    public void testOnHostCardEmulationDataWithApdu() throws RemoteException {
+        INfcOemExtensionCallback nfcOemExtensionCallback = mock(INfcOemExtensionCallback.class);
+        mCardEmulationManager.setOemExtension(nfcOemExtensionCallback);
+
+        mCardEmulationManager.onHostCardEmulationData(
+                CardEmulationManager.NFC_HCE_APDU, PROPER_SKIP_DATA_NDF1_HEADER);
+        verify(nfcOemExtensionCallback).onHceEventReceived(NfcOemExtension.HCE_DATA_TRANSFERRED);
+        verify(mHostEmulationManager).onHostEmulationData(PROPER_SKIP_DATA_NDF1_HEADER);
+    }
+
+    @Test
+    public void testOnHostCardEmulationDataWithNfcf() throws RemoteException {
+        INfcOemExtensionCallback nfcOemExtensionCallback = mock(INfcOemExtensionCallback.class);
+        mCardEmulationManager.setOemExtension(nfcOemExtensionCallback);
+
+        mCardEmulationManager.onHostCardEmulationData(
+                CardEmulationManager.NFC_HCE_NFCF, PROPER_SKIP_DATA_NDF1_HEADER);
+        verify(nfcOemExtensionCallback).onHceEventReceived(NfcOemExtension.HCE_DATA_TRANSFERRED);
+        verify(mHostNfcFEmulationManager).onHostEmulationData(PROPER_SKIP_DATA_NDF1_HEADER);
+        verify(mPowerManager).userActivity(anyLong(), eq(PowerManager.USER_ACTIVITY_EVENT_TOUCH),
+                eq(0));
+    }
+
+    @Test
+    public void testOnHostCardEmulationDeactivatedWithApdu() throws RemoteException {
+        INfcOemExtensionCallback nfcOemExtensionCallback = mock(INfcOemExtensionCallback.class);
+        mCardEmulationManager.setOemExtension(nfcOemExtensionCallback);
+        ArgumentCaptor<Integer> captor = ArgumentCaptor.forClass(Integer.class);
+
+        mCardEmulationManager.onHostCardEmulationDeactivated(CardEmulationManager.NFC_HCE_APDU);
+        verify(mHostEmulationManager).onHostEmulationDeactivated();
+        verify(mPreferredServices).onHostEmulationDeactivated();
+        verify(nfcOemExtensionCallback).onHceEventReceived(captor.capture());
+        assertEquals(NfcOemExtension.HCE_DEACTIVATE, captor.getValue().intValue());
+    }
+
+    @Test
+    public void testSetDefaultServiceForCategoryChecked() {
+        int userId = 1;
+        ComponentName componentName = new ComponentName("com.example.nfc", "ExampleNfcClass");
+        String category = CardEmulation.CATEGORY_PAYMENT;
+        Context context = mock(Context.class);
+        ContentResolver contentResolver = mock(ContentResolver.class);
+        UserHandle userHandle = mock(UserHandle.class);
+        when(UserHandle.of(userId)).thenReturn(userHandle);
+        when(mRegisteredServicesCache.hasService(userId, componentName)).thenReturn(true);
+        when(mContext.createContextAsUser(userHandle, 0)).thenReturn(context);
+        when(context.getContentResolver()).thenReturn(contentResolver);
+
+        assertTrue(mCardEmulationManager.setDefaultServiceForCategoryChecked(userId, componentName,
+                category));
+        verify(mRegisteredServicesCache).hasService(userId, componentName);
+    }
+
+    @Test
+    public void testSetDefaultServiceForCategoryCheckedWithOtherCategory() {
+        assertFalse(mCardEmulationManager.setDefaultServiceForCategoryChecked(1,
+                new ComponentName("com.example.nfc", "ExampleNfcClass"),
+                CardEmulation.CATEGORY_OTHER));
+    }
+
+    @Test
+    public void testUpdateForDefaultSwpToEuicc() throws NoSuchFieldException,
+            IllegalAccessException {
+        int subscriptionId = 1;
+        when(android.nfc.Flags.enableCardEmulationEuicc()).thenReturn(true);
+        Resources resources = mock(Resources.class);
+        when(mContext.getResources()).thenReturn(resources);
+        when(resources.getBoolean(anyInt())).thenReturn(true);
+        when(NfcInjector.NfcProperties.isEuiccSupported()).thenReturn(true);
+        when(mPreferredSubscriptionService.getPreferredSubscriptionId()).thenReturn(subscriptionId);
+        TelephonyUtils telephonyUtils = mock(TelephonyUtils.class);
+        SubscriptionInfo subscriptionInfo = mock(SubscriptionInfo.class);
+        Optional<SubscriptionInfo> optionalInfo = Optional.of(subscriptionInfo);
+        Field field = CardEmulationManager.class.getDeclaredField("mTelephonyUtils");
+        field.setAccessible(true);
+        field.set(mCardEmulationManager, telephonyUtils);
+        when(subscriptionInfo.isEmbedded()).thenReturn(true);
+        when(subscriptionInfo.getPortIndex()).thenReturn(0);
+        when(telephonyUtils.getActiveSubscriptionInfoById(subscriptionId)).thenReturn(optionalInfo);
+        when(telephonyUtils.updateSwpStatusForEuicc(TelephonyUtils.SIM_TYPE_EUICC_1)).thenReturn(
+                "6F02839000");
+
+        mCardEmulationManager.updateForDefaultSwpToEuicc();
+        verify(mPreferredSubscriptionService).getPreferredSubscriptionId();
+        verify(telephonyUtils).updateSwpStatusForEuicc(TelephonyUtils.SIM_TYPE_EUICC_1);
+        verify(mContext).getResources();
+    }
+
+    @Test
+    public void testUpdateForDefaultSwpToEuiccWithCmdFail() throws NoSuchFieldException,
+            IllegalAccessException {
+        int subscriptionId = 3;
+        when(android.nfc.Flags.enableCardEmulationEuicc()).thenReturn(true);
+        Resources resources = mock(Resources.class);
+        when(mContext.getResources()).thenReturn(resources);
+        when(resources.getBoolean(anyInt())).thenReturn(true);
+        when(NfcInjector.NfcProperties.isEuiccSupported()).thenReturn(true);
+        when(mPreferredSubscriptionService.getPreferredSubscriptionId()).thenReturn(subscriptionId);
+        TelephonyUtils telephonyUtils = mock(TelephonyUtils.class);
+        SubscriptionInfo subscriptionInfo = mock(SubscriptionInfo.class);
+        Optional<SubscriptionInfo> optionalInfo = Optional.of(subscriptionInfo);
+        Field field = CardEmulationManager.class.getDeclaredField("mTelephonyUtils");
+        field.setAccessible(true);
+        field.set(mCardEmulationManager, telephonyUtils);
+        when(subscriptionInfo.isEmbedded()).thenReturn(true);
+        when(subscriptionInfo.getPortIndex()).thenReturn(0);
+        when(telephonyUtils.getActiveSubscriptionInfoById(subscriptionId)).thenReturn(optionalInfo);
+        when(telephonyUtils.updateSwpStatusForEuicc(TelephonyUtils.SIM_TYPE_EUICC_1)).thenReturn(
+                "6F0283FFFF");
+
+        mCardEmulationManager.updateForDefaultSwpToEuicc();
+        verify(mPreferredSubscriptionService).getPreferredSubscriptionId();
+        verify(telephonyUtils).updateSwpStatusForEuicc(TelephonyUtils.SIM_TYPE_EUICC_1);
+        verify(mContext).getResources();
+        verify(resources).getBoolean(anyInt());
+    }
+
+    @Test
+    public void testUpdateForDefaultSwpToEuiccWithWrongLength() throws NoSuchFieldException,
+            IllegalAccessException {
+        int subscriptionId = 3;
+        when(android.nfc.Flags.enableCardEmulationEuicc()).thenReturn(true);
+        Resources resources = mock(Resources.class);
+        when(mContext.getResources()).thenReturn(resources);
+        when(resources.getBoolean(anyInt())).thenReturn(true);
+        when(NfcInjector.NfcProperties.isEuiccSupported()).thenReturn(true);
+        when(mPreferredSubscriptionService.getPreferredSubscriptionId()).thenReturn(subscriptionId);
+        TelephonyUtils telephonyUtils = mock(TelephonyUtils.class);
+        SubscriptionInfo subscriptionInfo = mock(SubscriptionInfo.class);
+        Optional<SubscriptionInfo> optionalInfo = Optional.of(subscriptionInfo);
+        Field field = CardEmulationManager.class.getDeclaredField("mTelephonyUtils");
+        field.setAccessible(true);
+        field.set(mCardEmulationManager, telephonyUtils);
+        when(subscriptionInfo.isEmbedded()).thenReturn(true);
+        when(subscriptionInfo.getPortIndex()).thenReturn(0);
+        when(telephonyUtils.getActiveSubscriptionInfoById(subscriptionId)).thenReturn(optionalInfo);
+        when(telephonyUtils.updateSwpStatusForEuicc(TelephonyUtils.SIM_TYPE_EUICC_1)).thenReturn(
+                "6FF");
+
+        mCardEmulationManager.updateForDefaultSwpToEuicc();
+        verify(mPreferredSubscriptionService).getPreferredSubscriptionId();
+        verify(telephonyUtils).updateSwpStatusForEuicc(TelephonyUtils.SIM_TYPE_EUICC_1);
+        verify(mContext).getResources();
+        verify(resources).getBoolean(anyInt());
+    }
+
+    @Test
+    public void testUpdateForDefaultSwpToEuiccWithEmulationDisabled() {
+        when(android.nfc.Flags.enableCardEmulationEuicc()).thenReturn(false);
+
+        mCardEmulationManager.updateForDefaultSwpToEuicc();
+        verify(mContext, never()).getResources();
+    }
+
+    @Test
+    public void testUpdateForDefaultSwpToEuiccWithEmulationNotSupport() {
+        when(android.nfc.Flags.enableCardEmulationEuicc()).thenReturn(true);
+        Resources resources = mock(Resources.class);
+        when(mContext.getResources()).thenReturn(resources);
+        when(resources.getBoolean(anyInt())).thenReturn(false);
+        when(NfcInjector.NfcProperties.isEuiccSupported()).thenReturn(false);
+
+        mCardEmulationManager.updateForDefaultSwpToEuicc();
+        verify(mContext).getResources();
+        verify(mPreferredSubscriptionService, never()).getPreferredSubscriptionId();
+    }
+
+    @Test
+    public void testWasServicePreInstalled() throws PackageManager.NameNotFoundException {
+        PackageManager packageManager = mock(PackageManager.class);
+        ComponentName service = new ComponentName("com.example.nfc", "NfcClass");
+        ApplicationInfo ai = mock(ApplicationInfo.class);
+        ai.flags = 1;
+        when(packageManager.getApplicationInfo("com.example.nfc", 0)).thenReturn(ai);
+
+        assertTrue(mCardEmulationManager.wasServicePreInstalled(packageManager, service));
+    }
+
+    @Test
+    public void testWasServicePreInstalledWithoutService()
+            throws PackageManager.NameNotFoundException {
+        PackageManager packageManager = mock(PackageManager.class);
+        ComponentName service = new ComponentName("com.example.nfc", "NfcClass");
+        when(packageManager.getApplicationInfo("com.example.nfc", 0)).thenThrow(
+                PackageManager.NameNotFoundException.class);
+
+        assertFalse(mCardEmulationManager.wasServicePreInstalled(packageManager, service));
+    }
+
+    @Test
+    public void testWasServicePreInstalledWithServiceNotPreInstalled()
+            throws PackageManager.NameNotFoundException {
+        PackageManager packageManager = mock(PackageManager.class);
+        ComponentName service = new ComponentName("com.example.nfc", "NfcClass");
+        ApplicationInfo ai = mock(ApplicationInfo.class);
+        ai.flags = 0;
+        when(packageManager.getApplicationInfo("com.example.nfc", 0)).thenReturn(ai);
+
+        assertFalse(mCardEmulationManager.wasServicePreInstalled(packageManager, service));
+    }
+
+    @Test
+    public void testVerifyDefaults() {
+        int userId = 1;
+        List<ApduServiceInfo> services = new ArrayList<>();
+        List<UserHandle> luh = new ArrayList<>();
+        boolean validateInstalled = true;
+        UserHandle userHandle = mock(UserHandle.class);
+        UserHandle secondUserHandle = mock(UserHandle.class);
+        Context context = mock(Context.class);
+        UserManager um = mock(UserManager.class);
+        ContentResolver contentResolver = mock(ContentResolver.class);
+        luh.add(userHandle);
+        luh.add(secondUserHandle);
+        String compName = "com.nfc/.NfcClass";
+        ComponentName service = ComponentName.unflattenFromString(compName);
+        //"com.nfc/.NfcClass" becomes package="com.nfc" class="com.nfc.NfcClass".
+        when(UserHandle.of(userId)).thenReturn(userHandle);
+        when(mContext.createContextAsUser(userHandle, 0)).thenReturn(context);
+        when(context.getSystemService(UserManager.class)).thenReturn(um);
+        when(um.getEnabledProfiles()).thenReturn(luh);
+        when(userHandle.getIdentifier()).thenReturn(userId);
+        when(secondUserHandle.getIdentifier()).thenReturn(userId);
+        when(context.getContentResolver()).thenReturn(contentResolver);
+        when(Settings.Secure.getString(contentResolver,
+                Constants.SETTINGS_SECURE_NFC_PAYMENT_DEFAULT_COMPONENT)).thenReturn(
+                compName);
+        when(mRegisteredServicesCache.hasService(userId, service)).thenReturn(true);
+
+        mCardEmulationManager.verifyDefaults(userId, services, validateInstalled);
+        verify(um).getEnabledProfiles();
+        verify(context).getSystemService(UserManager.class);
+        verify(mRegisteredServicesCache, times(2)).hasService(userId, service);
+    }
+
+    @Test
+    public void testVerifyDefaultsWithMorePaymentService()
+            throws PackageManager.NameNotFoundException {
+        int userId = 1;
+        List<ApduServiceInfo> services = new ArrayList<>();
+        List<UserHandle> luh = new ArrayList<>();
+        boolean validateInstalled = true;
+        UserHandle userHandle = mock(UserHandle.class);
+        UserHandle secondUserHandle = mock(UserHandle.class);
+        Context context = mock(Context.class);
+        UserManager um = mock(UserManager.class);
+        ContentResolver contentResolver = mock(ContentResolver.class);
+        luh.add(userHandle);
+        luh.add(secondUserHandle);
+        String compName = "com.nfc/.NfcClass";
+        ComponentName service = ComponentName.unflattenFromString(compName);
+        PackageManager pm = mock(PackageManager.class);
+        ApduServiceInfo apduService = mock(ApduServiceInfo.class);
+        ApduServiceInfo apduService2 = mock(ApduServiceInfo.class);
+        services.add(apduService);
+        services.add(apduService2);
+        ApplicationInfo ai = mock(ApplicationInfo.class);
+        ai.flags = 1;
+
+        when(UserHandle.of(userId)).thenReturn(userHandle);
+        when(mContext.createContextAsUser(userHandle, 0)).thenReturn(context);
+        when(context.getSystemService(UserManager.class)).thenReturn(um);
+        when(um.getEnabledProfiles()).thenReturn(luh);
+        when(userHandle.getIdentifier()).thenReturn(userId);
+        when(secondUserHandle.getIdentifier()).thenReturn(userId);
+        when(context.getContentResolver()).thenReturn(contentResolver);
+        when(Settings.Secure.getString(contentResolver,
+                Constants.SETTINGS_SECURE_NFC_PAYMENT_DEFAULT_COMPONENT)).thenReturn(
+                "");
+        when(mContext.createPackageContextAsUser("android", 0, userHandle)).thenReturn(context);
+        when(context.getPackageManager()).thenReturn(pm);
+        when(apduService.hasCategory(CardEmulation.CATEGORY_PAYMENT)).thenReturn(true);
+        when(apduService2.hasCategory(CardEmulation.CATEGORY_PAYMENT)).thenReturn(true);
+        when(apduService.getComponent()).thenReturn(service);
+        when(apduService2.getComponent()).thenReturn(service);
+        when(pm.getApplicationInfo("com.nfc", 0)).thenReturn(ai);
+        when(mRegisteredServicesCache.hasService(userId, service)).thenReturn(true);
+
+        mCardEmulationManager.verifyDefaults(userId, services, validateInstalled);
+        verify(um).getEnabledProfiles();
+        verify(mContext).createPackageContextAsUser("android", 0, userHandle);
+        verify(pm, times(2)).getApplicationInfo("com.nfc", 0);
+    }
+
+    @Test
+    public void testVerifyDefaultsWithSinglePaymentService()
+            throws PackageManager.NameNotFoundException {
+        int userId = 1;
+        List<ApduServiceInfo> services = new ArrayList<>();
+        List<UserHandle> luh = new ArrayList<>();
+        boolean validateInstalled = true;
+        UserHandle userHandle = mock(UserHandle.class);
+        UserHandle secondUserHandle = mock(UserHandle.class);
+        Context context = mock(Context.class);
+        UserManager um = mock(UserManager.class);
+        ContentResolver contentResolver = mock(ContentResolver.class);
+        luh.add(userHandle);
+        luh.add(secondUserHandle);
+        String compName = "com.nfc/.NfcClass";
+        ComponentName service = ComponentName.unflattenFromString(compName);
+        PackageManager pm = mock(PackageManager.class);
+        ApduServiceInfo apduService = mock(ApduServiceInfo.class);
+        services.add(apduService);
+        ApplicationInfo ai = mock(ApplicationInfo.class);
+        ai.flags = 1;
+        when(UserHandle.of(userId)).thenReturn(userHandle);
+        when(mContext.createContextAsUser(userHandle, 0)).thenReturn(context);
+        when(context.getSystemService(UserManager.class)).thenReturn(um);
+        when(um.getEnabledProfiles()).thenReturn(luh);
+        when(userHandle.getIdentifier()).thenReturn(userId);
+        when(secondUserHandle.getIdentifier()).thenReturn(userId);
+        when(context.getContentResolver()).thenReturn(contentResolver);
+        when(Settings.Secure.getString(contentResolver,
+                Constants.SETTINGS_SECURE_NFC_PAYMENT_DEFAULT_COMPONENT)).thenReturn(
+                "");
+        when(mContext.createPackageContextAsUser("android", 0, userHandle)).thenReturn(context);
+        when(context.getPackageManager()).thenReturn(pm);
+        when(apduService.hasCategory(CardEmulation.CATEGORY_PAYMENT)).thenReturn(true);
+        when(apduService.getComponent()).thenReturn(service);
+        when(pm.getApplicationInfo("com.nfc", 0)).thenReturn(ai);
+        when(mRegisteredServicesCache.hasService(userId, service)).thenReturn(true);
+
+        mCardEmulationManager.verifyDefaults(userId, services, validateInstalled);
+        verify(um).getEnabledProfiles();
+        verify(mContext).createPackageContextAsUser("android", 0, userHandle);
+        verify(pm, times(1)).getApplicationInfo("com.nfc", 0);
+    }
+
+    @Test
+    public void testVerifyDefaultsWithNoPaymentService()
+            throws PackageManager.NameNotFoundException {
+        int userId = 1;
+        List<ApduServiceInfo> services = new ArrayList<>();
+        List<UserHandle> luh = new ArrayList<>();
+        boolean validateInstalled = true;
+        UserHandle userHandle = mock(UserHandle.class);
+        UserHandle secondUserHandle = mock(UserHandle.class);
+        Context context = mock(Context.class);
+        UserManager um = mock(UserManager.class);
+        ContentResolver contentResolver = mock(ContentResolver.class);
+        luh.add(userHandle);
+        luh.add(secondUserHandle);
+        String compName = "com.nfc/.NfcClass";
+        ComponentName service = ComponentName.unflattenFromString(compName);
+        PackageManager pm = mock(PackageManager.class);
+        ApplicationInfo ai = mock(ApplicationInfo.class);
+        ai.flags = 1;
+        when(UserHandle.of(userId)).thenReturn(userHandle);
+        when(mContext.createContextAsUser(userHandle, 0)).thenReturn(context);
+        when(context.getSystemService(UserManager.class)).thenReturn(um);
+        when(um.getEnabledProfiles()).thenReturn(luh);
+        when(userHandle.getIdentifier()).thenReturn(userId);
+        when(secondUserHandle.getIdentifier()).thenReturn(userId);
+        when(context.getContentResolver()).thenReturn(contentResolver);
+        when(Settings.Secure.getString(contentResolver,
+                Constants.SETTINGS_SECURE_NFC_PAYMENT_DEFAULT_COMPONENT)).thenReturn(
+                "");
+        when(mContext.createPackageContextAsUser("android", 0, userHandle)).thenReturn(context);
+        when(context.getPackageManager()).thenReturn(pm);
+        when(mRegisteredServicesCache.hasService(userId, service)).thenReturn(true);
+
+        mCardEmulationManager.verifyDefaults(userId, services, validateInstalled);
+        verify(um).getEnabledProfiles();
+        verify(mContext).createPackageContextAsUser("android", 0, userHandle);
+        verify(pm, never()).getApplicationInfo(anyString(), eq(0));
+    }
+}
