@@ -744,15 +744,30 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         }
     }
 
+    List<PollingFrame> mPollingFramesToBeSent = new ArrayList<>();
+    final Runnable mPollingLoopsDetectedRunnable = new Runnable() {
+        public void run() {
+            List<PollingFrame> frames;
+            synchronized (mPollingLoopsDetectedRunnable) {
+                frames = mPollingFramesToBeSent;
+                mPollingFramesToBeSent = new ArrayList<>();
+            }
+            if (mCardEmulationManager != null) {
+                mCardEmulationManager.onPollingLoopDetected(new ArrayList<>(frames));
+            }
+        }
+    };
+
     @Override
     public void onPollingLoopDetected(List<PollingFrame> frames) {
         if (mCardEmulationManager != null) {
             if (Flags.postCallbacks()) {
-                mHandler.post(() -> {
-                    if (mCardEmulationManager != null) {
-                        mCardEmulationManager.onPollingLoopDetected(frames);
+                synchronized (mPollingLoopsDetectedRunnable) {
+                    mPollingFramesToBeSent.addAll(frames);
+                    if (!mHandler.hasCallbacks(mPollingLoopsDetectedRunnable)) {
+                        mHandler.post(mPollingLoopsDetectedRunnable);
                     }
-                });
+                }
             } else {
                 mCardEmulationManager.onPollingLoopDetected((frames));
             }
