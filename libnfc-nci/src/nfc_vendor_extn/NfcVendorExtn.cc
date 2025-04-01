@@ -56,7 +56,7 @@ void* p_oem_extn_handle = NULL;
 namespace {
   std::string searchLibPath(std::string file_name) {
     const std::vector<std::string> search_path = {
-        "/system/lib/", "/system/lib64/"
+        "/system/lib64/"
     };
     for (std::string path : search_path) {
       path.append(file_name);
