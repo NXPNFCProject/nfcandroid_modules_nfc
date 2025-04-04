@@ -709,3 +709,4 @@ TEST_F(NfaHciEnableOneNfceeTest, EeRecoveryState) {
     EXPECT_EQ(nfa_hci_cb.hci_state, NFA_HCI_STATE_IDLE);
     EXPECT_FALSE(nfa_ee_cb.isDiscoveryStopped);
 }
+

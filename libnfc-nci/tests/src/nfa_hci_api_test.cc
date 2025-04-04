@@ -852,3 +852,4 @@ TEST_F(NFA_HciGetRegistryTest, LowPowerMode) {
     tNFA_STATUS result = NFA_HciGetRegistry(hci_handle, valid_pipe, reg_inx);
     EXPECT_EQ(result, NFA_STATUS_FAILED);
 }
+

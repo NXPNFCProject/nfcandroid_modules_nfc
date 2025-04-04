@@ -826,3 +826,4 @@ TEST_F(NfaDmGetConfigTest, DifferentValidConfig) {
     bool result = nfa_dm_get_config(p_data);
     EXPECT_TRUE(result);
 }
+

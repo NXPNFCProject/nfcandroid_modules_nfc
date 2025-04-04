@@ -1613,3 +1613,9 @@ TEST_F(NfaHciuResettingTest, AllHostsResetting) {
     }
     EXPECT_FALSE(nfa_hciu_is_no_host_resetting());
 }
+
+
+
+
+
+

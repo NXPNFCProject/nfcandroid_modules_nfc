@@ -270,3 +270,5 @@ TEST_F(NfaRwSysDisableTest, TestRWCBTypeUnknown) {
     ASSERT_EQ(rw_cb.tcb_type, RW_CB_TYPE_UNKNOWN);
     ASSERT_EQ(nfa_rw_cb.p_pending_msg, nullptr);
 }
+
+
