@@ -31,6 +31,7 @@
 #include "nfa_nfcee_int.h"
 #include "nfa_rw_int.h"
 #include "nfc_api.h"
+#include "nfc_config.h"
 #include "nfc_int.h"
 #include "nfc_target.h"
 #include "rw_api.h"
@@ -39,6 +40,7 @@
 using android::base::StringPrintf;
 
 extern unsigned char appl_dta_mode_flag;
+extern std::vector<uint8_t> t4tNfceeAidBuf;
 
 /* main state */
 /* T4T is not activated                 */
@@ -99,6 +101,7 @@ static bool rw_t4t_read_file(uint32_t offset, uint32_t length,
 static bool rw_t4t_update_nlen(uint32_t ndef_len);
 static bool rw_t4t_update_file(void);
 static bool rw_t4t_update_cc_to_readonly(void);
+vector<uint8_t> get_t4t_ndef_nfcee_aid(uint8_t version);
 static bool rw_t4t_select_application(uint8_t version);
 static bool rw_t4t_validate_cc_file(void);
 
@@ -1215,6 +1218,33 @@ static bool rw_t4t_update_cc_to_readonly(void) {
 
 /*******************************************************************************
 **
+** Function         get_t4t_ndef_nfcee_aid
+**
+** Description      This function returns the T4T NDEF NFEE AID based on config
+**                  file or default value based on T4T version.
+**
+** Returns          valid T4T AID in case of success, otherwise returns empty.
+**
+*******************************************************************************/
+vector<uint8_t> get_t4t_ndef_nfcee_aid(uint8_t version) {
+  if (t4tNfceeAidBuf.size() == 0) {
+    if (version == T4T_VERSION_1_0) {
+      t4tNfceeAidBuf.assign(t4t_v10_ndef_tag_aid,
+                            t4t_v10_ndef_tag_aid + T4T_V10_NDEF_TAG_AID_LEN);
+    } else if ((version == T4T_VERSION_2_0) || (version == T4T_VERSION_3_0)) {
+      t4tNfceeAidBuf.assign(t4t_v20_ndef_tag_aid,
+                            t4t_v20_ndef_tag_aid + T4T_V20_NDEF_TAG_AID_LEN);
+    } else {
+      LOG(ERROR) << StringPrintf("%s - Invalid T4T Version", __func__);
+    }
+  } else {
+    LOG(VERBOSE) << StringPrintf("%s - Taking T4T AID configured", __func__);
+  }
+  return t4tNfceeAidBuf;
+}
+
+/*******************************************************************************
+**
 ** Function         rw_t4t_select_application
 **
 ** Description      Select Application
@@ -1250,24 +1280,32 @@ static bool rw_t4t_select_application(uint8_t version) {
   UINT8_TO_BE_STREAM(p, T4T_CMD_P1_SELECT_BY_NAME);
   UINT8_TO_BE_STREAM(p, T4T_CMD_P2_FIRST_OR_ONLY_00H);
 
-  if (version == T4T_VERSION_1_0) /* this is for V1.0 */
-  {
-    UINT8_TO_BE_STREAM(p, T4T_V10_NDEF_TAG_AID_LEN);
+  std::vector<uint8_t> t4tNfceeAidBuf = get_t4t_ndef_nfcee_aid(version);
 
-    memcpy(p, t4t_v10_ndef_tag_aid, T4T_V10_NDEF_TAG_AID_LEN);
+  if (t4tNfceeAidBuf.size() != 0) {
+    uint8_t* t4tAidBuf = t4tNfceeAidBuf.data();
+    if (version == T4T_VERSION_1_0) /* this is for V1.0 */
+    {
+      UINT8_TO_BE_STREAM(p, t4tNfceeAidBuf.size());
 
-    p_c_apdu->len = T4T_CMD_MAX_HDR_SIZE + T4T_V10_NDEF_TAG_AID_LEN;
-  } else if ((version == T4T_VERSION_2_0) || /* this is for V2.0 */
-             (version == T4T_VERSION_3_0))   /* this is for V3.0 */
-  {
-    UINT8_TO_BE_STREAM(p, T4T_V20_NDEF_TAG_AID_LEN);
+      memcpy(p, t4tAidBuf, t4tNfceeAidBuf.size());
 
-    memcpy(p, t4t_v20_ndef_tag_aid, T4T_V20_NDEF_TAG_AID_LEN);
-    p += T4T_V20_NDEF_TAG_AID_LEN;
+      p_c_apdu->len = T4T_CMD_MAX_HDR_SIZE + t4tNfceeAidBuf.size();
+    } else if ((version == T4T_VERSION_2_0) || /* this is for V2.0 */
+               (version == T4T_VERSION_3_0))   /* this is for V3.0 */
+    {
+      UINT8_TO_BE_STREAM(p, t4tNfceeAidBuf.size());
 
-    UINT8_TO_BE_STREAM(p, 0x00); /* Le set to 0x00 */
+      memcpy(p, t4tAidBuf, t4tNfceeAidBuf.size());
+      p += t4tNfceeAidBuf.size();
 
-    p_c_apdu->len = T4T_CMD_MAX_HDR_SIZE + T4T_V20_NDEF_TAG_AID_LEN + 1;
+      UINT8_TO_BE_STREAM(p, 0x00); /* Le set to 0x00 */
+
+      p_c_apdu->len = T4T_CMD_MAX_HDR_SIZE + t4tNfceeAidBuf.size() + 1;
+    } else {
+      GKI_freebuf(p_c_apdu);
+      return false;
+    }
   } else {
     GKI_freebuf(p_c_apdu);
     return false;
