@@ -1,0 +1,18 @@
+package: "com.android.nfc.module.flags"
+container: "com.android.nfcservices"
+
+flag {
+    name: "nfc_hce_latency_events"
+    is_exported: true
+    namespace: "wallet_integration"
+    description: "Enables tracking latency for HCE"
+    bug: "379849603"
+}
+
+flag {
+    name: "reader_mode_annotations"
+    is_exported: true
+    namespace: "wallet_integration"
+    description: "Enables NFC-A polling loop annotations in reader mode"
+    bug: "398910589"
+}
