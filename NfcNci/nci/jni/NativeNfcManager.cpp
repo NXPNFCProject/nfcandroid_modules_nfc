@@ -2273,6 +2273,12 @@ static void nfcManager_doSetScreenState(JNIEnv* e, jobject o,
       NCI_LISTEN_DH_NFCEE_ENABLE_MASK | NCI_POLLING_DH_ENABLE_MASK;
   sIsAlwaysPolling = alwaysPoll;
 
+  if (gPartialInitMode != ENABLE_MODE_DEFAULT) {
+    LOG(ERROR) << StringPrintf(
+        "%s: PartialInit mode Screen state change not required", __FUNCTION__);
+    return;
+  }
+
   LOG(DEBUG) << StringPrintf(
       "%s: state = %d prevScreenState= %d, discovry_param = %d", __FUNCTION__,
       state, prevScreenState, discovry_param);
