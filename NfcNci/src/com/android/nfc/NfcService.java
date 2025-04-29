@@ -4275,6 +4275,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             boolean status  = mDeviceHost.doClearNdefData();
             if (!isEnabled) {
                 mDeviceHost.deinitialize();
+                mDeviceHost.setPartialInitMode(NfcOemExtension.ENABLE_DEFAULT);
             }
             Log.i(TAG, "clearNdefData: " + status);
             return status
