@@ -156,6 +156,21 @@ RoutingManager::RoutingManager()
         mIsRFDiscoveryOptimized);
   }
 
+  if (NfcConfig::hasKey(NAME_OPTIMIZE_ROUTING_TABLE_UPDATE)) {
+    mIsRTUpdateOptimized =
+        (NfcConfig::getUnsigned(NAME_OPTIMIZE_ROUTING_TABLE_UPDATE) == 0x01
+             ? true
+             : false);
+    LOG(VERBOSE) << StringPrintf(
+        "%s: NAME_OPTIMIZE_ROUTING_TABLE_UPDATE found=%d", fn,
+        mIsRTUpdateOptimized);
+  } else {
+    mIsRTUpdateOptimized = false;
+    LOG(VERBOSE) << StringPrintf(
+        "%s: NAME_OPTIMIZE_ROUTING_TABLE_UPDATE not found=%d", fn,
+        mIsRTUpdateOptimized);
+  }
+
   memset(&mEeInfo, 0, sizeof(mEeInfo));
   mReceivedEeInfo = false;
   mSeTechMask = 0x00;
@@ -402,9 +417,11 @@ tNFA_STATUS RoutingManager::commitRouting() {
   bool eeChanged = mEeInfoChanged;
   mEeInfoChanged = false;
   sEeInfoChangedMutex.unlock();
-  if (eeChanged) {
-    clearRoutingEntry(CLEAR_PROTOCOL_ENTRIES | CLEAR_TECHNOLOGY_ENTRIES);
-    updateRoutingTable();
+  if (!mIsRTUpdateOptimized) {
+    if (eeChanged) {
+      clearRoutingEntry(CLEAR_PROTOCOL_ENTRIES | CLEAR_TECHNOLOGY_ENTRIES);
+      updateRoutingTable();
+    }
   }
   if (mAidRoutingConfigured || eeChanged) {
     LOG(DEBUG) << StringPrintf("%s: RT update needed", fn);
