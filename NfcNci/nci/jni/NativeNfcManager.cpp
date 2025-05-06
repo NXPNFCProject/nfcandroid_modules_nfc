@@ -1942,7 +1942,8 @@ static void nfcManager_enableDiscovery(JNIEnv* e, jobject o,
   }
 
   // Checking if RT should be updated
-  RoutingManager::getInstance().commitRouting();
+  if (!RoutingManager::getInstance().isRTUpdateOptimized())
+    RoutingManager::getInstance().commitRouting();
 
   // Actually start discovery.
   startRfDiscovery(true);
