@@ -16,7 +16,7 @@
 
 package com.android.nfc.cardemulation;
 
-// import static com.android.permission.flags.Flags.crossUserRoleEnabled;
+import static com.android.permission.flags.Flags.crossUserRoleEnabled;
 
 import android.app.ActivityManager;
 import android.app.role.OnRoleHoldersChangedListener;
@@ -72,19 +72,19 @@ public class WalletRoleObserver {
                 return;
             }
 
-//            if (Flags.walletRoleCrossUserEnabled()) {
-//                if (!Objects.equals(user,
-//                        userRoleManager.getActiveUserForRole(RoleManager.ROLE_WALLET))) {
-//                    return;
-//                }
-//
-//                UserManager userManager = mContext.getSystemService(UserManager.class);
-//                if (!Objects.equals(user, UserHandle.of(mCurrentUser)) &&
-//                        !Objects.equals(userManager.getProfileParent(user),
-//                                UserHandle.of(mCurrentUser))) {
-//                    return;
-//                }
-//            }
+            if (Flags.walletRoleCrossUserEnabled()) {
+                if (!Objects.equals(user,
+                        userRoleManager.getActiveUserForRole(RoleManager.ROLE_WALLET))) {
+                    return;
+                }
+
+                UserManager userManager = mContext.getSystemService(UserManager.class);
+                if (!Objects.equals(user, UserHandle.of(mCurrentUser)) &&
+                        !Objects.equals(userManager.getProfileParent(user),
+                                UserHandle.of(mCurrentUser))) {
+                    return;
+                }
+            }
 
             List<String> roleHolders = roleManager.getRoleHoldersAsUser(RoleManager.ROLE_WALLET,
                     user);
@@ -117,15 +117,15 @@ public class WalletRoleObserver {
                 return noRoleHolderResult;
             }
 
-//            if (Flags.walletRoleCrossUserEnabled() && crossUserRoleEnabled()) {
-//                roleUserHandle = userRoleManager.getActiveUserForRole(
-//                        RoleManager.ROLE_WALLET);
-//
-//                if (roleUserHandle == null) {
-//                    Log.d(TAG, "No active user for role");
-//                    return noRoleHolderResult;
-//                }
-            if (!userRoleManager.isRoleAvailable(RoleManager.ROLE_WALLET)) {
+            if (Flags.walletRoleCrossUserEnabled() && crossUserRoleEnabled()) {
+                roleUserHandle = userRoleManager.getActiveUserForRole(
+                        RoleManager.ROLE_WALLET);
+
+                if (roleUserHandle == null) {
+                    Log.d(TAG, "No active user for role");
+                    return noRoleHolderResult;
+                }
+            } else if (!userRoleManager.isRoleAvailable(RoleManager.ROLE_WALLET)) {
                 return noRoleHolderResult;
             }
 
