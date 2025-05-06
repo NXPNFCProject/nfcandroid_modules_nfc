@@ -103,11 +103,11 @@ public class WalletRoleObserverTest {
         when(mContext.getMainExecutor()).thenReturn(mExecutor);
         when(mNfcInjector.getNfcEventLog()).thenReturn(mNfcEventLog);
         when(ActivityManager.getCurrentUser()).thenReturn(USER_ID);
-        // when(mRoleManager.getActiveUserForRole(RoleManager.ROLE_WALLET)).thenReturn(USER_HANDLE);
+        when(mRoleManager.getActiveUserForRole(RoleManager.ROLE_WALLET)).thenReturn(USER_HANDLE);
         when(mContext.createContextAsUser(any(), anyInt())).thenReturn(mContext);
         when(mContext.getSystemService(eq(RoleManager.class))).thenReturn(mRoleManager);
         when(mContext.getSystemService(eq(UserManager.class))).thenReturn(mUserManager);
-        // when(Flags.walletRoleCrossUserEnabled()).thenReturn(false);
+        when(Flags.walletRoleCrossUserEnabled()).thenReturn(false);
         mWalletRoleObserver =
             new WalletRoleObserver(mContext, mRoleManager, mCallback, mNfcInjector);
     }
@@ -144,48 +144,48 @@ public class WalletRoleObserverTest {
         assertEquals(RoleManager.ROLE_WALLET, mRoleNameCaptor.getAllValues().get(1));
     }
 
-//    @Test
-//    public void testGetDefaultWalletRoleHolder_roleAvailable_returnsTheHolder_crossProfile() {
-//        when(Flags.walletRoleCrossUserEnabled()).thenReturn(true);
-//
-//        List<String> roleHolders = ImmutableList.of(WALLET_ROLE_HOLDER);
-//        when(mRoleManager.getRoleHoldersAsUser(eq(RoleManager.ROLE_WALLET),
-//                eq(USER_HANDLE))).thenReturn(roleHolders);
-//
-//        PackageAndUser roleHolder = mWalletRoleObserver.getDefaultWalletRoleHolder(USER_ID);
-//
-//        verify(mRoleManager).getActiveUserForRole(mRoleNameCaptor.capture());
-//        verify(mRoleManager).getRoleHoldersAsUser(mRoleNameCaptor.capture(),
-//                mUserHandlerCaptor.capture());
-//        assertEquals(WALLET_ROLE_HOLDER, roleHolder.getPackage());
-//        assertEquals(USER_ID, roleHolder.getUserId());
-//        assertEquals(RoleManager.ROLE_WALLET, mRoleNameCaptor.getAllValues().get(0));
-//        assertEquals(RoleManager.ROLE_WALLET, mRoleNameCaptor.getAllValues().get(1));
-//    }
+    @Test
+    public void testGetDefaultWalletRoleHolder_roleAvailable_returnsTheHolder_crossProfile() {
+        when(Flags.walletRoleCrossUserEnabled()).thenReturn(true);
 
-//    @Test
-//    public void testGetDefaultWalletRoleHolder_roleAvailable_returnsTheHolder_differentProfile() {
-//        int otherUserId = 11;
-//        UserHandle otherUser = UserHandle.of(otherUserId);
-//
-//        when(Flags.walletRoleCrossUserEnabled()).thenReturn(true);
-//        when(mUserManager.getProfileParent(otherUser)).thenReturn(USER_HANDLE);
-//        when(mRoleManager.getActiveUserForRole(RoleManager.ROLE_WALLET)).thenReturn(otherUser);
-//
-//        List<String> roleHolders = ImmutableList.of(WALLET_ROLE_HOLDER);
-//        when(mRoleManager.getRoleHoldersAsUser(eq(RoleManager.ROLE_WALLET),
-//                eq(otherUser))).thenReturn(roleHolders);
-//
-//        PackageAndUser roleHolder = mWalletRoleObserver.getDefaultWalletRoleHolder(USER_ID);
-//
-//        verify(mRoleManager).getActiveUserForRole(mRoleNameCaptor.capture());
-//        verify(mRoleManager).getRoleHoldersAsUser(mRoleNameCaptor.capture(),
-//                mUserHandlerCaptor.capture());
-//        assertEquals(WALLET_ROLE_HOLDER, roleHolder.getPackage());
-//        assertEquals(otherUserId, roleHolder.getUserId());
-//        assertEquals(RoleManager.ROLE_WALLET, mRoleNameCaptor.getAllValues().get(0));
-//        assertEquals(RoleManager.ROLE_WALLET, mRoleNameCaptor.getAllValues().get(1));
-//    }
+        List<String> roleHolders = ImmutableList.of(WALLET_ROLE_HOLDER);
+        when(mRoleManager.getRoleHoldersAsUser(eq(RoleManager.ROLE_WALLET),
+                eq(USER_HANDLE))).thenReturn(roleHolders);
+
+        PackageAndUser roleHolder = mWalletRoleObserver.getDefaultWalletRoleHolder(USER_ID);
+
+        verify(mRoleManager).getActiveUserForRole(mRoleNameCaptor.capture());
+        verify(mRoleManager).getRoleHoldersAsUser(mRoleNameCaptor.capture(),
+                mUserHandlerCaptor.capture());
+        assertEquals(WALLET_ROLE_HOLDER, roleHolder.getPackage());
+        assertEquals(USER_ID, roleHolder.getUserId());
+        assertEquals(RoleManager.ROLE_WALLET, mRoleNameCaptor.getAllValues().get(0));
+        assertEquals(RoleManager.ROLE_WALLET, mRoleNameCaptor.getAllValues().get(1));
+    }
+
+    @Test
+    public void testGetDefaultWalletRoleHolder_roleAvailable_returnsTheHolder_differentProfile() {
+        int otherUserId = 11;
+        UserHandle otherUser = UserHandle.of(otherUserId);
+
+        when(Flags.walletRoleCrossUserEnabled()).thenReturn(true);
+        when(mUserManager.getProfileParent(otherUser)).thenReturn(USER_HANDLE);
+        when(mRoleManager.getActiveUserForRole(RoleManager.ROLE_WALLET)).thenReturn(otherUser);
+
+        List<String> roleHolders = ImmutableList.of(WALLET_ROLE_HOLDER);
+        when(mRoleManager.getRoleHoldersAsUser(eq(RoleManager.ROLE_WALLET),
+                eq(otherUser))).thenReturn(roleHolders);
+
+        PackageAndUser roleHolder = mWalletRoleObserver.getDefaultWalletRoleHolder(USER_ID);
+
+        verify(mRoleManager).getActiveUserForRole(mRoleNameCaptor.capture());
+        verify(mRoleManager).getRoleHoldersAsUser(mRoleNameCaptor.capture(),
+                mUserHandlerCaptor.capture());
+        assertEquals(WALLET_ROLE_HOLDER, roleHolder.getPackage());
+        assertEquals(otherUserId, roleHolder.getUserId());
+        assertEquals(RoleManager.ROLE_WALLET, mRoleNameCaptor.getAllValues().get(0));
+        assertEquals(RoleManager.ROLE_WALLET, mRoleNameCaptor.getAllValues().get(1));
+    }
 
     @Test
     public void testGetDefaultWalletRoleHolder_roleNotAvailable_returnsNull() {
@@ -208,23 +208,23 @@ public class WalletRoleObserverTest {
         assertEquals(WALLET_ROLE_HOLDER, mRoleHolderCaptor.getValue());
     }
 
-//    @Test
-//    public void testCallbackFiringOnRoleChange_roleWallet_crossProfile() {
-//        when(Flags.walletRoleCrossUserEnabled()).thenReturn(true);
-//
-//        List<String> roleHolders = ImmutableList.of(WALLET_ROLE_HOLDER);
-//        when(mRoleManager.getActiveUserForRole(RoleManager.ROLE_WALLET))
-//                .thenReturn(USER_HANDLE);
-//        when(mRoleManager.getRoleHoldersAsUser(eq(RoleManager.ROLE_WALLET), eq(USER_HANDLE)))
-//                .thenReturn(roleHolders);
-//        mWalletRoleObserver.mOnRoleHoldersChangedListener
-//                .onRoleHoldersChanged(RoleManager.ROLE_WALLET, USER_HANDLE);
-//
-//        verify(mRoleManager).getRoleHoldersAsUser(mRoleNameCaptor.capture(), eq(USER_HANDLE));
-//        verify(mCallback).onWalletRoleHolderChanged(mRoleHolderCaptor.capture(), eq(USER_ID));
-//        assertEquals(RoleManager.ROLE_WALLET, mRoleNameCaptor.getValue());
-//        assertEquals(WALLET_ROLE_HOLDER, mRoleHolderCaptor.getValue());
-//    }
+    @Test
+    public void testCallbackFiringOnRoleChange_roleWallet_crossProfile() {
+        when(Flags.walletRoleCrossUserEnabled()).thenReturn(true);
+
+        List<String> roleHolders = ImmutableList.of(WALLET_ROLE_HOLDER);
+        when(mRoleManager.getActiveUserForRole(RoleManager.ROLE_WALLET))
+                .thenReturn(USER_HANDLE);
+        when(mRoleManager.getRoleHoldersAsUser(eq(RoleManager.ROLE_WALLET), eq(USER_HANDLE)))
+                .thenReturn(roleHolders);
+        mWalletRoleObserver.mOnRoleHoldersChangedListener
+                .onRoleHoldersChanged(RoleManager.ROLE_WALLET, USER_HANDLE);
+
+        verify(mRoleManager).getRoleHoldersAsUser(mRoleNameCaptor.capture(), eq(USER_HANDLE));
+        verify(mCallback).onWalletRoleHolderChanged(mRoleHolderCaptor.capture(), eq(USER_ID));
+        assertEquals(RoleManager.ROLE_WALLET, mRoleNameCaptor.getValue());
+        assertEquals(WALLET_ROLE_HOLDER, mRoleHolderCaptor.getValue());
+    }
 
     @Test
     public void testCallbackNotFiringOnRoleChange_roleNonWallet() {
