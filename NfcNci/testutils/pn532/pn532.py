@@ -400,6 +400,7 @@ class PN532(Reader):
             },
         )
         self.log.debug("Serial port: %s", path)
+
         try:
             self.device = serial.Serial(path, 115200, timeout=0.5)
         except Exception as e:
