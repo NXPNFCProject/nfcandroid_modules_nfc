@@ -587,16 +587,16 @@ static jint nativeNfcTag_doConnect(JNIEnv*, jobject, jint targetIdx,
     goto TheEnd;
   }
 
-  if (sCurrentConnectedTargetType == TARGET_TYPE_ISO14443_3A ||
-      sCurrentConnectedTargetType == TARGET_TYPE_ISO14443_3B) {
-    if (sCurrentConnectedTargetProtocol != NFC_PROTOCOL_MIFARE) {
-      LOG(DEBUG) << StringPrintf(
-          "%s: switching to tech=%x need to switch rf intf to frame", __func__,
+  if ((sCurrentConnectedTargetType == TARGET_TYPE_ISO14443_3A ||
+      sCurrentConnectedTargetType == TARGET_TYPE_ISO14443_3B) ||
+      (sCurrentConnectedTargetType == TARGET_TYPE_MIFARE_CLASSIC)) {
+    if (sCurrentConnectedTargetProtocol == NFC_PROTOCOL_MIFARE) {
+      intfType = NFA_INTERFACE_MIFARE;
+    } else {
+      LOG(DEBUG) << StringPrintf("%s: switching to tech=%x need to switch rf intf to frame", __func__,
           sCurrentConnectedTargetType);
       intfType = NFA_INTERFACE_FRAME;
     }
-  } else if (sCurrentConnectedTargetType == TARGET_TYPE_MIFARE_CLASSIC) {
-    intfType = NFA_INTERFACE_MIFARE;
   } else {
     intfType = NFA_INTERFACE_ISO_DEP;
   }
