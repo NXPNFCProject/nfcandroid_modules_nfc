@@ -30,7 +30,7 @@ java_aconfig_library {
     name: "com.android.nfc.flags-aconfig-java",
     aconfig_declarations: "com.android.nfc.flags-aconfig",
     sdk_version: "module_current",
-    min_sdk_version: "35",
+    min_sdk_version: "36",
     installable: false,
     libs: ["framework-configinfrastructure.stubs.module_lib"],
     visibility: [

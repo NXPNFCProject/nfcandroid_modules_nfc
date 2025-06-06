@@ -54,7 +54,7 @@ android_test {
     ],
 
     platform_apis: true,
-    min_sdk_version: "35", // Make it 36 once available.
+    min_sdk_version: "36",
 
     test_suites: [
         "device-tests",

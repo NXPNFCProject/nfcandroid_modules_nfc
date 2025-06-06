@@ -47,7 +47,7 @@ android_test {
         "src/**/*.java",
     ],
 
-    min_sdk_version: "35", // Make it 36 once available.
+    min_sdk_version: "36",
     test_suites: [
         "general-tests",
         "mts-nfc",

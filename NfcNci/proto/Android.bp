@@ -9,7 +9,7 @@ java_library {
         type: "lite",
     },
     sdk_version: "system_current",
-    min_sdk_version: "35",
+    min_sdk_version: "36",
     srcs: ["event.proto"],
     apex_available: [
         "//apex_available:platform",

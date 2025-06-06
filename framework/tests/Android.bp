@@ -66,5 +66,5 @@ android_test {
         "mts-nfc",
     ],
     compile_multilib: "both",
-    min_sdk_version: "35", // Should be 36 later.
+    min_sdk_version: "36",
 }
