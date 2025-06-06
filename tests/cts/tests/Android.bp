@@ -88,4 +88,5 @@ android_test {
         "general-tests",
     ],
     test_config: "InteractiveAndroidTest.xml",
+    min_sdk_version: "36",
 }
