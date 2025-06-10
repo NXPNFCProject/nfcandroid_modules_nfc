@@ -1239,6 +1239,7 @@ public final class NfcOemExtension {
                                         NfcAdapter.callService(() ->
                                                 NfcAdapter.sService.registerOemExtensionCallback(
                                                         mOemNfcExtensionCallback));
+                                        linkToNfcDeath();
                                     }
                                 }
                             } catch (Throwable t) {
