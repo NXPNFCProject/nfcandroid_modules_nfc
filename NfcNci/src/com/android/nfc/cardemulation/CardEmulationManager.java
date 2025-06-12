@@ -362,6 +362,7 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
 
     public void onOffHostAidSelected() {
         mHostEmulationManager.onOffHostAidSelected();
+        mPreferredServices.onHostEmulationActivated();
     }
 
     public void onBootCompleted() {
