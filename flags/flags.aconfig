@@ -26,3 +26,11 @@ flag {
         purpose: PURPOSE_BUGFIX
     }
 }
+
+
+flag {
+    name: "oem_extension_25q4"
+    namespace: "nfc"
+    description: "OEM extensions for Android 25Q4 release"
+    bug: "402346002"
+}
