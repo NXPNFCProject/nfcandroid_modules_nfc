@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <!-- no translation found for app_name (6065635506543927196) -->
-    <skip />
-    <!-- no translation found for nfcUserLabel (8399413714687124782) -->
-    <skip />
+    <string name="app_name" msgid="6065635506543927196">"Servei NFC"</string>
+    <string name="nfcUserLabel" msgid="8399413714687124782">"NFC"</string>
     <string name="accessibility_nfc_enabled" msgid="830589378553181410">"NFC activat."</string>
     <string name="tap_to_beam" msgid="2022424274840394451">"Toca per compartir-ho"</string>
     <string name="beam_progress" msgid="1929294166633309327">"Transferència entrant..."</string>
@@ -61,7 +59,7 @@
     <string name="tag_app_alert_action_button" msgid="1442462487575846704">"Toca per obtenir informació sobre com pots desactivar-ho."</string>
     <string name="nfc_logging_alert_title" msgid="7355334076019926549">"S\'estan gravant les dades d\'NFC"</string>
     <string name="nfc_logging_alert_message" msgid="3833608086332697579">"Toca per aturar la gravació."</string>
-    <string name="title_package_enabling_nfc" msgid="7797373366778008307">"Vols permetre que <xliff:g id="PKG">%1$s</xliff:g> activi la funció NFC?"</string>
+    <string name="title_package_enabling_nfc" msgid="7797373366778008307">"Vols permetre que <xliff:g id="PKG">%1$s</xliff:g> activi l\'NFC?"</string>
     <string name="enable_nfc_yes" msgid="3514504441883079276">"Sí"</string>
     <string name="enable_nfc_no" msgid="4272144216339787073">"No"</string>
     <string name="device_ndef_nfcee_service_name" msgid="1035872251333915624">"Etiqueta inserida"</string>
