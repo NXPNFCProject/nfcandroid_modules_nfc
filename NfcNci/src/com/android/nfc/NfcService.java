@@ -3658,6 +3658,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         synchronized (NfcService.this) {
             Log.w(TAG, "binderDied: OEM extension died");
             mNfcOemExtensionCallback = null;
+            restartStack();
         }
     };
 
