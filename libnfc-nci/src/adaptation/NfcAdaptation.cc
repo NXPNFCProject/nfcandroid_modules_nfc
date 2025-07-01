@@ -79,7 +79,7 @@ using Status = ::ndk::ScopedAStatus;
 #define DEFAULT_CRASH_LOGS_PATH "/data/misc/nfc/logs/hal_crash_logs"
 
 std::string NFC_AIDL_HAL_SERVICE_NAME = "android.hardware.nfc.INfc/default";
-static const char kChannelWakelockName[] = "nxp_nfc_write_channel";
+static const char kChannelWakelockName[] = "nfc_write_channel";
 extern void GKI_shutdown();
 extern void verify_stack_non_volatile_store();
 extern void delete_stack_non_volatile_store(bool forceDelete);
