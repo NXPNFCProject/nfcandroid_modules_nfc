@@ -79,7 +79,7 @@ using Status = ::ndk::ScopedAStatus;
 #define DEFAULT_CRASH_LOGS_PATH "/data/misc/nfc/logs/hal_crash_logs"
 
 std::string NFC_AIDL_HAL_SERVICE_NAME = "android.hardware.nfc.INfc/default";
-static const char kChannelWakelockName[] = "nfc_write_channel";
+static const char kNfcWakelockName[] = "nfc_write_wakelock";
 extern void GKI_shutdown();
 extern void verify_stack_non_volatile_store();
 extern void delete_stack_non_volatile_store(bool forceDelete);
@@ -1036,13 +1036,13 @@ void NfcAdaptation::HalWrite(uint16_t data_len, uint8_t* p_data) {
   LOG(VERBOSE) << StringPrintf("%s", func);
 
   /* Acquire wake lock */
-  acquire_wake_lock(PARTIAL_WAKE_LOCK, kChannelWakelockName);
+  acquire_wake_lock(PARTIAL_WAKE_LOCK, kNfcWakelockName);
   if (sVndExtnsPresent) {
     bool isVndExtSpecCmd = sNfcVendorExtn->processCmd(data_len, p_data);
     // If true to be handled in extension, otherwise processed to hal
     if (isVndExtSpecCmd) {
       /* release wake lock */
-      release_wake_lock(kChannelWakelockName);
+      release_wake_lock(kNfcWakelockName);
       return;
     }
   }
@@ -1056,7 +1056,7 @@ void NfcAdaptation::HalWrite(uint16_t data_len, uint8_t* p_data) {
     mHal->write(data);
   }
   /* release wake lock */
-  release_wake_lock(kChannelWakelockName);
+  release_wake_lock(kNfcWakelockName);
 }
 
 /*******************************************************************************
