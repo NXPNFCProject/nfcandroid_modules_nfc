@@ -2494,6 +2494,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     }
                 }
                 mHandler.removeMessages(MSG_RESUME_POLLING);
+                if (mCardEmulationManager != null) {
+                    mCardEmulationManager.resetToIdleState();
+                }
                 mPollingPaused = false;
                 new ApplyRoutingTask().execute();
                 if (DBG) Log.d(TAG, "resumePolling: done");
@@ -2745,6 +2748,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     listenTech = getNfcListenTech();
                 }
 
+                if (mCardEmulationManager != null) {
+                    mCardEmulationManager.resetToIdleState();
+                }
                 mDeviceHost.setDiscoveryTech(pollTech, listenTech);
                 applyRouting(true);
                 return;
@@ -2808,7 +2814,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 } else {
                     return;
                 }
-
+                if (mCardEmulationManager != null) {
+                    mCardEmulationManager.resetToIdleState();
+                }
                 applyRouting(true);
             }
         }
@@ -2922,6 +2930,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                                         .build())
                                 .build());
                 if (isNfcEnabled()) {
+                    if (mCardEmulationManager != null) {
+                        mCardEmulationManager.resetToIdleState();
+                    }
                     applyRouting(false);
                 }
             }

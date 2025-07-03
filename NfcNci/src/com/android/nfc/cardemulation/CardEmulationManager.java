@@ -342,6 +342,10 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         }
     }
 
+    public void resetToIdleState() {
+        mHostEmulationManager.resetToIdleState();
+    }
+
     public void onHostCardEmulationDeactivated(int technology) {
         if (technology == NFC_HCE_APDU) {
             mHostEmulationManager.onHostEmulationDeactivated();
