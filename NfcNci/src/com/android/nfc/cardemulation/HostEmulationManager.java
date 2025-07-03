@@ -812,6 +812,10 @@ public class HostEmulationManager implements HostEmulationManagerBase {
         }
     }
 
+    public void resetToIdleState() {
+        returnToIdleStateLocked();
+    }
+
     public void onFieldChangeDetected(boolean fieldOn) {
         rescheduleInactivityChecks();
         if (!fieldOn) {
