@@ -4819,7 +4819,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 Log.d(TAG, "sendScreenMessageAfterNfcCharging: applying postponed screen state "
                         + screenState);
             }
-            NfcService.getInstance().sendMessage(MSG_APPLY_SCREEN_STATE, screenState);
+            sendMessage(NfcService.MSG_APPLY_SCREEN_STATE, screenState);
             mPendingPowerStateUpdate = false;
             return true;
         }
