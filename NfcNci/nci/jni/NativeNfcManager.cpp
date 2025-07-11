@@ -200,7 +200,7 @@ tNFA_STATUS gVSCmdStatus = NFA_STATUS_OK;
 uint16_t gCurrentConfigLen;
 uint8_t gConfig[256];
 std::vector<uint8_t> gCaps(0);
-static int prevScreenState = NFA_SCREEN_STATE_OFF_LOCKED;
+static int prevScreenState = NFA_SCREEN_STATE_UNKNOWN;
 static int NFA_SCREEN_POLLING_TAG_MASK = 0x10;
 bool gIsDtaEnabled = false;
 static bool gObserveModeEnabled = false;
@@ -1712,7 +1712,7 @@ static jboolean nfcManager_doInitialize(JNIEnv* e, jobject o) {
           }
         }
 
-        prevScreenState = NFA_SCREEN_STATE_OFF_LOCKED;
+        prevScreenState = NFA_SCREEN_STATE_UNKNOWN;
 
         // Do custom NFCA startup configuration.
         doStartupConfig();
@@ -2329,7 +2329,8 @@ static void nfcManager_doSetScreenState(JNIEnv* e, jobject o,
 
   if (prevScreenState == NFA_SCREEN_STATE_OFF_LOCKED ||
       prevScreenState == NFA_SCREEN_STATE_OFF_UNLOCKED ||
-      prevScreenState == NFA_SCREEN_STATE_ON_LOCKED) {
+      prevScreenState == NFA_SCREEN_STATE_ON_LOCKED ||
+      prevScreenState == NFA_SCREEN_STATE_UNKNOWN) {
     SyncEventGuard guard(sNfaSetPowerSubState);
     status = NFA_SetPowerSubStateForScreenState(state);
     if (status != NFA_STATUS_OK) {
