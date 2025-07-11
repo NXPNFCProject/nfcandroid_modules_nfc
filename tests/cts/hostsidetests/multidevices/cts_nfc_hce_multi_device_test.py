@@ -1062,8 +1062,6 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             *POLLING_FRAMES_TYPE_B_SPECIAL,
             *POLLING_FRAMES_TYPE_B_LONG,
             *POLLING_FRAMES_TYPE_B_LONG,
-            *POLLING_FRAMES_TYPE_F_SPECIAL,
-            *POLLING_FRAMES_TYPE_F_SPECIAL,
             POLLING_FRAME_OFF,
         ]
         # 3. Transmit polling frames
@@ -1182,7 +1180,6 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             POLLING_FRAME_ON,
             *POLLING_FRAMES_TYPE_A_SPECIAL,
             *POLLING_FRAMES_TYPE_B_SPECIAL,
-            *POLLING_FRAMES_TYPE_F_SPECIAL,
             POLLING_FRAME_OFF
         ] * 2
 
