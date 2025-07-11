@@ -2117,7 +2117,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 listenTech = (NfcAdapter.FLAG_LISTEN_KEEP | NfcAdapter.FLAG_USE_ALL_TECH
                     | NfcAdapter.FLAG_SET_DEFAULT_TECH);
             }
-            mDeviceHost.setDiscoveryTech(NfcAdapter.FLAG_READER_KEEP, listenTech);
+            setDiscoveryTech(NfcAdapter.FLAG_READER_KEEP, listenTech);
         }
     }
 
@@ -2137,8 +2137,21 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         if (pollTech == -1 || pollTech == DEFAULT_POLL_TECH)
             pollTech = (NfcAdapter.FLAG_READER_KEEP|NfcAdapter.FLAG_USE_ALL_TECH);
 
-        mDeviceHost.setDiscoveryTech(pollTech|NfcAdapter.FLAG_SET_DEFAULT_TECH,
+        setDiscoveryTech(pollTech|NfcAdapter.FLAG_SET_DEFAULT_TECH,
                 listenTech|NfcAdapter.FLAG_SET_DEFAULT_TECH);
+    }
+
+    private void setDiscoveryTech(int pollTech, int listenTech) {
+        if(mReaderModeParams != null) {
+            Log.d(TAG, "setDiscoveryTech mReaderModeParams.flags = 0x"
+                + Integer.toHexString(mReaderModeParams.flags));
+            mDeviceHost.setDiscoveryTech(
+                    mReaderModeParams.flags == DISABLE_POLLING_FLAGS
+                        ? NfcAdapter.FLAG_READER_DISABLE
+                        : mReaderModeParams.flags, listenTech);
+        } else {
+            mDeviceHost.setDiscoveryTech(pollTech, listenTech);
+        }
     }
 
     public void playSound(int sound) {
@@ -2753,7 +2766,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 if (mCardEmulationManager != null) {
                     mCardEmulationManager.resetToIdleState();
                 }
-                mDeviceHost.setDiscoveryTech(pollTech, listenTech);
+                setDiscoveryTech(pollTech, listenTech);
                 applyRouting(true);
                 return;
             }
@@ -2789,7 +2802,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                         listenTech = getNfcListenTech();
                     }
                     try {
-                        mDeviceHost.setDiscoveryTech(pollTech, listenTech);
+                        setDiscoveryTech(pollTech, listenTech);
                         mDiscoveryTechParams = new DiscoveryTechParams();
                         mDiscoveryTechParams.uid = callingUid;
                         mDiscoveryTechParams.binder = binder;
@@ -3249,7 +3262,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 mIsReaderOptionEnabled = enable;
                 mBackupManager.dataChanged();
                 if (isNfcEnabled()) {
-                    mDeviceHost.setDiscoveryTech(getNfcPollTech(), getNfcListenTech());
+                    setDiscoveryTech(getNfcPollTech(), getNfcListenTech());
                 }
             }
             applyRouting(true);
