@@ -4811,6 +4811,10 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             mHandler.sendEmptyMessage(MSG_COMMIT_ROUTING);
             return STATUS_OK;
         }
+        if (mCommitRoutingCountDownLatch != null) {
+            Log.e(TAG, "Routing commit already in progress, ignoring...");
+            return STATUS_OK;
+        }
         mCommitRoutingCountDownLatch = new CountDownLatch(1);
         mHandler.sendEmptyMessage(MSG_COMMIT_ROUTING);
         try {
