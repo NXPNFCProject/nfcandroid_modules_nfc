@@ -345,4 +345,9 @@ public interface DeviceHost {
      * Restarts RF Discovery
      */
     void restartRfDiscovery();
+
+    /**
+     * Send NCI config update command
+     */
+    void setNciConfig(int paramId, byte[] param, int length, boolean custom);
 }
