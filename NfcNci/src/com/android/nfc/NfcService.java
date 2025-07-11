@@ -1035,7 +1035,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
     int getNfcPollTech() {
         synchronized (NfcService.this) {
-            return mPrefs.getInt(PREF_POLL_TECH, DEFAULT_POLL_TECH);
+            return isReaderOptionEnabled()
+                    ? mPrefs.getInt(PREF_POLL_TECH, DEFAULT_POLL_TECH) : 0x00;
         }
     }
 
@@ -1362,13 +1363,16 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
         mNfcPermissions = new NfcPermissions(mContext);
         mReaderOptionCapable = mDeviceConfigFacade.isReaderOptionCapable();
-
-        if (mReaderOptionCapable) {
-            mIsReaderOptionEnabled =
-                mPrefs.getBoolean(PREF_NFC_READER_OPTION_ON,
-                    mDeviceConfigFacade.getDefaultReaderOption() || mInProvisionMode);
+        if (mIsRWCapable) {
+            if (mReaderOptionCapable) {
+                mIsReaderOptionEnabled =
+                        mPrefs.getBoolean(PREF_NFC_READER_OPTION_ON,
+                                mDeviceConfigFacade.getDefaultReaderOption() || mInProvisionMode);
+            }
+        } else {
+            // Turn off reader option if the device does not support reader mode.
+            mIsReaderOptionEnabled = false;
         }
-
         executeTaskBoot();  // do blocking boot tasks
 
         if ((NFC_SNOOP_LOG_MODE.equals(NfcProperties.snoop_log_mode_values.FULL) ||
@@ -3250,6 +3254,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 mPrefsEditor.apply();
                 mIsReaderOptionEnabled = enable;
                 mBackupManager.dataChanged();
+                mDeviceHost.setDiscoveryTech(getNfcPollTech(), getNfcListenTech());
             }
             applyRouting(true);
             if (mNfcOemExtensionCallback != null) {
