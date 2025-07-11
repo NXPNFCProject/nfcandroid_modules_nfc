@@ -472,7 +472,6 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     boolean mIsRequestUnlockShowed;
     boolean mIsRecovering;
     boolean mIsNfcUserRestricted;
-    boolean mIsNfcUserChangeRestricted;
     boolean mIsWatchType;
     boolean mPendingPowerStateUpdate;
     boolean mIsWlcCapable;
@@ -1333,12 +1332,10 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         }
 
         mIsNfcUserRestricted = isNfcUserRestricted();
-        mIsNfcUserChangeRestricted = isNfcUserChangeRestricted();
         mContext.registerReceiver(
                 new BroadcastReceiver() {
                     @Override
                     public void onReceive(Context context, Intent intent) {
-                        mIsNfcUserChangeRestricted = isNfcUserChangeRestricted();
                         if (mIsNfcUserRestricted == isNfcUserRestricted()) {
                             return;
                         }
@@ -2256,7 +2253,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 throw new SecurityException(
                         "caller is not a system app, device owner or profile owner!");
             }
-            if (!isDeviceOrProfileOwner && mIsNfcUserChangeRestricted) {
+            if (!isDeviceOrProfileOwner && isNfcUserChangeRestricted()) {
                 throw new SecurityException("Change nfc state by system app is not allowed!");
             }
 
@@ -2310,7 +2307,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 throw new SecurityException(
                         "caller is not a system app, device owner or profile owner!");
             }
-            if (!isDeviceOrProfileOwner && mIsNfcUserChangeRestricted) {
+            if (!isDeviceOrProfileOwner && isNfcUserChangeRestricted()) {
                 throw new SecurityException("Change nfc state by system app is not allowed!");
             }
 
@@ -3528,7 +3525,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                                 .build());
             }
             mPrefsEditor.clear();
-            if (mIsNfcUserChangeRestricted) {
+            if (isNfcUserChangeRestricted()) {
                 mPrefsEditor.putBoolean(PREF_NFC_ON, getNfcOnSetting());
             }
             mPrefsEditor.putBoolean(
