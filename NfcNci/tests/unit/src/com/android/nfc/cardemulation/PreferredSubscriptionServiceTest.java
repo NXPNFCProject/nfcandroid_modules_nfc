@@ -33,6 +33,7 @@ import android.content.res.Resources;
 import android.telephony.SubscriptionInfo;
 
 import com.android.dx.mockito.inline.extended.ExtendedMockito;
+import com.android.nfc.DeviceConfigFacade;
 import com.android.nfc.cardemulation.util.TelephonyUtils;
 
 import org.junit.After;
@@ -64,6 +65,8 @@ public class PreferredSubscriptionServiceTest {
     private PackageManager mPackageManager;
     @Mock
     private Resources mResources;
+    @Mock
+    private DeviceConfigFacade mDeviceConfigFacade;
     private MockitoSession mStaticMockSession;
     private PreferredSubscriptionService mPreferredSubscriptionService;
 
@@ -90,7 +93,9 @@ public class PreferredSubscriptionServiceTest {
         when(mEditor.putInt(PREF_PREFERRED_SUB_ID, TelephonyUtils.SUBSCRIPTION_ID_UICC)).thenReturn(
                 editor);
         when(editor.commit()).thenReturn(true);
-        mPreferredSubscriptionService = new PreferredSubscriptionService(mContext, mCallback);
+        when(mDeviceConfigFacade.shouldDefaultPreferredSubscriptionToUicc()).thenReturn(true);
+        mPreferredSubscriptionService =
+                new PreferredSubscriptionService(mContext, mDeviceConfigFacade, mCallback);
     }
 
     @After
@@ -127,13 +132,13 @@ public class PreferredSubscriptionServiceTest {
                 editor);
         when(editor.commit()).thenReturn(true);
         when(mTelephonyUtils.getActiveSubscriptions()).thenReturn(infos);
-        when(mTelephonyUtils.isEuiccSubscription(
+        when(mTelephonyUtils.isUiccSubscription(
                 TelephonyUtils.SUBSCRIPTION_ID_UICC)).thenReturn(
-                false);
+                true);
 
         mPreferredSubscriptionService.setPreferredSubscriptionId(
                 TelephonyUtils.SUBSCRIPTION_ID_UICC, true);
-        verify(mTelephonyUtils).isEuiccSubscription(TelephonyUtils.SUBSCRIPTION_ID_UICC);
+        verify(mTelephonyUtils).isUiccSubscription(TelephonyUtils.SUBSCRIPTION_ID_UICC);
         verify(editor).commit();
     }
 
@@ -150,11 +155,11 @@ public class PreferredSubscriptionServiceTest {
         when(mSubscriptionInfo.areUiccApplicationsEnabled()).thenReturn(true);
         infos.add(mSubscriptionInfo);
         when(mTelephonyUtils.getActiveSubscriptions()).thenReturn(infos);
-        when(mTelephonyUtils.isEuiccSubscription(TelephonyUtils.SUBSCRIPTION_ID_UICC)).thenReturn(
-                false);
+        when(mTelephonyUtils.isUiccSubscription(TelephonyUtils.SUBSCRIPTION_ID_UICC)).thenReturn(
+                true);
 
         mPreferredSubscriptionService.onActiveSubscriptionsUpdated(infos);
-        verify(mTelephonyUtils).isEuiccSubscription(TelephonyUtils.SUBSCRIPTION_ID_UICC);
+        verify(mTelephonyUtils).isUiccSubscription(TelephonyUtils.SUBSCRIPTION_ID_UICC);
         verify(mCallback).onPreferredSubscriptionChanged(TelephonyUtils.SUBSCRIPTION_ID_UICC,
                 false);
     }
@@ -171,10 +176,10 @@ public class PreferredSubscriptionServiceTest {
         when(mSubscriptionInfo.areUiccApplicationsEnabled()).thenReturn(true);
         infos.add(mSubscriptionInfo);
         when(mTelephonyUtils.getActiveSubscriptions()).thenReturn(infos);
-        when(mTelephonyUtils.isEuiccSubscription(anyInt())).thenReturn(false);
+        when(mTelephonyUtils.isUiccSubscription(anyInt())).thenReturn(false);
 
         mPreferredSubscriptionService.initialize();
-        verify(mTelephonyUtils).isEuiccSubscription(anyInt());
+        verify(mTelephonyUtils).isUiccSubscription(anyInt());
         verify(mTelephonyUtils).registerSubscriptionChangedCallback(
                 any(TelephonyUtils.Callback.class));
 
