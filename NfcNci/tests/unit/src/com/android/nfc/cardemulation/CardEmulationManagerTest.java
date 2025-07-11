@@ -450,6 +450,7 @@ public class CardEmulationManagerTest {
         when(Flags.exitFrames()).thenReturn(true);
         when(mNfcService.isFirmwareExitFramesSupported()).thenReturn(true);
         when(mNfcService.getNumberOfFirmwareExitFramesSupported()).thenReturn(5);
+        when(mPreferredServices.onServicesUpdated()).thenReturn(true);
 
         mCardEmulationManager.onServicesUpdated(USER_ID, UPDATED_SERVICES, false);
 
