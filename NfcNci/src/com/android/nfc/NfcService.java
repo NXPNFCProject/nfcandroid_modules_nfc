@@ -3251,7 +3251,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 mPrefsEditor.apply();
                 mIsReaderOptionEnabled = enable;
                 mBackupManager.dataChanged();
-                mDeviceHost.setDiscoveryTech(getNfcPollTech(), getNfcListenTech());
+                if (isNfcEnabled()) {
+                    mDeviceHost.setDiscoveryTech(getNfcPollTech(), getNfcListenTech());
+                }
             }
             applyRouting(true);
             if (mNfcOemExtensionCallback != null) {
