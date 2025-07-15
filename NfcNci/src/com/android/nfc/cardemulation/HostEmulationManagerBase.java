@@ -61,6 +61,9 @@ public interface HostEmulationManagerBase {
     void onPreferredForegroundServiceChanged(ComponentNameAndUser serviceAndUser);
 
     /** */
+    void resetToIdleState();
+
+    /** */
     void onFieldChangeDetected(boolean fieldOn);
 
     /** */
