@@ -965,7 +965,8 @@ void RoutingManager::updateDefaultRoute() {
   SyncEventGuard guard(mRoutingEvent);
   tNFA_STATUS nfaStat = NFA_EeAddSystemCodeRouting(
       mDefaultSysCode, mDefaultSysCodeRoute,
-      mSecureNfcEnabled ? 0x01 : mDefaultSysCodePowerstate);
+      mSecureNfcEnabled ? (mDefaultSysCodePowerstate & 0x01)
+                        : mDefaultSysCodePowerstate);
   if (nfaStat == NFA_STATUS_NOT_SUPPORTED) {
     mIsScbrSupported = false;
     LOG(ERROR) << fn << ": SCBR not supported";
