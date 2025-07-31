@@ -54,6 +54,7 @@ import android.os.PowerManager;
 import android.os.Process;
 import android.os.RemoteException;
 import android.os.UserHandle;
+import android.os.WorkSource;
 import android.testing.AndroidTestingRunner;
 import android.testing.TestableLooper;
 
@@ -89,6 +90,7 @@ import java.util.regex.Pattern;
 public class HostEmulationManagerTest {
 
     private static final String WALLET_HOLDER_PACKAGE_NAME = "com.android.test.walletroleholder";
+    private static final int WALLET_HOLDER_UID = 10234;
     private static final String NFC_PACKAGE = "com.android.nfc";
     private static final ComponentName WALLET_PAYMENT_SERVICE =
             new ComponentName(
@@ -109,6 +111,7 @@ public class HostEmulationManagerTest {
     @Mock private Context mContext;
     @Mock private RegisteredAidCache mRegisteredAidCache;
     @Mock private PowerManager mPowerManager;
+    @Mock private PowerManager.WakeLock mWakeLock;
     @Mock private KeyguardManager mKeyguardManager;
     @Mock private PackageManager mPackageManager;
     @Mock private NfcAdapter mNfcAdapter;
@@ -155,6 +158,7 @@ public class HostEmulationManagerTest {
         when(com.android.nfc.flags.Flags.statsdCeEventsFlag()).thenReturn(true);
         when(ActivityManager.getCurrentUser()).thenReturn(0);
         when(mContext.getSystemService(eq(PowerManager.class))).thenReturn(mPowerManager);
+        when(mPowerManager.newWakeLock(anyInt(), anyString())).thenReturn(mWakeLock);
         when(mContext.getSystemService(eq(KeyguardManager.class))).thenReturn(mKeyguardManager);
         when(mRegisteredAidCache.getPreferredPaymentService())
                 .thenReturn(new ComponentNameAndUser(0, null));
@@ -307,6 +311,9 @@ public class HostEmulationManagerTest {
         mHostEmulationManager.mPaymentServiceName = WALLET_PAYMENT_SERVICE;
         when(mPackageManager.getApplicationInfo(eq(WALLET_HOLDER_PACKAGE_NAME), eq(0)))
                 .thenReturn(applicationInfo);
+        when(mPackageManager.getPackageUidAsUser(eq(WALLET_HOLDER_PACKAGE_NAME),
+                eq(PackageManager.PackageInfoFlags.of(0)), eq(USER_ID))).thenReturn(
+                        WALLET_HOLDER_UID);
         String data = "filter";
         PollingFrame frame1 =
                 new PollingFrame(
@@ -768,8 +775,21 @@ public class HostEmulationManagerTest {
     }
 
     @Test
-    public void testOnHostEmulationData_stateW4Select_noDefaultService_noBoundActiveService() {
+    public void testOnHostEmulationData_stateW4Select_noDefaultService_noBoundActiveService()
+            throws Exception {
+        when(com.android.nfc.module.flags.Flags.ceWakeLock()).thenReturn(true);
+        when(mDeviceConfigFacade.getCeWakeLockTimeoutMillis()).thenReturn(1000);
+        when(mContext.getPackageManager()).thenReturn(mPackageManager);
+        when(mPackageManager.getPackageUidAsUser(
+                eq(WALLET_HOLDER_PACKAGE_NAME), any(), eq(USER_ID)))
+                .thenReturn(WALLET_HOLDER_UID);
         when(mContext.bindServiceAsUser(any(), any(), anyInt(), any())).thenReturn(true);
+
+        mHostEmulationManager.onFieldChangeDetected(true);
+        verify(mWakeLock).acquire(1000);
+        verify(mWakeLock, times(1)).setWorkSource(null);
+        when(mWakeLock.isHeld()).thenReturn(true);
+
         byte[] mockAidData = createSelectAidData(MOCK_AID);
         mHostEmulationManager.mState = HostEmulationManager.STATE_W4_SELECT;
         ApduServiceInfo apduServiceInfo = mock(ApduServiceInfo.class);
@@ -800,6 +820,10 @@ public class HostEmulationManagerTest {
         verify(mRegisteredAidCache).resolveAid(eq(MOCK_AID));
         verify(mContext).getSystemService(eq(PowerManager.class));
         verify(mContext).getSystemService(eq(KeyguardManager.class));
+        verify(mContext).getPackageManager();
+        verify(mPackageManager).getPackageUidAsUser(anyString(), any(), anyInt());
+        verify(mWakeLock).setWorkSource(
+                eq(new WorkSource(WALLET_HOLDER_UID, WALLET_HOLDER_PACKAGE_NAME)));
         verify(mContext)
                 .bindServiceAsUser(
                         mIntentArgumentCaptor.capture(),
@@ -816,6 +840,10 @@ public class HostEmulationManagerTest {
                 mServiceConnectionArgumentCaptor.getValue());
         assertTrue(mHostEmulationManager.isServiceBounded(USER_ID, WALLET_PAYMENT_SERVICE));
         verifyNoMoreInteractions(mContext);
+
+        mHostEmulationManager.onFieldChangeDetected(false);
+        verify(mWakeLock).release();
+        verify(mWakeLock, times(2)).setWorkSource(null);
     }
 
     @Test
@@ -1415,6 +1443,7 @@ public class HostEmulationManagerTest {
     @Test
     public void testSlowTapTrace() {
         when(com.android.nfc.module.flags.Flags.nfcHceLatencyEvents()).thenReturn(true);
+
         mHostEmulationManager.onFieldChangeDetected(true);
         mHostEmulationManager.onHostEmulationActivated();
 
@@ -1428,6 +1457,21 @@ public class HostEmulationManagerTest {
 
         ExtendedMockito.verify(
                 () -> PerfettoTrigger.trigger(HostEmulationManager.TRIGGER_NAME_SLOW_TAP));
+    }
+
+    @Test
+    public void testWakeLockAcquireOnFieldChangeDetected() {
+        when(com.android.nfc.module.flags.Flags.ceWakeLock()).thenReturn(true);
+        when(mDeviceConfigFacade.getCeWakeLockTimeoutMillis()).thenReturn(1000);
+
+        mHostEmulationManager.onFieldChangeDetected(true);
+        verify(mWakeLock).acquire(1000);
+        verify(mWakeLock, times(1)).setWorkSource(null);
+        when(mWakeLock.isHeld()).thenReturn(true);
+
+        mHostEmulationManager.onFieldChangeDetected(false);
+        verify(mWakeLock).release();
+        verify(mWakeLock, times(2)).setWorkSource(null);
     }
 
     private void verifyTapAgainLaunched(ApduServiceInfo service, String category) {
