@@ -82,6 +82,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -1005,6 +1006,18 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         }
 
         @Override
+        public List<String> getPollingLoopFiltersForService(int userId, ComponentName service) {
+            NfcPermissions.validateUserId(userId);
+            NfcPermissions.enforceUserPermissions(mContext);
+            if (!isServiceRegistered(userId, service)) {
+                throw new IllegalArgumentException("getPollingLoopPatternFiltersForService: "
+                        + "service (" + service + ") isn't registered for user " + userId);
+            }
+            return List.copyOf(mServiceCache.getPollingLoopFiltersForService(
+                    userId,Binder.getCallingUid(), service));
+        }
+
+        @Override
         public boolean registerPollingLoopPatternFilterForService(int userId, ComponentName service,
                 String pollingLoopPatternFilter, boolean autoTransact) throws RemoteException {
             NfcPermissions.validateUserId(userId);
@@ -1072,6 +1085,19 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
                                     .build())
                             .build());
             return true;
+        }
+
+        @Override
+        public List<String> getPollingLoopPatternFiltersForService(
+            int userId, ComponentName service) {
+            NfcPermissions.validateUserId(userId);
+            NfcPermissions.enforceUserPermissions(mContext);
+            if (!isServiceRegistered(userId, service)) {
+                throw new IllegalArgumentException("getPollingLoopPatternFiltersForService: "
+                        + "service (" + service + ") isn't registered for user " + userId);
+            }
+            return List.copyOf(mServiceCache.getPollingLoopPatternFiltersForService(
+                    userId, Binder.getCallingUid(), service));
         }
 
         @Override
