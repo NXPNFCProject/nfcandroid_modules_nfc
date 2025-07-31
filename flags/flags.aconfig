@@ -28,6 +28,13 @@ flag {
 }
 
 flag {
+    name: "get_polling_loop_filters"
+    namespace: "nfc"
+    description: "API to fetch polling loop filters registered for HCE service"
+    bug: "402776679"
+}
+
+flag {
     name: "oem_extension_25q4"
     namespace: "nfc"
     description: "OEM extensions for Android 25Q4 release"
