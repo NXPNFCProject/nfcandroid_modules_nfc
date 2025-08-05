@@ -1116,7 +1116,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         filter.addAction(Intent.ACTION_USER_ADDED);
         filter.addAction(ACTION_BOOT_COMPLETED);
         filter.addAction(ACTION_LOCKED_BOOT_COMPLETED);
-        if (mFeatureFlags.enableDirectBootAware()) filter.addAction(Intent.ACTION_USER_UNLOCKED);
+        filter.addAction(Intent.ACTION_USER_UNLOCKED);
         mContext.registerReceiverForAllUsers(mReceiver, filter, null, null);
     }
 
@@ -6047,8 +6047,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                             UserHandle.of(ActivityManager.getCurrentUser()), /*flags=*/0))
                             .startNotification();
                 }
-            } else if (action.equals(Intent.ACTION_USER_UNLOCKED)
-                    && mFeatureFlags.enableDirectBootAware()) {
+            } else if (action.equals(Intent.ACTION_USER_UNLOCKED)) {
                 // If this is first unlock after upgrading to NFC stack that is direct boot aware,
                 // migrate over the data from CE directory to DE directory for access before user
                 // unlock in subsequent bootups.
