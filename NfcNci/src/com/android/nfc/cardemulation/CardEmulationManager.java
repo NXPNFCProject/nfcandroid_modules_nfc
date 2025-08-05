@@ -900,6 +900,66 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         }
 
         @Override
+        public void setRequireDeviceScreenOnForService(int userId, ComponentName service,
+                boolean enable) {
+            NfcPermissions.validateUserId(userId);
+            NfcPermissions.enforceUserPermissions(mContext);
+
+            if (!isServiceRegistered(userId, service)) {
+                throw new IllegalArgumentException(
+                        "Service with component name " + service + " is not registered");
+            }
+
+            Log.d(TAG, "setRequireDeviceScreenOnForService: (" + service + ") to " + enable);
+
+            mServiceCache.setRequireDeviceScreenOnForService(
+                    userId, Binder.getCallingUid(), service, enable);
+        }
+
+        @Override
+        public boolean isDeviceScreenOnRequiredForService(int userId, ComponentName service) {
+            NfcPermissions.validateUserId(userId);
+            NfcPermissions.enforceUserPermissions(mContext);
+
+            if (!isServiceRegistered(userId, service)) {
+                throw new IllegalArgumentException(
+                        "Service with component name " + service + " is not registered");
+            }
+
+            return mServiceCache.getService(userId, service).requiresScreenOn();
+        }
+
+        @Override
+        public void setRequireDeviceUnlockForService(int userId, ComponentName service,
+                boolean enable) {
+            NfcPermissions.validateUserId(userId);
+            NfcPermissions.enforceUserPermissions(mContext);
+
+            if (!isServiceRegistered(userId, service)) {
+                throw new IllegalArgumentException(
+                        "Service with component name " + service + " is not registered");
+            }
+
+            Log.d(TAG, "setRequireDeviceUnlockForService: (" + service + ") to " + enable);
+
+            mServiceCache.setRequireDeviceUnlockForService(
+                    userId, Binder.getCallingUid(), service, enable);
+        }
+
+        @Override
+        public boolean isDeviceUnlockRequiredForService(int userId, ComponentName service) {
+            NfcPermissions.validateUserId(userId);
+            NfcPermissions.enforceUserPermissions(mContext);
+
+            if (!isServiceRegistered(userId, service)) {
+                throw new IllegalArgumentException(
+                        "Service with component name " + service + " is not registered");
+            }
+
+            return mServiceCache.getService(userId, service).requiresUnlock();
+        }
+
+        @Override
         public boolean registerAidGroupForService(int userId,
                 ComponentName service, AidGroup aidGroup) throws RemoteException {
             NfcPermissions.validateUserId(userId);
