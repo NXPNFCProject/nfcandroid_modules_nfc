@@ -2020,7 +2020,8 @@ public class CardEmulationTest {
         ComponentName customServiceName = new ComponentName(mContext, CustomHostApduService.class);
         String testName = new Object() {
         }.getClass().getEnclosingMethod().getName();
-        String annotationStringHex = HexFormat.of().toHexDigits(testName.hashCode());
+        String annotationStringHex =
+            HexFormat.of().withUpperCase().toHexDigits(testName.hashCode());
         assertTrue(cardEmulation.registerPollingLoopFilterForService(
                 customServiceName,
                 annotationStringHex, false));
@@ -2036,14 +2037,11 @@ public class CardEmulationTest {
         ComponentName customServiceName = new ComponentName(mContext, CustomHostApduService.class);
         String testName = new Object() {
         }.getClass().getEnclosingMethod().getName();
-        String annotationStringHexPrefix = HexFormat.of().toHexDigits(testName.hashCode());
-        String annotationStringHex = annotationStringHexPrefix + "123456789ABCDF";
+        String annotationStringHexPrefix =
+            HexFormat.of().withUpperCase().toHexDigits(testName.hashCode());
         String annotationStringHexPattern = annotationStringHexPrefix + ".*";
         assertTrue(cardEmulation.registerPollingLoopPatternFilterForService(
                 customServiceName, annotationStringHexPattern, false));
-        assertTrue(cardEmulation.registerPollingLoopPatternFilterForService(
-                customServiceName,
-                annotationStringHexPattern, false));
         assertEquals(List.of(annotationStringHexPattern),
                 cardEmulation.getPollingLoopPatternFiltersForService(customServiceName));
     }
