@@ -82,7 +82,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -116,8 +115,9 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         EnabledNfcFServices.Callback, WalletRoleObserver.Callback,
         PreferredSubscriptionService.Callback,
         HostEmulationManager.NfcAidRoutingListener {
-    static final String TAG = "CardEmulationManager";
+    static final String TAG = "NfcCardEmulationManager";
     static final boolean DBG = NfcProperties.debug_enabled().orElse(true);
+    static final boolean VDBG = NfcProperties.verbose_debug_enabled().orElse(true);
 
     static final int NFC_HCE_APDU = 0x01;
     static final int NFC_HCE_NFCF = 0x04;
@@ -402,6 +402,7 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
     }
 
     public void onUserSwitched(int userId) {
+        if (DBG) Log.d(TAG, "onUserSwitched");
         mWalletRoleObserver.onUserSwitched(userId);
         // for HCE
         mServiceCache.onUserSwitched();
@@ -425,6 +426,7 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
     }
 
     public void onNfcEnabled() {
+        if (DBG) Log.d(TAG, "onNfcEnabled");
         // for HCE
         mAidCache.onNfcEnabled();
         // for HCE-F
@@ -432,6 +434,7 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
     }
 
     public void onNfcDisabled() {
+        if (DBG) Log.d(TAG, "onNfcDisabled");
         // for HCE
         mAidCache.onNfcDisabled();
         // for HCE-F
@@ -676,6 +679,10 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
 
     boolean setDefaultServiceForCategoryChecked(int userId, ComponentName service,
             String category) {
+        if (DBG) {
+            Log.d(TAG, "setDefaultServiceForCategoryChecked: service=" + service + ", category="
+                    + category);
+        }
         if (!CardEmulation.CATEGORY_PAYMENT.equals(category)) {
             Log.e(TAG, "setDefaultServiceForCategoryChecked: Not allowing defaults for category "
                     + category);
@@ -829,6 +836,10 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
             if (!isServiceRegistered(userId, service)) {
                 return false;
             }
+            if (DBG) {
+                Log.d(TAG, "isDefaultServiceForCategory: service=" + service + ", category="
+                        + category);
+            }
             if (mWalletRoleObserver.isWalletRoleFeatureEnabled()) {
                 PackageAndUser holder =
                         mWalletRoleObserver.getDefaultWalletRoleHolder(userId);
@@ -870,6 +881,9 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
                 throws RemoteException {
             NfcPermissions.validateProfileId(mContext, userId);
             NfcPermissions.enforceAdminPermissions(mContext);
+            if (DBG) {
+                Log.d(TAG, "setDefaultForNextTap: service=" + service);
+            }
             if (service != null && !isServiceRegistered(userId, service)) {
                 return false;
             }
@@ -1251,9 +1265,12 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
                 return mWalletRoleObserver.getDefaultWalletRoleHolder(
                         callingUserId).getPackage() != null;
             }
-            String defaultComponent = Settings.Secure.getString(mContext.getContentResolver(),
-                    Constants.SETTINGS_SECURE_NFC_PAYMENT_DEFAULT_COMPONENT);
-            return defaultComponent != null ? true : false;
+            boolean isRegistered = Settings.Secure.getString(mContext.getContentResolver(),
+                    Constants.SETTINGS_SECURE_NFC_PAYMENT_DEFAULT_COMPONENT) != null;
+            if (DBG) {
+                Log.d(TAG, "isDefaultPaymentRegistered: " + isRegistered);
+            }
+            return isRegistered;
         }
 
         @Override
