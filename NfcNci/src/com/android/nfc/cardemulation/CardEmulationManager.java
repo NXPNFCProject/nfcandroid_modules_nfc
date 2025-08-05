@@ -114,7 +114,7 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         RegisteredNfcFServicesCache.Callback, PreferredServices.Callback,
         EnabledNfcFServices.Callback, WalletRoleObserver.Callback,
         PreferredSubscriptionService.Callback,
-        HostEmulationManagerBase.NfcAidRoutingListener {
+        HostEmulationManager.NfcAidRoutingListener {
     static final String TAG = "CardEmulationManager";
     static final boolean DBG = NfcProperties.debug_enabled().orElse(true);
 
@@ -142,7 +142,7 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
     final RegisteredT3tIdentifiersCache mT3tIdentifiersCache;
     final RegisteredServicesCache mServiceCache;
     final RegisteredNfcFServicesCache mNfcFServicesCache;
-    final HostEmulationManagerBase mHostEmulationManager;
+    final HostEmulationManager mHostEmulationManager;
     final HostNfcFEmulationManager mHostNfcFEmulationManager;
     final PreferredServices mPreferredServices;
 
