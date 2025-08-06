@@ -133,15 +133,13 @@ public class CardEmulationTest {
     @After
     public void tearDown() throws Exception {
         if (mAdapter != null && mContext != null) {
+            Assert.assertTrue("Failed to enable NFC in test cleanup",
+                NfcUtils.enableNfc(mAdapter, mContext));
             CardEmulation cardEmulation = CardEmulation.getInstance(mAdapter);
             cardEmulation.setShouldDefaultToObserveModeForService(new ComponentName(mContext,
                     CustomHostApduService.class), false);
             cardEmulation.setShouldDefaultToObserveModeForService(new ComponentName(mContext,
                     CtsMyHostApduService.class), false);
-
-            mAdapter.notifyHceDeactivated();
-            Assert.assertTrue("Failed to enable NFC in test cleanup",
-                NfcUtils.enableNfc(mAdapter, mContext));
         } else {
             Log.w("CardEmulationTest", "mAdapter or mContext is null");
         }
