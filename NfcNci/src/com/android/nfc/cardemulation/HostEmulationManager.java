@@ -70,6 +70,7 @@ import com.android.nfc.NfcInjector;
 import com.android.nfc.NfcService;
 import com.android.nfc.NfcStatsLog;
 import com.android.nfc.PerfettoTrigger;
+import com.android.nfc.cardemulation.HostEmulationManager.HostEmulationConnection;
 import com.android.nfc.cardemulation.RegisteredAidCache.AidResolveInfo;
 import com.android.nfc.cardemulation.util.StatsdUtils;
 import com.android.nfc.flags.Flags;
@@ -514,9 +515,8 @@ public class HostEmulationManager {
 
     public void onObserveModeStateChange(boolean enabled) {
         synchronized (mLock) {
-            if (!enabled && mAutoDisableObserveModeRunnable != null) {
-                mHandler.removeCallbacks(mAutoDisableObserveModeRunnable);
-                mAutoDisableObserveModeRunnable = null;
+            if (!enabled) {
+                clearAutoDisableObserveModeRunnableLocked();
             }
         }
     }
@@ -614,6 +614,19 @@ public class HostEmulationManager {
             } else {
                 mAutoDisableObserveModeRunnable.addServiceToList(name);
             }
+        }
+    }
+
+    private void clearAutoDisableObserveModeRunnableLocked() {
+        if (mAutoDisableObserveModeRunnable != null) {
+            mHandler.removeCallbacks(mAutoDisableObserveModeRunnable);
+            mAutoDisableObserveModeRunnable = null;
+        }
+    }
+
+    void onNfcFHostEmulationDeactivated() {
+        synchronized (mLock) {
+            clearAutoDisableObserveModeRunnableLocked();
         }
     }
 
@@ -1119,10 +1132,7 @@ public class HostEmulationManager {
             unbindServiceIfNeededLocked();
             returnToIdleStateLocked();
 
-            if (mAutoDisableObserveModeRunnable != null) {
-                mHandler.removeCallbacks(mAutoDisableObserveModeRunnable);
-                mAutoDisableObserveModeRunnable = null;
-            }
+            clearAutoDisableObserveModeRunnableLocked();
 
             if (mEnableObserveModeAfterTransaction) {
                 Log.d(TAG, "onHostEmulationDeactivated: re-enable observe mode.");
