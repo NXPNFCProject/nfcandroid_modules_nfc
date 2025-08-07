@@ -89,6 +89,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 public class HostEmulationManager {
@@ -226,7 +227,7 @@ public class HostEmulationManager {
     @UserIdInt int mActiveServiceUserId; // The UserId of the current active one
 
     String mLastSelectedAid;
-    int mState;
+    AtomicInteger mState = new AtomicInteger(STATE_IDLE);
     byte[] mSelectApdu;
     Handler mHandler;
 
@@ -375,7 +376,6 @@ public class HostEmulationManager {
         mHandler = new Handler(looper);
         mLock = new Object();
         mAidCache = aidCache;
-        mState = STATE_IDLE;
         mPollingLoopState = PollingLoopState.EVALUATING_POLLING_LOOP;
         mKeyguard = context.getSystemService(KeyguardManager.class);
         mPowerManager = context.getSystemService(PowerManager.class);
@@ -653,8 +653,8 @@ public class HostEmulationManager {
                 mHandler.postDelayed(mReturnToIdleStateRunnable, FIELD_OFF_IDLE_DELAY_MS);
             }
 
-            if (mState == STATE_IDLE) {
-                mState = STATE_POLLING_LOOP;
+            if (mState.get() == STATE_IDLE) {
+                mState.set(STATE_POLLING_LOOP);
             }
             int onCount = 0;
             int offCount = 0;
@@ -896,10 +896,10 @@ public class HostEmulationManager {
             Intent intent = new Intent(TapAgainDialog.ACTION_CLOSE);
             intent.setPackage(NfcInjector.getInstance().getNfcPackageName());
             mContext.sendBroadcastAsUser(intent, UserHandle.ALL);
-            if (mState != STATE_IDLE && mState != STATE_POLLING_LOOP) {
+            if (mState.get() != STATE_IDLE && mState.get() != STATE_POLLING_LOOP) {
                 Log.e(TAG, "onHostEmulationActivated: Got activation event in non-idle state");
             }
-            mState = STATE_W4_SELECT;
+            mState.set(STATE_W4_SELECT);
         }
     }
 
@@ -912,10 +912,10 @@ public class HostEmulationManager {
         ApduServiceInfo resolvedServiceInfo = null;
         AidResolveInfo resolveInfo = null;
         synchronized (mLock) {
-            if (mState == STATE_IDLE) {
+            if (mState.get() == STATE_IDLE) {
                 Log.e(TAG, "onHostEmulationData: Got data in idle state.");
                 return;
-            } else if (mState == STATE_W4_DEACTIVATE) {
+            } else if (mState.get() == STATE_W4_DEACTIVATE) {
                 Log.e(TAG, "onHostEmulationData: Dropping APDU in STATE_W4_DECTIVATE");
                 return;
             }
@@ -1015,7 +1015,7 @@ public class HostEmulationManager {
                     // We have no default, and either one or more services.
                     // Ask the user to confirm.
                     // Just ignore all future APDUs until we resolve to only one
-                    mState = STATE_W4_DEACTIVATE;
+                    mState.set(STATE_W4_DEACTIVATE);
                     NfcStatsLog.write(NfcStatsLog.NFC_AID_CONFLICT_OCCURRED, selectAid);
                     if (android.nfc.Flags.nfcEventListener()) {
                         notifyAidConflictListener(selectAid);
@@ -1033,7 +1033,7 @@ public class HostEmulationManager {
                     return;
                 }
             }
-            switch (mState) {
+            switch (mState.get()) {
                 case STATE_W4_SELECT:
                     if (selectAid != null) {
                         int uid = resolvedServiceInfo.getUid();
@@ -1068,7 +1068,7 @@ public class HostEmulationManager {
                             Log.d(TAG, "onHostEmulationData: Waiting for new service.");
                             // Queue SELECT APDU to be used
                             mSelectApdu = data;
-                            mState = STATE_W4_SERVICE;
+                            mState.set(STATE_W4_SERVICE);
                         }
                         if (mStatsdUtils != null) {
                             mStatsdUtils.notifyCardEmulationEventWaitingForResponse();
@@ -1105,7 +1105,7 @@ public class HostEmulationManager {
                         } else {
                             // Waiting for service to be bound
                             mSelectApdu = data;
-                            mState = STATE_W4_SERVICE;
+                            mState.set(STATE_W4_SERVICE);
                         }
                     } else if (mActiveService != null) {
                         // Regular APDU data
@@ -1122,7 +1122,7 @@ public class HostEmulationManager {
     public void onHostEmulationDeactivated() {
         Log.d(TAG, "onHostEmulationDeactivated");
         synchronized (mLock) {
-            if (mState == STATE_IDLE) {
+            if (mState.get() == STATE_IDLE) {
                 Log.e(
                         TAG,
                         "onHostEmulationDeactivated: Got deactivation "
@@ -1158,9 +1158,8 @@ public class HostEmulationManager {
     }
 
     public boolean isHostCardEmulationActivated() {
-        synchronized (mLock) {
-            return mState != STATE_IDLE && mState != STATE_POLLING_LOOP;
-        }
+        int state = mState.get();
+        return state != STATE_IDLE && state != STATE_POLLING_LOOP;
     }
 
     public void onOffHostAidSelectedOrTransaction() {
@@ -1168,7 +1167,7 @@ public class HostEmulationManager {
         synchronized (mLock) {
             mHandler.removeCallbacks(mEnableObserveModeAfterTransactionRunnable);
             rescheduleInactivityChecks();
-            if (mState != STATE_XFER || mActiveService == null) {
+            if (mState.get() != STATE_XFER || mActiveService == null) {
                 // Don't bother telling, we're not bound to any service yet
             } else {
                 sendDeactivateToActiveServiceLocked(HostApduService.DEACTIVATION_DESELECTED);
@@ -1182,7 +1181,7 @@ public class HostEmulationManager {
             }
             resetActiveService();
             unbindServiceIfNeededLocked();
-            mState = STATE_W4_SELECT;
+            mState.set(STATE_W4_SELECT);
 
             // close the TapAgainDialog
             Intent intent = new Intent(TapAgainDialog.ACTION_CLOSE);
@@ -1326,7 +1325,7 @@ public class HostEmulationManager {
     void sendDataToServiceLocked(Messenger service, byte[] data) {
         if (DBG) Log.d(TAG, "sendDataToServiceLocked");
 
-        mState = STATE_XFER;
+        mState.set(STATE_XFER);
 
         int cookie = 0;
         if (nfcHceLatencyEvents()) {
@@ -1407,8 +1406,8 @@ public class HostEmulationManager {
                 HostApduService.KEY_POLLING_LOOP_FRAMES_BUNDLE, pollingFrames);
         msg.setData(msgData);
         msg.replyTo = mMessenger;
-        if (mState == STATE_IDLE) {
-            mState = STATE_POLLING_LOOP;
+        if (mState.get() == STATE_IDLE) {
+            mState.set(STATE_POLLING_LOOP);
         }
         if (nfcHceLatencyEvents()) {
             int cookie = generateApduAckCookie();
@@ -1615,7 +1614,7 @@ public class HostEmulationManager {
         mUnprocessedPollingFrames = null;
         resetActiveService();
         setPollingLoopStateLocked(PollingLoopState.EVALUATING_POLLING_LOOP);
-        mState = STATE_IDLE;
+        mState.set(STATE_IDLE);
     }
 
     private void resetActiveService() {
@@ -1772,7 +1771,7 @@ public class HostEmulationManager {
                                 ? null
                                 : preferredUserAndService.getComponentName();
                 /* Service is already deactivated and not preferred, don't bind */
-                if (mState == STATE_IDLE && !name.equals(preferredServiceName)) {
+                if (mState.get() == STATE_IDLE && !name.equals(preferredServiceName)) {
                     return;
                 }
                 Messenger messenger = new Messenger(service);
@@ -1899,11 +1898,7 @@ public class HostEmulationManager {
                     Log.e(TAG, "handleMessage: Dropping empty R-APDU");
                     return;
                 }
-                int state;
-                synchronized (mLock) {
-                    state = mState;
-                }
-                if (state == STATE_XFER) {
+                if (mState.get() == STATE_XFER) {
                     Log.d(TAG, "handleMessage: Sending data");
                     NfcService.getInstance().sendData(data);
                     if (mStatsdUtils != null) {
@@ -1912,7 +1907,7 @@ public class HostEmulationManager {
                 } else {
                     Log.d(
                             TAG,
-                            "handleMessage: Dropping data, wrong state " + Integer.toString(state));
+                            "handleMessage: Dropping data, wrong state " + mState.get());
                 }
 
                 if (nfcHceLatencyEvents()) {
@@ -2012,7 +2007,7 @@ public class HostEmulationManager {
 
     @VisibleForTesting
     public int getState() {
-        return mState;
+        return mState.get();
     }
 
     @VisibleForTesting
