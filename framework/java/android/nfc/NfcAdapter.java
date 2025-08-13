@@ -1907,8 +1907,8 @@ public final class NfcAdapter {
          * Allow priv apps to pass null in activity.
          */
         if (activity == null
-                || ((pollTechnology & FLAG_SET_DEFAULT_TECH) == FLAG_SET_DEFAULT_TECH
-                || (listenTechnology & FLAG_SET_DEFAULT_TECH) == FLAG_SET_DEFAULT_TECH)) {
+                || (pollTechnology & FLAG_SET_DEFAULT_TECH) == FLAG_SET_DEFAULT_TECH
+                || (listenTechnology & FLAG_SET_DEFAULT_TECH) == FLAG_SET_DEFAULT_TECH) {
             Binder token = new Binder();
             callService( () ->
                     sService.updateDiscoveryTechnology(

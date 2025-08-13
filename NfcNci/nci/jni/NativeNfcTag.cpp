@@ -592,7 +592,8 @@ static jint nativeNfcTag_doConnect(JNIEnv*, jobject, jint targetIdx,
     if (sCurrentConnectedTargetProtocol == NFC_PROTOCOL_MIFARE) {
       intfType = NFA_INTERFACE_MIFARE;
     } else {
-      LOG(DEBUG) << StringPrintf("%s: switching to tech=%x need to switch rf intf to frame", __func__,
+      LOG(DEBUG) << StringPrintf(
+          "%s: switching to tech=%x need to switch rf intf to frame", __func__,
           sCurrentConnectedTargetType);
       intfType = NFA_INTERFACE_FRAME;
     }
