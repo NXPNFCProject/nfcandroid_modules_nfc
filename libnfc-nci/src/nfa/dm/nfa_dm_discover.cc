@@ -3005,14 +3005,14 @@ void nfa_dm_disc_sm_execute(tNFA_DM_RF_DISC_SM_EVENT event,
       nfa_dm_cb.disc_cb.disc_state, nfa_dm_cb.disc_cb.disc_flags);
 
   if (((nfa_dm_cb.disc_cb.disc_state == NFA_DM_RFST_IDLE) ||
-       (nfa_dm_cb.disc_cb.disc_state == NFA_DM_RFST_DISCOVERY)) &&
+        (nfa_dm_cb.disc_cb.disc_state == NFA_DM_RFST_DISCOVERY)) &&
       (!(nfa_dm_cb.disc_cb.disc_flags & NFA_DM_DISC_FLAGS_W4_RSP)) &&
       (nfa_hci_cb.hci_state != NFA_HCI_STATE_EE_RECOVERY) &&
       (nfc_cb.is_nfcee_discovery_required)) {
     LOG(VERBOSE) << StringPrintf("%s: Triggering Pending EE discovery...",
-                                 __func__);
+        __func__);
     nfa_dm_nfc_response_cback_wrapper(NFC_NFCEE_STATUS_REVT,
-                                      &nfc_cb.nfcee_data);
+        &nfc_cb.nfcee_data);
   }
 }
 
@@ -3186,7 +3186,7 @@ bool nfa_dm_rf_removal_detection(uint8_t waiting_time) {
 
   if (nfa_dm_cb.disc_cb.disc_state == NFA_DM_RFST_POLL_ACTIVE) {
     /* state is OK: notify the status when the response is received from NFCC
-      */
+     */
     detect_params.waiting_time = waiting_time;
 
     nfa_dm_cb.disc_cb.disc_flags |= NFA_DM_DISC_FLAGS_NOTIFY;
@@ -3194,7 +3194,7 @@ bool nfa_dm_rf_removal_detection(uint8_t waiting_time) {
     tNFA_DM_RF_DISC_DATA nfa_dm_rf_disc_data;
     nfa_dm_rf_disc_data.detect_removal = detect_params;
     nfa_dm_disc_sm_execute(NFA_DM_RF_REMOVAL_DETECT_START_CMD,
-                            &nfa_dm_rf_disc_data);
+                           &nfa_dm_rf_disc_data);
   } else {
     /* Wrong state: notify failed status right away */
     LOG(ERROR) << __func__ << ": NFCC not in poll active state";

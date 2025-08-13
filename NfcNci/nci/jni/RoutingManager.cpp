@@ -1658,7 +1658,7 @@ void RoutingManager::setEeInfoChangedFlag() {
 **
 ** Function:        isRTUpdateOptimized
 **
-** Description:     Cheking if routing table update optimized or not.
+** Description:     Checking if routing table update optimized or not.
 **
 ** Returns:         True/False
 **

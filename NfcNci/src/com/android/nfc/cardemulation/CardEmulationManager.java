@@ -398,7 +398,6 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         if (com.android.nfc.module.flags.Flags.eventListenerOffhostAidSelected()) {
             callNfcEventCallbacks(listener -> listener.onOffHostAidSelected(aid, eeName));
         }
-        mPreferredServices.onHostEmulationActivated();
     }
 
     public void onBootCompleted() {
@@ -1418,8 +1417,8 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
                     + ", emptyAid: " + aids + ", protocol: " + protocol
                     + ", technologyAB: " + technologyAB + ", technologyF: " + technologyF
                     + ", systemCode: " + sc);
-
             mNfcPermissions.checkPackage(Binder.getCallingUid(), pkg);
+            NfcPermissions.enforceAdminPermissions(mContext);
             // If the OEM has set a list of allowed packages, check if the calling package is in
             // the list.
             List<String> allowListPkgs =

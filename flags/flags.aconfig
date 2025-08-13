@@ -28,14 +28,6 @@ flag {
 }
 
 flag {
-    name: "get_polling_loop_filters"
-    is_exported: true
-    namespace: "nfc"
-    description: "API to fetch polling loop filters registered for HCE service"
-    bug: "402776679"
-}
-
-flag {
     name: "oem_extension_25q4"
     is_exported: true
     namespace: "nfc"
@@ -49,6 +41,14 @@ flag {
     namespace: "nfc"
     description: "Event listener callback for offhost AID select"
     bug: "396186563"
+}
+
+flag {
+    name: "get_polling_loop_filters"
+    is_exported: true
+    namespace: "nfc"
+    description: "API to fetch polling loop filters registered for HCE service"
+    bug: "402776679"
 }
 
 flag {

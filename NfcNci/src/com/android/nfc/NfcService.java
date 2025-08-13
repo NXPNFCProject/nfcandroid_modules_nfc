@@ -1940,11 +1940,12 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                         && mAlwaysOnState != NfcAdapter.STATE_TURNING_OFF)) {
                 /* Start polling loop */
                 applyRouting(true);
-                if (mIsHceCapable) { 
+
+                if (mIsHceCapable) {
                     // Generate the initial card emulation routing table
-                        mCardEmulationManager.onNfcEnabled();
+                    mCardEmulationManager.onNfcEnabled();
                 }
-             }
+            }
 
             if (mIsRecovering) {
                  // Intents for all users
