@@ -80,6 +80,7 @@ using Status = ::ndk::ScopedAStatus;
 
 std::string NFC_AIDL_HAL_SERVICE_NAME = "android.hardware.nfc.INfc/default";
 static const char kNfcWakelockName[] = "nfc_write_wakelock";
+
 extern void GKI_shutdown();
 extern void verify_stack_non_volatile_store();
 extern void delete_stack_non_volatile_store(bool forceDelete);
