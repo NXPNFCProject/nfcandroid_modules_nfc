@@ -824,10 +824,6 @@ public class HostEmulationManager {
          }
      }
 
-    public void resetToIdleState() {
-        returnToIdleStateLocked();
-    }
-
     public void onFieldChangeDetected(boolean fieldOn) {
         rescheduleInactivityChecks();
         if (!fieldOn) {
