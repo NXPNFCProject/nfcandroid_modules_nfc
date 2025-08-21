@@ -29,9 +29,10 @@
 #include <android/hardware/nfc/1.1/INfc.h>
 #include <android/hardware/nfc/1.2/INfc.h>
 #include <cutils/properties.h>
-#include <future>
+#include <hardware_legacy/power.h>
 #include <hwbinder/ProcessState.h>
 
+#include <future>
 #include <thread>
 
 #include "NfcVendorExtn.h"
@@ -42,8 +43,6 @@
 #include "nfa_sys_int.h"
 #include "nfc_config.h"
 #include "nfc_int.h"
-
-#include <hardware_legacy/power.h>
 
 using ::android::wp;
 using ::android::hardware::hidl_death_recipient;

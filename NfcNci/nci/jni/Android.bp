@@ -53,7 +53,7 @@ cc_defaults {
         "libbinder_ndk",
         "libstatssocket",
         "libz",
-        "libhardware_legacy",
+        "libpower",
     ],
 
     static_libs: [
