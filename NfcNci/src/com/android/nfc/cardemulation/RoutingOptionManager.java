@@ -26,6 +26,7 @@ import androidx.annotation.VisibleForTesting;
 
 import com.android.nfc.DeviceConfigFacade;
 import com.android.nfc.NfcService;
+import com.android.nfc.R;
 import com.android.nfc.cardemulation.util.TelephonyUtils;
 import com.android.nfc.dhimpl.NativeNfcManager;
 
@@ -35,7 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 
 public class RoutingOptionManager {
-    static final String TAG = "RoutingOptionManager";
+    static final String TAG = "NfcRoutingOptionManager";
     static final boolean DBG = NfcProperties.debug_enabled().orElse(true);
 
     static final int ROUTE_UNKNOWN = -1;
@@ -156,23 +157,41 @@ public class RoutingOptionManager {
     @VisibleForTesting
     RoutingOptionManager() {
         mDefaultRoute = doGetDefaultRouteDestination();
-        if (DBG) Log.d(TAG, "mDefaultRoute=0x" + Integer.toHexString(mDefaultRoute));
+        if (DBG) {
+            Log.d(TAG, "mDefaultRoute=0x" + Integer.toHexString(mDefaultRoute));
+        }
         mDefaultIsoDepRoute = doGetDefaultIsoDepRouteDestination();
-        if (DBG) Log.d(TAG, "mDefaultIsoDepRoute=0x" + Integer.toHexString(mDefaultIsoDepRoute));
+        if (DBG) {
+            Log.d(TAG, "mDefaultIsoDepRoute=0x" + Integer.toHexString(mDefaultIsoDepRoute));
+        }
         mDefaultOffHostRoute = doGetDefaultOffHostRouteDestination();
-        if (DBG) Log.d(TAG, "mDefaultOffHostRoute=0x" + Integer.toHexString(mDefaultOffHostRoute));
+        if (DBG) {
+            Log.d(TAG, "mDefaultOffHostRoute=0x" + Integer.toHexString(mDefaultOffHostRoute));
+        }
         mDefaultFelicaRoute = doGetDefaultFelicaRouteDestination();
-        if (DBG) Log.d(TAG, "mDefaultFelicaRoute=0x" + Integer.toHexString(mDefaultFelicaRoute));
+        if (DBG) {
+            Log.d(TAG, "mDefaultFelicaRoute=0x" + Integer.toHexString(mDefaultFelicaRoute));
+        }
         mDefaultScRoute = doGetDefaultScRouteDestination();
-        if (DBG) Log.d(TAG, "mDefaultScRoute=0x" + Integer.toHexString(mDefaultScRoute));
+        if (DBG) {
+            Log.d(TAG, "mDefaultScRoute=0x" + Integer.toHexString(mDefaultScRoute));
+        }
         mOffHostRouteUicc = doGetOffHostUiccDestination();
-        if (DBG) Log.d(TAG, "mOffHostRouteUicc=" + Arrays.toString(mOffHostRouteUicc));
+        if (DBG) {
+            Log.d(TAG, "mOffHostRouteUicc=" + Arrays.toString(mOffHostRouteUicc));
+        }
         mOffHostRouteEse = doGetOffHostEseDestination();
-        if (DBG) Log.d(TAG, "mOffHostRouteEse=" + Arrays.toString(mOffHostRouteEse));
+        if (DBG) {
+            Log.d(TAG, "mOffHostRouteEse=" + Arrays.toString(mOffHostRouteEse));
+        }
         mAidMatchingSupport = doGetAidMatchingMode();
-        if (DBG) Log.d(TAG, "mAidMatchingSupport=0x" + Integer.toHexString(mAidMatchingSupport));
+        if (DBG) {
+            Log.d(TAG, "mAidMatchingSupport=0x" + Integer.toHexString(mAidMatchingSupport));
+        }
         mNdefNfceeRoute = NativeNfcManager.getInstance().getNdefNfceeRouteId();
-        if (DBG) Log.d(TAG, "mNdefNfceeRoute=0x" + Integer.toHexString(mNdefNfceeRoute));
+        if (DBG) {
+            Log.d(TAG, "mNdefNfceeRoute=0x" + Integer.toHexString(mNdefNfceeRoute));
+        }
 
         mPreferredSimSettings = new SimSettings((mOffHostRouteUicc != null) ?
                 mOffHostRouteUicc.length : 0, 1);
@@ -384,6 +403,15 @@ public class RoutingOptionManager {
 
         addOrUpdateTableItems(SE_PREFIX_SIM, mOffHostRouteUicc);
         addOrUpdateTableItems(SE_PREFIX_ESE, mOffHostRouteEse);
+
+        for (Map.Entry<String, Integer> entry : mRouteForSecureElement.entrySet()) {
+            Log.d(TAG, "createLookUpTable: route=" + entry.getKey() + ", nfceeId="
+                    + Integer.toHexString(entry.getValue()));
+        }
+        for (Map.Entry<Integer, String> entry : mSecureElementForRoute.entrySet()) {
+            Log.d(TAG, "createLookUpTable: nfceeId=" + Integer.toHexString(entry.getKey())
+                    + ", route=" + entry.getValue());
+        }
     }
 
     boolean isRoutingTableOverwrittenOrOverlaid(
@@ -485,8 +513,35 @@ public class RoutingOptionManager {
     }
 
     public int getRouteForSecureElement(String se) {
-        return Optional.ofNullable(mRouteForSecureElement.get(renameSecureElementIfSimType(se)))
-                .orElseGet(() -> 0x00);
+        boolean telephonySubscriptionEnabled = mContext.getResources().getBoolean(
+                R.bool.telephony_subscription_routing_enabled);
+        if (telephonySubscriptionEnabled) {
+            return Optional.ofNullable(mRouteForSecureElement.get(renameSecureElementIfSimType(se)))
+                    .orElseGet(() -> 0x00);
+        } else {
+            if (se == null || se.length() <= 3) {
+                return 0;
+            }
+            try {
+                if (se.startsWith("eSE") && mOffHostRouteEse != null) {
+                    int index = Integer.parseInt(se.substring(3));
+                    if (mOffHostRouteEse.length >= index && index > 0) {
+                        return mOffHostRouteEse[index - 1] & 0xFF;
+                    }
+                } else if (se.startsWith("SIM") && mOffHostRouteUicc != null) {
+                    int index = Integer.parseInt(se.substring(3));
+                    if (mOffHostRouteUicc.length >= index && index > 0) {
+                        return mOffHostRouteUicc[index - 1] & 0xFF;
+                    }
+                }
+                if (mOffHostRouteEse == null && mOffHostRouteUicc == null) {
+                    return mDefaultOffHostRoute;
+                }
+            } catch (NumberFormatException e) {
+                Log.e(TAG, "NumberFormatException while parsing secure element index", e);
+            }
+            return 0;
+        }
     }
 
     public String getSecureElementForRoute(int route) {
@@ -506,9 +561,14 @@ public class RoutingOptionManager {
     private int getAlternativeRouteIfSimIsInvalid(int route) {
         // TODO - Implement
         if (getSecureElementForRoute(route).startsWith(SE_PREFIX_SIM)) {
-            if (mPreferredSimSettings.type == TelephonyUtils.SIM_TYPE_UNKNOWN) {
-                Log.e(TAG, "getAlternativeRouteIfSimIsInvalid: sim is invalid");
-                return getRouteForSecureElement(mIsEseCapable ? (SE_PREFIX_ESE + 1) : DEVICE_HOST);
+            boolean telephonySubscriptionEnabled = mContext.getResources().getBoolean(
+                    R.bool.telephony_subscription_routing_enabled);
+            if (telephonySubscriptionEnabled) {
+                if (mPreferredSimSettings.type == TelephonyUtils.SIM_TYPE_UNKNOWN) {
+                    Log.e(TAG, "getAlternativeRouteIfSimIsInvalid: sim is invalid");
+                    return getRouteForSecureElement(mIsEseCapable
+                            ? (SE_PREFIX_ESE + 1) : DEVICE_HOST);
+                }
             }
         }
         return route;
@@ -522,15 +582,6 @@ public class RoutingOptionManager {
                 mRouteForSecureElement.putIfAbsent(name, route);
                 mSecureElementForRoute.putIfAbsent(route, name);
             }
-        }
-
-        for (Map.Entry<String, Integer> entry : mRouteForSecureElement.entrySet()) {
-            Log.d(TAG, "addOrUpdateTableItems: route: " + entry.getKey() + ", nfceeId: "
-                    + Integer.toHexString(entry.getValue()));
-        }
-        for (Map.Entry<Integer, String> entry : mSecureElementForRoute.entrySet()) {
-            Log.d(TAG, "addOrUpdateTableItems: nfceeId: " + Integer.toHexString(entry.getKey())
-                    + ", route: " + entry.getValue());
         }
     }
 }
