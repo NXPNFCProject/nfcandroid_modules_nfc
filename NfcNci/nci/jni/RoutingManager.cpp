@@ -892,7 +892,6 @@ void RoutingManager::updateSystemCodeRoute(int route) {
   LOG(DEBUG) << StringPrintf("%s:  New default SC route=0x%x", fn, route);
   setEeInfoChangedFlag();
   mDefaultSysCodeRoute = route;
-  updateDefaultRoute();
 }
 
 /*******************************************************************************
