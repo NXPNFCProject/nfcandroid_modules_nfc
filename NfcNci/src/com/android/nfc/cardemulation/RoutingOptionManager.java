@@ -533,6 +533,9 @@ public class RoutingOptionManager {
                     if (mOffHostRouteUicc.length >= index && index > 0) {
                         return mOffHostRouteUicc[index - 1] & 0xFF;
                     }
+                } else if (se.equals(SE_NDEF_NFCEE)) {
+                    return Optional.ofNullable(mRouteForSecureElement.get(se))
+                            .orElseGet(() -> 0x00);
                 }
                 if (mOffHostRouteEse == null && mOffHostRouteUicc == null) {
                     return mDefaultOffHostRoute;
