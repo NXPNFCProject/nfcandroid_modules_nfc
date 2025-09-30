@@ -574,6 +574,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     private boolean mRfFieldActivated = false;
     private boolean mRfDiscoveryStarted = false;
     private boolean mEeListenActivated = false;
+    private boolean mTagConnected = false;
     // Scheduled executor for routing table update
     private final ScheduledExecutorService mRtUpdateScheduler = Executors.newScheduledThreadPool(1);
     private ScheduledFuture<?> mRtUpdateScheduledTask = null;
@@ -3877,6 +3878,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     mNfcOemExtensionCallback.onRfFieldDetected(mRfFieldActivated);
                     mNfcOemExtensionCallback.onRfDiscoveryStarted(mRfDiscoveryStarted);
                     mNfcOemExtensionCallback.onEeListenActivated(mEeListenActivated);
+                    mNfcOemExtensionCallback.onTagConnected(mTagConnected);
                 } catch (RemoteException e) {
                     Log.e(TAG, "updateNfCState: Failed to update, e=", e);
                 }
@@ -6046,6 +6048,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     }
 
     private void executeOemOnTagConnectedCallback(boolean connected) {
+        mTagConnected = connected;
         if (mNfcOemExtensionCallback != null) {
             try {
                 mNfcOemExtensionCallback.onTagConnected(connected);
