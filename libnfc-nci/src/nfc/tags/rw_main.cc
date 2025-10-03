@@ -250,6 +250,9 @@ tNFC_STATUS RW_SetActivatedTagType(tNFC_ACTIVATE_DEVT* p_activate_params,
   if (rw_cb.tcb_type == RW_CB_TYPE_T4T && rw_cb.tcb.t4t.p_retry_cmd) {
     GKI_freebuf(rw_cb.tcb.t4t.p_retry_cmd);
   }
+  if (rw_cb.tcb_type == RW_CB_TYPE_T5T && rw_cb.tcb.i93.p_retry_cmd) {
+    GKI_freebuf(rw_cb.tcb.i93.p_retry_cmd);
+  }
   memset(&rw_cb.tcb, 0, sizeof(tRW_TCB));
 
 #if (RW_STATS_INCLUDED == TRUE)
