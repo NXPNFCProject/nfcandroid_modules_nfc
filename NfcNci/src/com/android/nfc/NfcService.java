@@ -5047,8 +5047,15 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     }
 
     public void clearT3tIdentifiersCache() {
-        Log.d(TAG, "clearT3tIdentifiersCache");
-        mDeviceHost.clearT3tIdentifiersCache();
+        if (NativeNfcManager.getInstance().isT3TIdentifierRegistered()) {
+            Log.d(TAG, "clearT3tIdentifiersCache");
+            mDeviceHost.disableDiscovery();
+
+            mDeviceHost.clearT3tIdentifiersCache();
+            NfcDiscoveryParameters params = computeDiscoveryParameters(mScreenState);
+            boolean shouldRestart = mCurrentDiscoveryParameters.shouldEnableDiscovery();
+            mDeviceHost.enableDiscovery(params, shouldRestart);
+        }
     }
 
     public int getLfT3tMax() {
