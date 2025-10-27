@@ -303,7 +303,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     static final int DEFAULT_LISTEN_TECH = 0xf; // See: Listen technology masks above
 
     // minimum screen state that enables NFC polling
-    static final int NFC_POLLING_MODE = ScreenStateHelper.SCREEN_STATE_ON_UNLOCKED;
+    static final int NFC_POLLING_MODE = ScreenStateHelper.SCREEN_STATE_OFF_UNLOCKED;
 
     // Time to wait for NFC controller to initialize before watchdog
     // goes off. This time is chosen large, because firmware download
