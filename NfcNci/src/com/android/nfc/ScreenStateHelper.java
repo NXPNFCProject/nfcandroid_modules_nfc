@@ -61,16 +61,16 @@ class ScreenStateHelper {
     }
 
     int checkScreenState(boolean checkDisplayState) {
-        if (!mPowerManager.isInteractive() || (checkDisplayState && !isDisplayOn())) {
+        if (mPowerManager.isInteractive() || (checkDisplayState && isDisplayOn())) {
             if (NfcInjector.getInstance().isDeviceLocked()) {
-                return SCREEN_STATE_OFF_LOCKED;
+                return SCREEN_STATE_ON_LOCKED;
             } else {
-                return SCREEN_STATE_OFF_UNLOCKED;
+                return SCREEN_STATE_ON_UNLOCKED;
             }
         } else if (NfcInjector.getInstance().isDeviceLocked()) {
-            return SCREEN_STATE_ON_LOCKED;
+            return SCREEN_STATE_OFF_LOCKED;
         } else {
-            return SCREEN_STATE_ON_UNLOCKED;
+            return SCREEN_STATE_OFF_UNLOCKED;
         }
     }
 

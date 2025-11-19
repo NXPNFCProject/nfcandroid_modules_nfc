@@ -130,7 +130,7 @@ public class ScreenStateHelperTest {
     @Test
     public void testCheckScreenStateOffLocked() {
         Display mockDisplay = mock(Display.class);
-        when(mMockPowerMngr.isInteractive()).thenReturn(true);
+        when(mMockPowerMngr.isInteractive()).thenReturn(false);
         when(mMockDisplayMngr.getDisplay(anyInt())).thenReturn(mockDisplay);
         when(mMockDisplayMngr.getDisplays(anyString())).thenReturn(new Display[0]);
         when((mockDisplay.getState())).thenReturn(Display.STATE_OFF);
@@ -142,7 +142,7 @@ public class ScreenStateHelperTest {
     @Test
     public void testCheckScreenStateOffUnLocked() {
         Display mockDisplay = mock(Display.class);
-        when(mMockPowerMngr.isInteractive()).thenReturn(true);
+        when(mMockPowerMngr.isInteractive()).thenReturn(false);
         when(mMockDisplayMngr.getDisplay(anyInt())).thenReturn(mockDisplay);
         when(mMockDisplayMngr.getDisplays(anyString())).thenReturn(new Display[0]);
         when((mockDisplay.getState())).thenReturn(Display.STATE_OFF);
@@ -216,7 +216,7 @@ public class ScreenStateHelperTest {
                 .thenReturn(builtInDisplays);
 
         // Mock device as interactive and locked
-        when(mMockPowerMngr.isInteractive()).thenReturn(true);
+        when(mMockPowerMngr.isInteractive()).thenReturn(false);
         when(mMockNfcInjector.isDeviceLocked()).thenReturn(true);
 
         // The screen should be considered OFF and LOCKED because all displays are OFF.
