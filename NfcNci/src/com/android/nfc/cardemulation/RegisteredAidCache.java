@@ -293,6 +293,22 @@ public class RegisteredAidCache {
         return mRequiresScreenOnServiceExist;
     }
 
+    private boolean isForegroundPreferred(ApduServiceInfo service) {
+        if (mPreferredForegroundService == null) {
+            return false;
+        }
+        int userId = UserHandle.getUserHandleForUid(service.getUid()).getIdentifier();
+        if (userId != mUserIdPreferredForegroundService) {
+            return false;
+        }
+        if (com.android.nfc.module.flags.Flags.foregroundAppPackageNameMatching()) {
+            return service.getComponent().getPackageName().equals(
+                    mPreferredForegroundService.getPackageName());
+        } else {
+            return service.getComponent().equals(mPreferredForegroundService);
+        }
+    }
+
     @TargetApi(35)
     ApduServiceInfo resolvePollingLoopFilterConflict(List<ApduServiceInfo> conflictingServices) {
         ApduServiceInfo matchedForeground = null;
@@ -303,8 +319,7 @@ public class RegisteredAidCache {
                     .getIdentifier();
             ComponentName componentName = serviceInfo.getComponent();
 
-            if (componentName.equals(mPreferredForegroundService) &&
-                    userId == mUserIdPreferredForegroundService) {
+            if (isForegroundPreferred(serviceInfo)) {
                 matchedForeground = serviceInfo;
             } else if (mWalletRoleObserver.isWalletRoleFeatureEnabled()) {
                 if (isDefaultOrAssociatedWalletService(serviceInfo, userId)) {
@@ -479,8 +494,7 @@ public class RegisteredAidCache {
                     .getIdentifier();
             ComponentName componentName = serviceAidInfo.service.getComponent();
 
-            if (componentName.equals(mPreferredForegroundService) &&
-                    userId == mUserIdPreferredForegroundService) {
+            if (isForegroundPreferred(serviceAidInfo.service)) {
                 if (VDBG) {
                     Log.d(TAG, "resolveAidConflictLocked: Prioritizing foreground services");
                 }
@@ -583,8 +597,7 @@ public class RegisteredAidCache {
                     .getIdentifier();
             ComponentName componentName = serviceAidInfo.service.getComponent();
 
-            if (componentName.equals(mPreferredForegroundService) &&
-                    userId == mUserIdPreferredForegroundService) {
+            if (isForegroundPreferred(serviceAidInfo.service)) {
                 defaultServiceInfo.foregroundDefault = serviceAidInfo;
                 if (DBG && (serviceAidInfo != null)) {
                     Log.d(TAG, "findDefaultServices: foregroundDefault=" + serviceAidInfo);
@@ -902,13 +915,11 @@ public class RegisteredAidCache {
                 String plainPrefix= prefixAid.substring(0, prefixAid.length() - 1);
                 if (plainSubsetAid.startsWith(plainPrefix)) {
                     if (priorityRootAid) {
-                       int userId = UserHandle.getUserHandleForUid(service.getUid())
-                               .getIdentifier();
-                       if (CardEmulation.CATEGORY_PAYMENT
-                               .equals(service.getCategoryForAid(prefixAid)) ||
-                               (service.getComponent().equals(mPreferredForegroundService) &&
-                                userId == mUserIdPreferredForegroundService))
-                           prefixAids.add(prefixAid);
+                        if (CardEmulation.CATEGORY_PAYMENT
+                                .equals(service.getCategoryForAid(prefixAid))
+                                || isForegroundPreferred(service)) {
+                            prefixAids.add(prefixAid);
+                        }
                     } else {
                         prefixAids.add(prefixAid);
                     }
@@ -1035,14 +1046,9 @@ public class RegisteredAidCache {
                     resolvedAids.addAll(prefixConflicts.aids);
                     for (String aid : resolveInfo.defaultService.getSubsetAids()) {
                         if (prefixConflicts.aids.contains(aid)) {
-                            int userId = UserHandle.
-                                    getUserHandleForUid(resolveInfo.defaultService.getUid()).
-                                    getIdentifier();
                             if ((CardEmulation.CATEGORY_PAYMENT.
                                   equals(resolveInfo.defaultService.getCategoryForAid(aid))) ||
-                                    (resolveInfo.defaultService.getComponent().
-                                     equals(mPreferredForegroundService) &&
-                                     userId == mUserIdPreferredForegroundService)) {
+                                    isForegroundPreferred(resolveInfo.defaultService)) {
                                 AidResolveInfo childResolveInfo = resolveAidConflictLocked(mAidServices.get(aid), false);
                                 aidCache.put(aid,childResolveInfo);
                                 if (VDBG) {

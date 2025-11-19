@@ -92,3 +92,10 @@ flag {
         purpose: PURPOSE_BUGFIX
     }
 }
+
+flag {
+    name: "foreground_app_package_name_matching"
+    namespace: "nfc"
+    description: "Use package name instead of component name for foreground app matching."
+    bug: "433127912"
+}

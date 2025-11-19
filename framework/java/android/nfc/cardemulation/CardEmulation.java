@@ -844,6 +844,9 @@ public final class CardEmulation {
      * <p>Note that this preference is not persisted by the OS, and hence must be
      * called every time the Activity is resumed.
      *
+     * <p>Starting with {@link Build.VERSION_CODES#CINNAMON_BUN}, this
+     * method will prefer all services matching the package name of the activity.
+     *
      * @param activity The activity which prefers this service to be invoked
      * @param service The service to be preferred while this activity is in the foreground
      * @return whether the registration was successful
