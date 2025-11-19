@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.android.nfc;
 
 import static android.nfc.NfcAdapter.ACTION_PREFERRED_PAYMENT_CHANGED;
@@ -891,8 +892,12 @@ public final class NfcServiceTest {
     }
 
     @Test
-    public void testDirectBootAware() throws Exception {
+    public void testDirectBootAware_migrationForUser0() throws Exception {
         when(mPreferences.getBoolean(eq(PREF_NFC_ON), anyBoolean())).thenReturn(true);
+        // Ensure migration is not marked as complete
+        when(mPreferences.getBoolean(eq(NfcService.PREF_MIGRATE_TO_DE_COMPLETE), anyBoolean()))
+                .thenReturn(false);
+
         mNfcService = new NfcService(mApplication, mNfcInjector);
         mLooper.dispatchAll();
         verify(mNfcInjector).makeDeviceHost(mDeviceHostListener.capture());
@@ -905,22 +910,81 @@ public final class NfcServiceTest {
         Context ceContext = mock(Context.class);
         when(mApplication.createCredentialProtectedStorageContext()).thenReturn(ceContext);
         when(ceContext.getSharedPreferences(anyString(), anyInt())).thenReturn(mPreferences);
-        doAnswer(new Answer() {
-            @Override
-            public Map<String, ?> answer(InvocationOnMock invocation) throws Throwable {
-                Map<String, Object> prefMap = Map.of(PREF_NFC_ON, true);
-                return prefMap;
-            }
+        doAnswer((Answer<Map<String, ?>>) invocation -> {
+            Map<String, Object> prefMap = Map.of(PREF_NFC_ON, true);
+            return prefMap;
         }).when(mPreferences).getAll();
         when(mApplication.moveSharedPreferencesFrom(ceContext, NfcService.PREF)).thenReturn(true);
         when(mApplication.moveSharedPreferencesFrom(ceContext, NfcService.PREF_TAG_APP_LIST))
-            .thenReturn(true);
-        mGlobalReceiver.getValue().onReceive(mApplication, new Intent(Intent.ACTION_USER_UNLOCKED));
+                .thenReturn(true);
+
+        // Create an intent for the primary user (user 0)
+        Intent intent = new Intent(Intent.ACTION_USER_UNLOCKED);
+        intent.putExtra(Intent.EXTRA_USER_HANDLE, 0);
+        mGlobalReceiver.getValue().onReceive(mApplication, intent);
+
+        // Verify that migration logic was triggered
         verify(mApplication).moveSharedPreferencesFrom(ceContext, NfcService.PREF);
         verify(mApplication).getSharedPreferences(eq(NfcService.PREF), anyInt());
         verify(mPreferences).edit();
         verify(mPreferencesEditor).putBoolean(NfcService.PREF_MIGRATE_TO_DE_COMPLETE, true);
         verify(mPreferencesEditor).apply();
+    }
+
+    @Test
+    public void testDirectBootAware_noMigrationForSecondaryUser() throws Exception {
+        when(mPreferences.getBoolean(eq(PREF_NFC_ON), anyBoolean())).thenReturn(true);
+        // Ensure migration is not marked as complete
+        when(mPreferences.getBoolean(eq(NfcService.PREF_MIGRATE_TO_DE_COMPLETE), anyBoolean()))
+                .thenReturn(false);
+
+        mNfcService = new NfcService(mApplication, mNfcInjector);
+        mLooper.dispatchAll();
+        verify(mNfcInjector).makeDeviceHost(mDeviceHostListener.capture());
+        verify(mApplication).registerReceiverForAllUsers(
+                mGlobalReceiver.capture(),
+                argThat(intent -> intent.hasAction(Intent.ACTION_USER_UNLOCKED)), any(), any());
+        verify(mDeviceHost).initialize();
+
+        clearInvocations(mApplication, mPreferences, mPreferencesEditor);
+
+        // Create an intent for a secondary user
+        Intent intent = new Intent(Intent.ACTION_USER_UNLOCKED);
+        intent.putExtra(Intent.EXTRA_USER_HANDLE, 10); // Non-primary user
+        mGlobalReceiver.getValue().onReceive(mApplication, intent);
+
+        // Verify migration logic is NOT triggered
+        verify(mApplication, never()).moveSharedPreferencesFrom(any(), anyString());
+        verify(mPreferencesEditor, never()).putBoolean(
+                eq(NfcService.PREF_MIGRATE_TO_DE_COMPLETE), anyBoolean());
+    }
+
+    @Test
+    public void testDirectBootAware_migrationSkippedIfComplete() throws Exception {
+        when(mPreferences.getBoolean(eq(PREF_NFC_ON), anyBoolean())).thenReturn(true);
+        // Setup: migration is already complete
+        when(mPreferences.getBoolean(eq(NfcService.PREF_MIGRATE_TO_DE_COMPLETE), anyBoolean()))
+                .thenReturn(true);
+
+        mNfcService = new NfcService(mApplication, mNfcInjector);
+        mLooper.dispatchAll();
+        verify(mNfcInjector).makeDeviceHost(mDeviceHostListener.capture());
+        verify(mApplication).registerReceiverForAllUsers(
+                mGlobalReceiver.capture(),
+                argThat(intent -> intent.hasAction(Intent.ACTION_USER_UNLOCKED)), any(), any());
+        verify(mDeviceHost).initialize();
+
+        clearInvocations(mApplication, mPreferences, mPreferencesEditor);
+
+        // Create an intent for the primary user
+        Intent intent = new Intent(Intent.ACTION_USER_UNLOCKED);
+        intent.putExtra(Intent.EXTRA_USER_HANDLE, 0);
+        mGlobalReceiver.getValue().onReceive(mApplication, intent);
+
+        // Verify migration logic is NOT triggered
+        verify(mApplication, never()).moveSharedPreferencesFrom(any(), anyString());
+        verify(mPreferencesEditor, never()).putBoolean(
+                eq(NfcService.PREF_MIGRATE_TO_DE_COMPLETE), anyBoolean());
     }
 
     @Test
