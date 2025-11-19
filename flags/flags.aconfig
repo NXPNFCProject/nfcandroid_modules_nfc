@@ -52,14 +52,6 @@ flag {
 }
 
 flag {
-    name: "ce_wake_lock"
-    is_exported: false
-    namespace: "nfc"
-    description: "Holds a wake lock while CE is in field on state."
-    bug: "406827464"
-}
-
-flag {
     name: "screen_state_attribute_toggle"
     is_exported: true
     namespace: "nfc"

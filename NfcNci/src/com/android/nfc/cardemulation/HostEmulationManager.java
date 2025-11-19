@@ -17,7 +17,6 @@
 package com.android.nfc.cardemulation;
 
 import static com.android.nfc.module.flags.Flags.nfcHceLatencyEvents;
-import static com.android.nfc.module.flags.Flags.ceWakeLock;
 
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
@@ -1168,14 +1167,14 @@ public class HostEmulationManager {
     }
 
     private void acquireWakeLock() {
-        if (!ceWakeLock() || mDeviceConfig.getCeWakeLockTimeoutMillis() == 0) return;
+        if (mDeviceConfig.getCeWakeLockTimeoutMillis() == 0) return;
         Log.d(TAG, "acquireWakeLock");
         mWakeLock.setWorkSource(null); // reset work source from previous transaction
         mWakeLock.acquire(mDeviceConfig.getCeWakeLockTimeoutMillis());
     }
 
     private void updateWakeLockWorkSource(ComponentNameAndUser componentNameAndUser) {
-        if (!ceWakeLock() || !mWakeLock.isHeld()) return;
+        if (!mWakeLock.isHeld()) return;
         Log.d(TAG, "updateWakeLockWorkSource: " + componentNameAndUser);
         final String packageName = componentNameAndUser.getComponentName().getPackageName();
         try {
@@ -1194,7 +1193,7 @@ public class HostEmulationManager {
     }
 
     private void releaseWakeLock() {
-        if (!ceWakeLock() || !mWakeLock.isHeld()) return;
+        if (!mWakeLock.isHeld()) return;
         Log.d(TAG, "releaseWakeLock");
         mWakeLock.release();
         mWakeLock.setWorkSource(null);

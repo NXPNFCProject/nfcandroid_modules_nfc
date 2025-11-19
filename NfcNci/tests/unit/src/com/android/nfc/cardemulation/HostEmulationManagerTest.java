@@ -781,7 +781,6 @@ public class HostEmulationManagerTest {
     @Test
     public void testOnHostEmulationData_stateW4Select_noDefaultService_noBoundActiveService()
             throws Exception {
-        when(com.android.nfc.module.flags.Flags.ceWakeLock()).thenReturn(true);
         when(mDeviceConfigFacade.getCeWakeLockTimeoutMillis()).thenReturn(1000);
         when(mContext.getPackageManager()).thenReturn(mPackageManager);
         when(mPackageManager.getPackageUidAsUser(
@@ -1470,7 +1469,6 @@ public class HostEmulationManagerTest {
 
     @Test
     public void testWakeLockAcquireOnFieldChangeDetected() {
-        when(com.android.nfc.module.flags.Flags.ceWakeLock()).thenReturn(true);
         when(mDeviceConfigFacade.getCeWakeLockTimeoutMillis()).thenReturn(1000);
 
         mHostEmulationManager.onFieldChangeDetected(true);
