@@ -2715,7 +2715,11 @@ static void nfcManager_setDiscoveryTech(JNIEnv* e, jobject o, jint pollTech,
 
   if (nfaStat == NFA_STATUS_OK) {
     // wait for NFA_LISTEN_DISABLED_EVT
-    sNfaEnableDisablePollingEvent.wait();
+    LOG(DEBUG) << StringPrintf("%s: wait for completion", __func__);
+    if (!sNfaEnableDisablePollingEvent.wait(5000)) {
+      LOG(ERROR) << StringPrintf("%s: wait for NFA_LISTEN_DISABLED_EVT timeout",
+                                 __func__);
+    }
   } else {
     LOG(ERROR) << StringPrintf("%s: fail disable polling; error=0x%X", __func__,
                                nfaStat);
