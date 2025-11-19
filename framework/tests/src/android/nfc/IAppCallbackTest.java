@@ -53,6 +53,14 @@ public class IAppCallbackTest {
                     e.printStackTrace();
                 }
             }
+            @Override
+            public void onTagLost() {
+                try {
+                    mCallback.onTagLost();
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+            }
         };
     }
 
@@ -62,12 +70,24 @@ public class IAppCallbackTest {
         verify(mCallback).onTagDiscovered(mTag);
     }
 
+    @Test
+    public void testOnTagLost() throws RemoteException {
+        mBinder.onTagLost();
+        verify(mCallback).onTagLost();
+    }
+
+
+
     class NfcAppCallbackService extends Service {
         private static final String TAG = "NfcAppCallbackService";
 
         private final IAppCallback.Stub binder = new IAppCallback.Stub() {
             @Override
             public void onTagDiscovered(Tag tag) throws RemoteException {
+                // override
+            }
+            @Override
+            public void onTagLost() throws RemoteException {
                 // override
             }
         };

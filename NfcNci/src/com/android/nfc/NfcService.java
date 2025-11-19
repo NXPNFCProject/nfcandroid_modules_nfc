@@ -4940,6 +4940,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             // If there are some tags connected, we need to execute the callback to indicate
             // the tag is being forcibly disconnected.
             executeOemOnTagConnectedCallback(false);
+            executeReaderModeOnTagLostCallback();
         }
         for (Object object : objectValues) {
             if (object instanceof TagEndpoint) {
@@ -5352,6 +5353,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                                     mCookieUpToDate = -1;
                                     clearAppInactivityDetectionContext();
                                     executeOemOnTagConnectedCallback(false);
+                                    executeReaderModeOnTagLostCallback();
                                     applyRouting(false);
                                 }
                             };
@@ -5410,6 +5412,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                             tag.disconnect();
                             if (DBG) Log.d(TAG, "handleMessage: Read NDEF error");
                             executeOemOnTagConnectedCallback(false);
+                            executeReaderModeOnTagLostCallback();
                             if (mScreenState == ScreenStateHelper.SCREEN_STATE_ON_UNLOCKED) {
                                 if (mReadErrorCount < mReadErrorCountMax) {
                                     mReadErrorCount++;
@@ -6027,6 +6030,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                         && !isEndPointRemovalDetectionSupported()) {
                     if (DBG) Log.d(TAG, "dispatchTagEndpoint: Tag dispatch failed");
                     executeOemOnTagConnectedCallback(false);
+                    executeReaderModeOnTagLostCallback();
                     unregisterObject(tagEndpoint.getHandle());
                     if (mPollDelayTime > NO_POLL_DELAY) {
                         pollingDelay();
@@ -6086,6 +6090,17 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         if (mNfcOemExtensionCallback != null) {
             try {
                 mNfcOemExtensionCallback.onTagConnected(connected);
+            } catch (RemoteException e) {
+                Log.e(TAG, e.toString());
+            }
+        }
+    }
+
+    private void executeReaderModeOnTagLostCallback() {
+        if (mReaderModeParams != null && mReaderModeParams.callback != null) {
+            try {
+                Log.e(TAG, "[Jack] executeReaderModeOnTagLostCallback - onTagLost");
+                mReaderModeParams.callback.onTagLost();
             } catch (RemoteException e) {
                 Log.e(TAG, e.toString());
             }

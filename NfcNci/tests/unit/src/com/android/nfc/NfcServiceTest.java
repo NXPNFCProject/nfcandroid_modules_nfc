@@ -115,7 +115,6 @@ import android.os.UserManager;
 import android.os.test.TestLooper;
 import android.platform.test.annotations.DisableFlags;
 import android.platform.test.annotations.EnableFlags;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.platform.test.flag.junit.SetFlagsRule;
@@ -1542,7 +1541,6 @@ public final class NfcServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_COALESCE_RF_EVENTS)
     public void testOnRemoteFieldCoalessing() throws RemoteException {
         Assume.assumeTrue(Flags.coalesceRfEvents());
         createNfcServiceWithoutStatsdUtils();

@@ -25,6 +25,10 @@ aconfig_declarations {
     container: "com.android.nfcservices",
     exportable: true,
     srcs: ["*.aconfig"],
+    visibility: [
+        "//packages/modules/Nfc:__subpackages__",
+        "//frameworks/base:__subpackages__",
+    ],
 }
 
 java_aconfig_library {
@@ -52,6 +56,7 @@ java_aconfig_library {
     ],
     visibility: [
         "//packages/modules/Nfc:__subpackages__",
+        "//frameworks/base:__subpackages__",
     ],
 }
 

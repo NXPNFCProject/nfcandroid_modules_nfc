@@ -99,3 +99,11 @@ flag {
     description: "Use package name instead of component name for foreground app matching."
     bug: "433127912"
 }
+
+flag {
+    name: "tap_to_x"
+    is_exported: true
+    namespace: "nfc"
+    description: "Tap to X API for Android 17"
+    bug: "416517337"
+}
