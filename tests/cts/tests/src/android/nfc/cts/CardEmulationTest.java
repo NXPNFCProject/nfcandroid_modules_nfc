@@ -43,6 +43,7 @@ import android.nfc.cardemulation.ApduServiceInfo;
 import android.nfc.cardemulation.CardEmulation;
 import android.nfc.cardemulation.PollingFrame;
 import android.nfc.cardemulation.PollingFrame.PollingFrameType;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
@@ -2341,6 +2342,7 @@ public class CardEmulationTest {
     @Test
     public void testAidResolutionWithRoleHolder_associatedService_withPackageName()
             throws NoSuchFieldException {
+        assumeTrue(Build.VERSION.SDK_INT > Build.VERSION_CODES.BAKLAVA);
         runWithRole(mContext, WalletRoleTestUtils.WALLET_HOLDER2_PACKAGE_NAME, ()-> {
             /*
              * Aid Mapping:
