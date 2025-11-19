@@ -118,6 +118,13 @@ public class NfcPermissions {
     /**
      * Permission check for android.Manifest.permission.PERFORM_GESTURE_EXCHANGE
      */
+    public static boolean checkGestureExchangePermissions(Context context) {
+        return context.checkCallingPermission(GESTURE_EXCHANGE_PERMISSION) == PERMISSION_GRANTED;
+    }
+
+    /**
+     * Permission check for android.Manifest.permission.PERFORM_GESTURE_EXCHANGE
+     */
     public static void enforceGestureExchangePermissions(Context context) {
         context.enforceCallingOrSelfPermission(GESTURE_EXCHANGE_PERMISSION,
                 GESTURE_EXCHANGE_PERM_ERROR);

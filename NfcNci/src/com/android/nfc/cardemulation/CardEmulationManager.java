@@ -1272,9 +1272,12 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         }
 
         @Override
-        public boolean setPreferredService(ComponentName service)
+        public boolean setPreferredService(ComponentName service, boolean hasActivity)
                 throws RemoteException {
             NfcPermissions.enforceUserPermissions(mContext);
+            if (!NfcPermissions.checkGestureExchangePermissions(mContext) && !hasActivity) {
+                throw new NullPointerException("activity is null");
+            }
             if (!isServiceRegistered( UserHandle.getUserHandleForUid(
                     Binder.getCallingUid()).getIdentifier(), service)) {
                 Log.e(TAG, "setPreferredService: unknown component");
@@ -1285,8 +1288,11 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         }
 
         @Override
-        public boolean unsetPreferredService() throws RemoteException {
+        public boolean unsetPreferredService(boolean hasActivity) throws RemoteException {
             NfcPermissions.enforceUserPermissions(mContext);
+            if (!NfcPermissions.checkGestureExchangePermissions(mContext) && !hasActivity) {
+                throw new NullPointerException("activity is null");
+            }
             return mPreferredServices.unregisteredPreferredForegroundService(
                     Binder.getCallingUid());
         }

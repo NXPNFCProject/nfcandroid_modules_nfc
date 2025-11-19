@@ -853,10 +853,11 @@ public final class CardEmulation {
      */
     public boolean setPreferredService(Activity activity, ComponentName service) {
         // Verify the activity is in the foreground before calling into NfcService
-        if (activity == null || service == null) {
-            throw new NullPointerException("activity or service or category is null");
+        if (service == null) {
+            throw new NullPointerException("service is null");
         }
-        return callServiceReturn(() -> sService.setPreferredService(service), false);
+        return callServiceReturn(() -> sService.setPreferredService(service, activity != null),
+                false);
     }
 
     /**
@@ -870,10 +871,7 @@ public final class CardEmulation {
      * @return true when successful
      */
     public boolean unsetPreferredService(Activity activity) {
-        if (activity == null) {
-            throw new NullPointerException("activity is null");
-        }
-        return callServiceReturn(() -> sService.unsetPreferredService(), false);
+        return callServiceReturn(() -> sService.unsetPreferredService(activity != null), false);
     }
 
     /**

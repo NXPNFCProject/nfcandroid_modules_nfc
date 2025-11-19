@@ -1387,7 +1387,7 @@ public class CardEmulationManagerTest {
         assertTrue(
                 mCardEmulationManager
                         .getNfcCardEmulationInterface()
-                        .setPreferredService(WALLET_PAYMENT_SERVICE));
+                        .setPreferredService(WALLET_PAYMENT_SERVICE, true));
 
         ExtendedMockito.verify(
                 () -> {
@@ -1414,7 +1414,7 @@ public class CardEmulationManagerTest {
         assertFalse(
                 mCardEmulationManager
                         .getNfcCardEmulationInterface()
-                        .setPreferredService(WALLET_PAYMENT_SERVICE));
+                        .setPreferredService(WALLET_PAYMENT_SERVICE, true));
 
         ExtendedMockito.verify(
                 () -> {
@@ -1435,7 +1435,8 @@ public class CardEmulationManagerTest {
         when(mRegisteredServicesCache.hasService(eq(USER_ID), any())).thenReturn(true);
         when(mPreferredServices.unregisteredPreferredForegroundService(anyInt())).thenReturn(true);
 
-        assertTrue(mCardEmulationManager.getNfcCardEmulationInterface().unsetPreferredService());
+        assertTrue(mCardEmulationManager.getNfcCardEmulationInterface()
+                .unsetPreferredService(true));
 
         ExtendedMockito.verify(
                 () -> {
@@ -1452,7 +1453,8 @@ public class CardEmulationManagerTest {
             throws RemoteException {
         when(mPreferredServices.unregisteredPreferredForegroundService(anyInt())).thenReturn(false);
 
-        assertFalse(mCardEmulationManager.getNfcCardEmulationInterface().unsetPreferredService());
+        assertFalse(mCardEmulationManager.getNfcCardEmulationInterface()
+                .unsetPreferredService(true));
 
         ExtendedMockito.verify(
                 () -> {
@@ -2488,7 +2490,7 @@ public class CardEmulationManagerTest {
                 .unflattenFromString("com.android.test.component/.Component");
         when(mPreferredServices.registerPreferredForegroundService(any(), anyInt()))
                 .thenReturn(true);
-        boolean result = iNfcCardEmulation.setPreferredService(componentName);
+        boolean result = iNfcCardEmulation.setPreferredService(componentName, true);
         assertThat(result).isTrue();
     }
 
@@ -2512,7 +2514,7 @@ public class CardEmulationManagerTest {
         assertThat(iNfcCardEmulation).isNotNull();
         when(mPreferredServices
                 .unregisteredPreferredForegroundService(anyInt())).thenReturn(true);
-        boolean result = iNfcCardEmulation.unsetPreferredService();
+        boolean result = iNfcCardEmulation.unsetPreferredService(true);
         assertThat(result).isTrue();
     }
 
