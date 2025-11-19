@@ -666,10 +666,23 @@ public class HostEmulationManager {
                     }
                     Map<Pattern, List<ApduServiceInfo>> patternMappingForUser =
                             mPollingLoopPatternFilters.get(ActivityManager.getCurrentUser());
-                    Set<Pattern> patternSet = patternMappingForUser.keySet();
-                    List<Pattern> matchedPatterns = patternSet.stream()
+                    Set<Pattern> patternSet;
+                    if (patternMappingForUser != null) {
+                        patternSet = patternMappingForUser.keySet();
+                    } else {
+                        Log.e(TAG, "patternMappingForUser is null, CurrentUser: "
+                                + ActivityManager.getCurrentUser());
+                        patternSet = null;
+                    }
+                    List<Pattern> matchedPatterns;
+                    if (patternSet != null) {
+                        matchedPatterns = patternSet.stream()
                             .filter(p -> p.matcher(dataStr).matches()).toList();
-                    if (!matchedPatterns.isEmpty()) {
+                    } else {
+                        Log.e(TAG, "patternSet is null");
+                        matchedPatterns = null;
+                    }
+                    if (matchedPatterns != null && !matchedPatterns.isEmpty()) {
                         if (serviceInfos == null) {
                             serviceInfos = new ArrayList<ApduServiceInfo>();
                         }
