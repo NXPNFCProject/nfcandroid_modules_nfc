@@ -226,6 +226,16 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         first_device = json_obj[0]
         return first_device["device_id"]
 
+    def _enable_nfc_logs(self, ad: android_device.AndroidDevice):
+        """
+        Enables NFC logs on the Android device.
+        """
+        ad.adb.shell("setprop persist.nfc.vendor_debug_enabled true")
+        ad.adb.shell("setprop log.tag.libnfc_nci VERBOSE")
+        ad.adb.shell("setprop persist.log.tag.libnfc_nci VERBOSE")
+        ad.adb.shell("setprop persist.nfc.snoop_log_mode full")
+        ad.reboot()
+
     def setup_class(self):
         """
         Sets up class by registering an emulator device, enabling NFC, and loading snippets.
@@ -247,8 +257,8 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         self._setup_failure_should_block_tests = True
 
         try:
-            devices = self.register_controller(android_device)[:1]
-            self.emulator = devices[0]
+            self.emulator = self.register_controller(android_device)[0]
+            self._enable_nfc_logs(self.emulator)
             self.record_mainline_version(self.emulator)
 
             self._setup_failure_reason = (
