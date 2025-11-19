@@ -148,6 +148,7 @@ public class HostEmulationManagerTest {
         MockitoAnnotations.initMocks(this);
         mTestableLooper = TestableLooper.get(this);
         when(NfcAdapter.getDefaultAdapter(mContext)).thenReturn(mNfcAdapter);
+        when(mNfcAdapter.getAdapterState()).thenReturn(NfcAdapter.STATE_ON);
         when(UserHandle.getUserHandleForUid(eq(USER_ID))).thenReturn(USER_HANDLE);
         when(UserHandle.of(eq(USER_ID))).thenReturn(USER_HANDLE);
         when(NfcService.getInstance()).thenReturn(mNfcService);

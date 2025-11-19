@@ -1737,6 +1737,16 @@ public class HostEmulationManager {
 
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
+            NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+            if (adapter == null) {
+                Log.e(TAG, "onServiceConnected: "
+                        + "adapter is null, returning");
+                return;
+            }
+            if (adapter.getAdapterState() != NfcAdapter.STATE_ON) {
+                Log.i(TAG, "onServiceConnected: NFC is not enabled, returning");
+                return;
+            }
             synchronized (mLock) {
                 ComponentNameAndUser preferredUserAndService = mAidCache.getPreferredService();
                 ComponentName preferredServiceName =
