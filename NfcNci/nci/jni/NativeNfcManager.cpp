@@ -1210,6 +1210,7 @@ static jint nfcManager_commitRouting(JNIEnv* e, jobject) {
     /*Update routing table only in Idle state.*/
     startRfDiscovery(false);
   }
+  RoutingManager::getInstance().setEeTechRouteUpdateRequired();
   jint commitStatus = RoutingManager::getInstance().commitRouting();
   startRfDiscovery(true);
   return commitStatus;
@@ -1981,8 +1982,10 @@ static void nfcManager_enableDiscovery(JNIEnv* e, jobject o,
   }
 
   // Checking if RT should be updated
-  if (!RoutingManager::getInstance().isRTUpdateOptimized())
+  if (!RoutingManager::getInstance().isRTUpdateOptimized()) {
+    RoutingManager::getInstance().setEeTechRouteUpdateRequired();
     RoutingManager::getInstance().commitRouting();
+  }
 
   // Actually start discovery.
   startRfDiscovery(true);
