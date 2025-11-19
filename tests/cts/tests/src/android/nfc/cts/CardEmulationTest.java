@@ -2336,6 +2336,40 @@ public class CardEmulationTest {
         });
     }
 
+    @RequiresFlagsEnabled({android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED,
+            android.nfc.Flags.FLAG_NFC_ASSOCIATED_ROLE_SERVICES})
+    @Test
+    public void testAidResolutionWithRoleHolder_associatedService_withPackageName()
+            throws NoSuchFieldException {
+        runWithRole(mContext, WalletRoleTestUtils.WALLET_HOLDER2_PACKAGE_NAME, ()-> {
+            /*
+             * Aid Mapping:
+             * Wallet Holder App: Service 1:     PAYMENT_AID_1, PAYMENT_AID_2
+             * Wallet Holder App: Service 2:     PAYMENT_AID_1, PAYMENT_AID_2
+             * Foreground App :   Associated Service:  PAYMENT_AID_3
+             *
+             * Scenario:
+             * Wallet Role Holder is WalletRoleHolderApp
+             * Associated app: ForegroundApp
+             *
+             * Expected Outcome:
+             * Associated Service should be the default service for the PAYMENT_AID_3.
+             * The Wallet Holder app should still be default for PAYMENT_AID_1 and
+             * PAYMENT_AID_2.
+             **/
+            CardEmulation instance = CardEmulation.getInstance(mAdapter);
+            assertTrue(instance.isDefaultServiceForAid(
+                    WalletRoleTestUtils.getWalletRoleHolder2Service(),
+                    WalletRoleTestUtils.PAYMENT_AID_1));
+            assertTrue(instance.isDefaultServiceForAid(
+                    WalletRoleTestUtils.getWalletRoleHolder2Service(),
+                    WalletRoleTestUtils.PAYMENT_AID_2));
+            assertTrue(instance.isDefaultServiceForAid(
+                    WalletRoleTestUtils.getAssociatedService(),
+                    WalletRoleTestUtils.PAYMENT_AID_3));
+        });
+    }
+
     @RequiresFlagsEnabled(android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED)
     @RequiresFlagsDisabled(android.nfc.Flags.FLAG_NFC_ASSOCIATED_ROLE_SERVICES)
     @Test

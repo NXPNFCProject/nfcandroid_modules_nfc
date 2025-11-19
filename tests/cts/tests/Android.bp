@@ -50,6 +50,7 @@ android_test {
     ],
     data: [
         ":WalletRoleHolderApp",
+        ":WalletRoleHolderApp2",
         ":ForegroundNfcApp",
         ":NonPaymentNfcApp",
     ],

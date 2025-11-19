@@ -179,6 +179,7 @@ public class RegisteredAidCache {
     boolean mRequiresScreenOnServiceExist = false;
 
     Set<ApduServiceInfo> mAssociatedRoleServices = new HashSet<>();
+    Set<String> mAssociatedRolePackageNames = new HashSet<>();
 
     int mPreferredSimType =  TelephonyUtils.SIM_TYPE_UNKNOWN;
 
@@ -416,13 +417,8 @@ public class RegisteredAidCache {
             }
 
             if (Flags.nfcAssociatedRoleServices()) {
-                for (ApduServiceInfo associatedService : mAssociatedRoleServices) {
-                    if (associatedService.getComponent().getPackageName().equals(packageName)) {
-                        return true;
-                    }
-                }
+                return mAssociatedRolePackageNames.contains(packageName);
             }
-
             return false;
         }
     }
@@ -1465,8 +1461,8 @@ public class RegisteredAidCache {
         if (!Flags.nfcAssociatedRoleServices()) {
             return;
         }
-
         mAssociatedRoleServices.clear();
+        mAssociatedRolePackageNames.clear();
 
         if (mDefaultWalletHolderPackageName == null || userId != mUserIdDefaultWalletHolder) {
             return;
@@ -1478,27 +1474,70 @@ public class RegisteredAidCache {
         }
 
         PackageManager pm = mContext.getPackageManager();
-
+        String shareRolePriorityPackageName = null;
+        Boolean shareRolePriority = null;
+        // Try reading the app level property first.
         try {
             PackageManager.Property prop = pm.getProperty(
                     CardEmulation.PROPERTY_ALLOW_SHARED_ROLE_PRIORITY,
                     mDefaultWalletHolderPackageName);
-            if (!prop.getBoolean()) {
+            shareRolePriorityPackageName = prop.getString();
+            shareRolePriority = prop.getBoolean();
+            if (shareRolePriorityPackageName == null && !shareRolePriority) {
                 return;
+            }
+            // Associated wallet role package may not have any CE service (only for ability to
+            // toggle observe mode), so add these packages directly here.
+            if (shareRolePriorityPackageName != null) {
+                Log.v(TAG, "Found associated role package: " + shareRolePriorityPackageName);
+                mAssociatedRolePackageNames.add(shareRolePriorityPackageName);
             }
         } catch (PackageManager.NameNotFoundException e) {
             // Role owner does not want to share priority with anyone else
-            return;
+        }
+        // Now try reading the preferred payment service level property.
+        if (mPreferredPaymentService != null
+                && shareRolePriorityPackageName == null && shareRolePriority == null) {
+            try {
+                PackageManager.Property prop = pm.getProperty(
+                        CardEmulation.PROPERTY_ALLOW_SHARED_ROLE_PRIORITY,
+                        mPreferredPaymentService);
+                shareRolePriorityPackageName = prop.getString();
+                shareRolePriority = prop.getBoolean();
+                if (shareRolePriorityPackageName == null && !shareRolePriority) {
+                    return;
+                }
+                // Associated wallet role package may not have any CE service (only for ability to
+                // toggle observe mode), so add these packages directly here.
+                if (shareRolePriorityPackageName != null) {
+                    Log.v(TAG, "Found associated role package: " + shareRolePriorityPackageName);
+                    mAssociatedRolePackageNames.add(shareRolePriorityPackageName);
+                }
+            } catch (PackageManager.NameNotFoundException e) {
+                // Role owner does not want to share priority with anyone else
+                return;
+            }
         }
 
         for (ApduServiceInfo service : apduServices) {
             if (service.getComponent().getPackageName().equals(mDefaultWalletHolderPackageName)) {
                 continue;
             }
-
-            if (service.wantsRoleHolderPriority() && pm.checkSignatures(mDefaultWalletHolderPackageName,
-                    service.getComponent().getPackageName()) == PackageManager.SIGNATURE_MATCH) {
-                mAssociatedRoleServices.add(service);
+            String servicePkg = service.getComponent().getPackageName();
+            if (service.wantsRoleHolderPriority()) {
+                if (shareRolePriorityPackageName == null) {
+                    if (pm.checkSignatures(mDefaultWalletHolderPackageName, servicePkg)
+                            == PackageManager.SIGNATURE_MATCH) {
+                        Log.v(TAG, "Found associated role service: " + service);
+                        mAssociatedRoleServices.add(service);
+                        mAssociatedRolePackageNames.add(servicePkg);
+                    }
+                } else if (servicePkg.equals(shareRolePriorityPackageName)) {
+                    // If there are CE services from the associated wallet role package, add them as
+                    // well.
+                    Log.v(TAG, "Found associated role service: " + service);
+                    mAssociatedRoleServices.add(service);
+                }
             }
         }
     }
@@ -1533,17 +1572,8 @@ public class RegisteredAidCache {
     }
 
     @NonNull
-    public List<ComponentNameAndUser> getPreferredPaymentAssociatedServices() {
-        List<ComponentNameAndUser> associatedServices = new ArrayList<>();
-        if (mAssociatedRoleServices != null) {
-            for (ApduServiceInfo service : mAssociatedRoleServices) {
-                associatedServices.add(
-                        new ComponentNameAndUser(
-                                UserHandle.getUserHandleForUid(service.getUid()).getIdentifier(),
-                                service.getComponent()));
-            }
-        }
-        return associatedServices;
+    public List<String> getPreferredPaymentServiceAssociatedRolePackageNames() {
+        return mAssociatedRolePackageNames.stream().collect(Collectors.toUnmodifiableList());
     }
 
     public boolean isPreferredServicePackageNameForUser(String packageName, int userId) {
@@ -1645,6 +1675,7 @@ public class RegisteredAidCache {
             pw.println("    Wallet role package: " + mDefaultWalletHolderPackageName);
             pw.println("    Associated role services: " + mAssociatedRoleServices.stream()
                     .map(service -> service.getComponent().toString()).toList());
+            pw.println("    Associated role packages: " + mAssociatedRolePackageNames);
         }
         pw.println("");
         mRoutingManager.dump(fd, pw, args);

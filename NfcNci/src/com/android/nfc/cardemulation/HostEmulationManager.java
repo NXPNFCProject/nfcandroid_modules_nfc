@@ -509,10 +509,8 @@ public class HostEmulationManager {
             // If this is the payment service, also add the associated services to the list of
             // packages to monitor.
             if (service.equals(mAidCache.getPreferredPaymentService().getComponentName())) {
-                for (ComponentNameAndUser preferredService
-                        : mAidCache.getPreferredPaymentAssociatedServices()) {
-                    mServicePackageNames.add(preferredService.getComponentName().getPackageName());
-                }
+                mServicePackageNames.addAll(
+                        mAidCache.getPreferredPaymentServiceAssociatedRolePackageNames());
             }
         }
 
