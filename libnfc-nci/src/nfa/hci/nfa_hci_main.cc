@@ -557,7 +557,8 @@ void nfa_hci_enable_one_nfcee(void) {
     } else if (nfa_hci_cb.hci_state == NFA_HCI_STATE_EE_RECOVERY) {
       nfa_hci_cb.hci_state = NFA_HCI_STATE_IDLE;
       if (nfa_ee_cb.isDiscoveryStopped == true) {
-        nfa_dm_act_start_rf_discovery(nullptr);
+        LOG(ERROR) << StringPrintf(
+            "%s: await routing table commit for RF discovery start", __func__);
         nfa_ee_cb.isDiscoveryStopped = false;
         if (!nfc_cb.is_nfcee_discovery_required) {
           tNFA_EE_CBACK_DATA nfa_ee_cback_data;
