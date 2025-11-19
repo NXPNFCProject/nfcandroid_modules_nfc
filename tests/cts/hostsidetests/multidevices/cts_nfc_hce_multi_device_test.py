@@ -1402,12 +1402,8 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         if hasattr(self, 'pn532'):
             self.pn532.reset_buffers()
             self.pn532.mute()
-        if hasattr(self, 'emulator'):
-            param_list = [[self.emulator]]
-            utils.concurrent_exec(lambda d: d.services.create_output_excerpts_all(
-                self.current_test_info),
-                                  param_list=param_list,
-                                  raise_on_exception=True)
+        if hasattr(self, "emulator"):
+            self.emulator.services.create_output_excerpts_all(self.current_test_info)
 
     #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
     def test_single_non_payment_service_with_listen_tech_disabled(self):
