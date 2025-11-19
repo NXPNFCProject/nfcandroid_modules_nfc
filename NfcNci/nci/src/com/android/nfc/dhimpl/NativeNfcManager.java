@@ -770,7 +770,8 @@ public class NativeNfcManager implements DeviceHost {
                 proprietaryCaps.isPollingFrameNotificationSupported(),
                 proprietaryCaps.isPowerSavingModeSupported(),
                 proprietaryCaps.isAutotransactPollingLoopFilterSupported(),
-                proprietaryCaps.getNumberOfExitFramesSupported());
+                proprietaryCaps.getNumberOfExitFramesSupported(),
+                proprietaryCaps.isReaderModeAnnotationSupported());
     }
 
     public void notifyObserveModeChanged(boolean enabled) {
