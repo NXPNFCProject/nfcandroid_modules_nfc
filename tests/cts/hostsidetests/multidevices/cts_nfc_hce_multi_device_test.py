@@ -470,6 +470,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             _LOG.info(f"Could not kill pid {pid} through adb.")
             self.emulator.nfc_emulator.killProcess(pid)
 
+        time.sleep(2) # Wait for the payment service to be restarted.
         self._set_up_reader_and_assert_transaction(expected_service=_PAYMENT_SERVICE_1)
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"])
