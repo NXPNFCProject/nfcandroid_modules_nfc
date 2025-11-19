@@ -259,7 +259,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
     static final int DISABLE_POLLING_FLAGS = 0x1000;
 
-    static final int RF_COALESCING_WINDOW = 50;
+    static final int RF_COALESCING_WINDOW_1 = 50;
+    static final int RF_COALESCING_WINDOW_2 = 150;
 
     static final int TASK_ENABLE = 1;
     static final int TASK_DISABLE = 2;
@@ -753,7 +754,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         if (Flags.coalesceRfEvents()) {
             mHandler.sendMessageDelayed(
                     mHandler.obtainMessage(MSG_RF_FIELD_DEACTIVATED),
-                    RF_COALESCING_WINDOW);
+                    coalesceRfFieldOnOffBroadcasts()
+                            ? RF_COALESCING_WINDOW_2
+                            : RF_COALESCING_WINDOW_1);
         } else {
             sendMessage(MSG_RF_FIELD_DEACTIVATED, null);
         }
