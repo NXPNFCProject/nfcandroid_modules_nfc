@@ -3032,20 +3032,30 @@ void startRfDiscovery(bool isStart) {
 
   LOG(DEBUG) << StringPrintf("%s: is start=%d", __func__, isStart);
   nativeNfcTag_acquireRfInterfaceMutexLock();
-  SyncEventGuard guard(sNfaEnableDisablePollingEvent);
-  status = isStart ? NFA_StartRfDiscovery() : NFA_StopRfDiscovery();
-  if (!sIsRecovering) {
-    if (status == NFA_STATUS_OK) {
-      sNfaEnableDisablePollingEvent
-          .wait();  // wait for NFA_RF_DISCOVERY_xxxx_EVT
-      sRfEnabled = isStart;
-    } else {
+  {
+    SyncEventGuard guard(sNfaEnableDisablePollingEvent);
+    status = isStart ? NFA_StartRfDiscovery() : NFA_StopRfDiscovery();
+    if (!sIsRecovering && status == NFA_STATUS_OK) {
+      LOG(DEBUG) << StringPrintf("%s: Wait for completion timeout", __func__);
+      if (!sNfaEnableDisablePollingEvent.wait(5000)) {
+        LOG(ERROR) << StringPrintf(
+            "%s: Wait for NFA_RF_DISCOVERY_xxxx_EVT timeout. Restart NFC "
+            "service...",
+            __func__);
+        status = NFA_STATUS_TIMEOUT;
+      } else {
+        sRfEnabled = isStart;
+      }
+    } else if (!sIsRecovering) {
       LOG(ERROR) << StringPrintf(
           "%s: Failed to start/stop RF discovery; error=0x%X", __func__,
           status);
     }
   }
   nativeNfcTag_releaseRfInterfaceMutexLock();
+  if (status == NFA_STATUS_TIMEOUT) {
+    nfaDeviceManagementCallback(NFA_DM_NFCC_TIMEOUT_EVT, nullptr);
+  }
 }
 
 /*******************************************************************************
