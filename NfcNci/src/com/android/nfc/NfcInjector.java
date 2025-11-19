@@ -48,7 +48,6 @@ import com.android.nfc.cardemulation.CardEmulationManager;
 import com.android.nfc.cardemulation.util.StatsdUtils;
 import com.android.nfc.cardemulation.util.StatsdUtilsContext;
 import com.android.nfc.dhimpl.NativeNfcManager;
-import com.android.nfc.flags.FeatureFlags;
 import com.android.nfc.flags.Flags;
 import com.android.nfc.handover.HandoverDataParser;
 import com.android.nfc.wlc.NfcCharging;
@@ -79,7 +78,6 @@ public class NfcInjector {
     private final NfcDispatcher mNfcDispatcher;
     private final VibrationEffect mVibrationEffect;
     private final BackupManager mBackupManager;
-    private final FeatureFlags mFeatureFlags;
     @Nullable
     private final StatsdUtils mStatsdUtils;
     @Nullable
@@ -117,10 +115,8 @@ public class NfcInjector {
                     isInProvisionMode(), mDeviceConfigFacade);
         mVibrationEffect = VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE);
         mBackupManager = new BackupManager(mContext);
-        mFeatureFlags = new com.android.nfc.flags.FeatureFlagsImpl();
-        mStatsdUtilsContext = mFeatureFlags.statsdCeEventsFlag() ? new StatsdUtilsContext() : null;
-        mStatsdUtils = mFeatureFlags.statsdCeEventsFlag() ?
-            new StatsdUtils(mStatsdUtilsContext) : null;
+        mStatsdUtilsContext = Flags.statsdCeEventsFlag() ? new StatsdUtilsContext() : null;
+        mStatsdUtils = Flags.statsdCeEventsFlag() ? new StatsdUtils(mStatsdUtilsContext) : null;
         mForegroundUtils =
                 ForegroundUtils.getInstance(mContext.getSystemService(ActivityManager.class));
         mNfcDiagnostics = new NfcDiagnostics(mContext);
@@ -198,10 +194,6 @@ public class NfcInjector {
 
     public BackupManager getBackupManager() {
         return mBackupManager;
-    }
-
-    public FeatureFlags getFeatureFlags() {
-        return mFeatureFlags;
     }
 
     @Nullable

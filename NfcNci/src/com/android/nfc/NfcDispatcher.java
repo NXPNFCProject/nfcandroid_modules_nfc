@@ -958,10 +958,7 @@ class NfcDispatcher {
         dispatch.intent.setPackage(null);
 
         if (dispatch.isWebIntent()) {
-            if (mNfcInjector.getFeatureFlags().sendViewIntentForUrlTagDispatch()) {
-                dispatch.setViewIntent();
-                Log.d(TAG, "tryNdef: Sending VIEW intent instead of NFC specific intent");
-            }
+            dispatch.setViewIntent();
             if (dispatch.hasIntentReceiver()) {
                 if (showWebLinkConfirmation(dispatch)) {
                     if (DBG) Log.i(TAG, "tryNdef: matched Web link - prompting user");

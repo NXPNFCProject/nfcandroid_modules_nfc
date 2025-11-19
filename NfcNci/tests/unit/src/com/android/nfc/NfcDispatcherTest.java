@@ -72,7 +72,6 @@ import android.util.proto.ProtoOutputStream;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.dx.mockito.inline.extended.ExtendedMockito;
-import com.android.nfc.flags.FeatureFlags;
 import com.android.nfc.handover.HandoverDataParser;
 import com.android.nfc.handover.PeripheralHandoverService;
 
@@ -431,9 +430,6 @@ public final class NfcDispatcherTest {
         when(mUserManager.isQuietModeEnabled(userHandle)).thenReturn(false);
         NfcDispatcher.DispatchInfo dispatchInfo = new NfcDispatcher
                 .DispatchInfo(mockContext, mNfcInjector, tag, ndefMessage);
-        FeatureFlags featureFlags = mock(FeatureFlags.class);
-        when(featureFlags.sendViewIntentForUrlTagDispatch()).thenReturn(false);
-        when(mNfcInjector.getFeatureFlags()).thenReturn(featureFlags);
         ResolveInfo ri = mock(ResolveInfo.class);
         when(mPackageManager.resolveActivity(any(), anyInt())).thenReturn(ri);
         mNfcDispatcher.tryNdef(dispatchInfo, ndefMessage);

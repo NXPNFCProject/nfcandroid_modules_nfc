@@ -132,7 +132,6 @@ import com.android.nfc.cardemulation.CardEmulationManager;
 import com.android.nfc.cardemulation.RoutingOptionManager;
 import com.android.nfc.cardemulation.util.StatsdUtils;
 import com.android.nfc.dhimpl.NativeNfcManager;
-import com.android.nfc.flags.FeatureFlags;
 import com.android.nfc.flags.Flags;
 import com.android.nfc.handover.HandoverDataParser;
 import com.android.nfc.proto.NfcEventProto;
@@ -566,7 +565,6 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     public static final int T4TNFCEE_STATUS_FAILED = -1;
     private Object mT4tNdefNfcEeObj = new Object();
     private Bundle mT4tNdefNfceeReturnBundle = new Bundle();
-    private final FeatureFlags mFeatureFlags;
     private final Set<INfcWlcStateListener> mWlcStateListener =
             Collections.synchronizedSet(new HashSet<>());
     @Nullable
@@ -1269,7 +1267,6 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
         mBackupManager = mNfcInjector.getBackupManager();
 
-        mFeatureFlags = mNfcInjector.getFeatureFlags();
         mStatsdUtils = mNfcInjector.getStatsdUtils();
 
         // Intents for all users
@@ -6704,4 +6701,3 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         return result;
     }
 }
-

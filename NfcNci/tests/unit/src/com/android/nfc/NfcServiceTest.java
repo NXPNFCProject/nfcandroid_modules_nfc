@@ -127,7 +127,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.android.dx.mockito.inline.extended.ExtendedMockito;
 import com.android.nfc.cardemulation.CardEmulationManager;
 import com.android.nfc.cardemulation.util.StatsdUtils;
-import com.android.nfc.flags.FeatureFlags;
 import com.android.nfc.flags.Flags;
 import com.android.nfc.wlc.NfcCharging;
 
@@ -189,7 +188,6 @@ public final class NfcServiceTest {
     @Mock BackupManager mBackupManager;
     @Mock AlarmManager mAlarmManager;
     @Mock SoundPool mSoundPool;
-    @Mock FeatureFlags mFeatureFlags;
     @Mock DisplayManager mDisplayManager;
     @Mock CardEmulationManager mCardEmulationManager;
     @Mock StatsdUtils mStatsdUtils;
@@ -254,7 +252,6 @@ public final class NfcServiceTest {
         when(mNfcInjector.getBackupManager()).thenReturn(mBackupManager);
         when(mNfcInjector.getNfcDispatcher()).thenReturn(mNfcDispatcher);
         when(mNfcInjector.getNfcUnlockManager()).thenReturn(mNfcUnlockManager);
-        when(mNfcInjector.getFeatureFlags()).thenReturn(mFeatureFlags);
         when(mNfcInjector.isSatelliteModeSensitive()).thenReturn(true);
         when(mNfcInjector.getCardEmulationManager()).thenReturn(mCardEmulationManager);
         when(mNfcInjector.getNfcCharging(mDeviceHost)).thenReturn(mNfcCharging);
