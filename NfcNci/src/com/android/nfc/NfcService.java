@@ -6254,10 +6254,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                             .startNotification();
                 }
             } else if (action.equals(Intent.ACTION_USER_UNLOCKED)) {
+                int userId = intent.getIntExtra(Intent.EXTRA_USER_HANDLE, 0);
                 // If this is first unlock after upgrading to NFC stack that is direct boot aware,
                 // migrate over the data from CE directory to DE directory for access before user
                 // unlock in subsequent bootups.
-                if (!mPrefs.getBoolean(PREF_MIGRATE_TO_DE_COMPLETE, false)) {
+                if (!mPrefs.getBoolean(PREF_MIGRATE_TO_DE_COMPLETE, false) && userId == 0) {
                     Log.i(TAG, "mReceiver.onReceive: Migrating shared prefs to DE directory "
                             + "from CE directory");
                     Context ceContext = mContext.createCredentialProtectedStorageContext();
