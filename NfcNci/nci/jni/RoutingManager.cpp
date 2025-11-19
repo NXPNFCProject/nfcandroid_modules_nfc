@@ -293,6 +293,7 @@ bool RoutingManager::isTypeATypeBTechSupportedInEe(tNFA_HANDLE eeHandle) {
   }
 
   if (mEuiccMepMode) {
+    actualNbEe = NFA_EE_MAX_EE_SUPPORTED;
     memset(&eeInfo, 0, actualNbEe * sizeof(tNFA_EE_INFO));
     nfaStat = NFA_EeGetMepInfo(&actualNbEe, eeInfo);
     if (nfaStat != NFA_STATUS_OK) {
