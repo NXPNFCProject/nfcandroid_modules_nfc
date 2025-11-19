@@ -82,6 +82,7 @@ public final class NfcAdapter {
     private final NfcControllerAlwaysOnListener mControllerAlwaysOnListener;
     private final NfcWlcStateListener mNfcWlcStateListener;
     private final NfcVendorNciCallbackListener mNfcVendorNciCallbackListener;
+    private final NfcGestureExchangeCallbackListener mNfcGestureExchangeCallbackListener;
 
     /**
      * Intent to start an activity when a tag with NDEF payload is discovered.
@@ -956,6 +957,7 @@ public final class NfcAdapter {
         mNfcWlcStateListener = new NfcWlcStateListener(getService());
         mNfcVendorNciCallbackListener = new NfcVendorNciCallbackListener();
         mNfcOemExtension = new NfcOemExtension(mContext, this);
+        mNfcGestureExchangeCallbackListener = new NfcGestureExchangeCallbackListener();
     }
 
     /**
@@ -3039,4 +3041,60 @@ public final class NfcAdapter {
         return callServiceReturn(() ->  sService.isTagIntentAllowed(mContext.getPackageName(),
                 UserHandle.myUserId()), false);
     }
+
+    /**
+     * Registers a {@link ReaderCallback} to be invoked when the GESTURE_EXCHAGE_AID is detected
+     * during regular NFC polling.
+     *
+     * <p>When this callback is registered, the NFC service will attempt to select the
+     * {@link TAP_TO_SHARE AID} in addition to the standard NDEF AID during its regular polling
+     * cycle.
+     *
+     * <p>Registering this callback prevents the platform from playing sounds or vibrating when
+     * dispatching a tag to the application that registers this callback. This behavior is
+     * equivalent to using the {@link FLAG_READER_NO_PLATFORM_SOUNDS} flag when calling
+     * {@link enableReaderMode}.
+     *
+     * <p>The provided callback will be invoked by the given {@link Executor}.
+     *
+     * @param executor an {@link Executor} to dispatch the callback
+     * @param callback user implementation of the {@link ReaderCallback}
+     * @hide
+     */
+    @SystemApi
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_TAP_TO_X)
+    @RequiresPermission(android.Manifest.permission.PERFORM_GESTURE_EXCHANGE)
+    public void registerGestureExchangeReaderCallback(@NonNull @CallbackExecutor Executor executor,
+            @NonNull ReaderCallback callback) {
+        mNfcGestureExchangeCallbackListener.register(executor, callback);
+    }
+
+    /**
+     * Unregisters the specified {@link ReaderCallback}
+     *
+     * <p>The same {@link ReaderCallback} object used when calling
+     * {@link #registerGestureExchangeReaderCallback(Executor, ReaderCallback)} must be used.
+     *
+     * <p>Callbacks are automatically unregistered when application process goes away
+     *
+     * @param callback user implementation of the {@link ReaderCallback}
+     * @hide
+     */
+    @SystemApi
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_TAP_TO_X)
+    @RequiresPermission(android.Manifest.permission.PERFORM_GESTURE_EXCHANGE)
+    public void unregisterGestureExchangeReaderCallback(@NonNull ReaderCallback callback) {
+        mNfcGestureExchangeCallbackListener.unregister(callback);
+    }
+
+    /**
+      * Get the AID for Tap to Share functionality.
+      */
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_TAP_TO_X)
+    @RequiresPermission(android.Manifest.permission.PERFORM_GESTURE_EXCHANGE)
+    @Nullable
+    public String getGestureExchangeAid() {
+        return callServiceReturn(() ->  sService.getGestureExchangeAid(), null);
+    }
+
 }

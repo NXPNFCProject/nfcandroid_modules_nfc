@@ -71,6 +71,7 @@ package android.nfc {
     method public void enableForegroundDispatch(android.app.Activity, android.app.PendingIntent, android.content.IntentFilter[], String[][]);
     method public void enableReaderMode(android.app.Activity, android.nfc.NfcAdapter.ReaderCallback, int, android.os.Bundle);
     method public static android.nfc.NfcAdapter getDefaultAdapter(android.content.Context);
+    method @FlaggedApi("com.android.nfc.module.flags.tap_to_x") @Nullable @RequiresPermission(android.Manifest.permission.PERFORM_GESTURE_EXCHANGE) public String getGestureExchangeAid();
     method @Nullable public android.nfc.NfcAntennaInfo getNfcAntennaInfo();
     method @FlaggedApi("android.nfc.enable_nfc_charging") @Nullable public android.nfc.WlcListenerDeviceInfo getWlcListenerDeviceInfo();
     method public boolean ignore(android.nfc.Tag, int, android.nfc.NfcAdapter.OnTagRemovedListener, android.os.Handler);

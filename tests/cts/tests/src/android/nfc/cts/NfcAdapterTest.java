@@ -1,6 +1,7 @@
 package android.nfc.cts;
 
 import static android.Manifest.permission.NFC_SET_CONTROLLER_ALWAYS_ON;
+import static android.Manifest.permission.PERFORM_GESTURE_EXCHANGE;
 import static android.nfc.NfcOemExtension.HCE_ACTIVATE;
 import static android.nfc.NfcRoutingTableEntry.TYPE_AID;
 import static android.nfc.NfcRoutingTableEntry.TYPE_PROTOCOL;
@@ -1082,6 +1083,32 @@ public class NfcAdapterTest {
             if (cb != null) nfcAdapter.unregisterControllerAlwaysOnListener(cb);
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.nfc.module.flags.Flags.FLAG_TAP_TO_X)
+    public void testGetGestureExchangeAid() {
+        NfcAdapter adapter = getDefaultAdapter();
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation().adoptShellPermissionIdentity(PERFORM_GESTURE_EXCHANGE);
+        adapter.getGestureExchangeAid();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.nfc.module.flags.Flags.FLAG_TAP_TO_X)
+    public void testRegisterAndUnregisterGestureExchangeCallbacks() {
+        NfcAdapter nfcAdapter = getDefaultAdapter();
+        assertNotNull(nfcAdapter);
+        NfcAdapter.ReaderCallback cb = new CtsReaderCallback();
+        try {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation().adoptShellPermissionIdentity(PERFORM_GESTURE_EXCHANGE);
+            nfcAdapter.registerGestureExchangeReaderCallback(
+                    Executors.newSingleThreadExecutor(), cb);
+
+        } finally {
+            nfcAdapter.unregisterGestureExchangeReaderCallback(cb);
         }
     }
 
