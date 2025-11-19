@@ -47,7 +47,7 @@
             android:textAlignment="center"
             android:text="@string/tap_again_description"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:textColor="@androidprv:color/materialColorOnSurface"/>
+            android:textColor="@color/materialColorOnSurface"/>
 
         <ImageView android:id="@+id/tap_again_appicon"
             android:layout_height="84dp"

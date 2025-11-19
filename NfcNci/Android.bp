@@ -31,6 +31,7 @@ java_library {
 java_defaults {
     name: "NfcNciDefaults",
     static_libs: [
+        "dynamiccolors",
         "android.app.flags-aconfig-java",
         "android.service.chooser.flags-aconfig-java",
         "android.se.omapi-V1-java",

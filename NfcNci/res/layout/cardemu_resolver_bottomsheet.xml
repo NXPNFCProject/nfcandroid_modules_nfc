@@ -58,7 +58,7 @@
             android:textAlignment="center"
             android:text="@string/appchooser_description"
             android:textAppearance="?android:attr/textAppearanceLarge"
-            android:textColor="@androidprv:color/materialColorOnSurface"/>
+            android:textColor="@color/materialColorOnSurface"/>
 
         <ListView
             android:id="@+id/resolver_list"
