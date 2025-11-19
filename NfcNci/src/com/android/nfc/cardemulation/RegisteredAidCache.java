@@ -301,7 +301,7 @@ public class RegisteredAidCache {
         if (userId != mUserIdPreferredForegroundService) {
             return false;
         }
-        if (com.android.nfc.module.flags.Flags.foregroundAppPackageNameMatching()) {
+        if (com.android.nfc.flags.Flags.foregroundAppPackageNameMatching()) {
             return service.getComponent().getPackageName().equals(
                     mPreferredForegroundService.getPackageName());
         } else {

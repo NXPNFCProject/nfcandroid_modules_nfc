@@ -47,5 +47,24 @@ flag {
     bug: "323440961"
 }
 
+# TODO (b/460625807) workaround to move un-exported flags from com.android.nfc.module.flags to
+# com.android.nfc.flags
+flag {
+    name: "coalesce_rf_field_on_off_broadcasts"
+    namespace: "nfc"
+    description: "Set delivery group policy to coalesce RF field on/off broadcasts."
+    bug: "447360447"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "foreground_app_package_name_matching"
+    namespace: "nfc"
+    description: "Use package name instead of component name for foreground app matching."
+    bug: "433127912"
+}
+
 # Don't add any new flags for Android 16+ targeting features. Use the flags
 # in com.android.nfc.module.flags (packages/modules/Nfc/flags) instead.

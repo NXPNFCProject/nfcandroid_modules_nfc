@@ -610,9 +610,9 @@ public final class NfcServiceTest {
         Assert.assertNull(mNfcService.mSoundPool);
     }
 
-    @EnableFlags(com.android.nfc.module.flags.Flags.FLAG_COALESCE_RF_FIELD_ON_OFF_BROADCASTS)
     @Test
     public void testMsg_Rf_Field_Activated() {
+        Assume.assumeTrue(com.android.nfc.flags.Flags.coalesceRfFieldOnOffBroadcasts());
         Handler handler = mNfcService.getHandler();
         Assert.assertNotNull(handler);
         Message msg = handler.obtainMessage(NfcService.MSG_RF_FIELD_ACTIVATED);
@@ -637,9 +637,9 @@ public final class NfcServiceTest {
         Assert.assertEquals(NfcAdapter.ACTION_REQUIRE_UNLOCK_FOR_NFC, intent.getAction());
     }
 
-    @DisableFlags(com.android.nfc.module.flags.Flags.FLAG_COALESCE_RF_FIELD_ON_OFF_BROADCASTS)
     @Test
     public void testMsg_Rf_Field_Activated_withBroadcastCoalescingDisabled() {
+        Assume.assumeFalse(com.android.nfc.flags.Flags.coalesceRfFieldOnOffBroadcasts());
         Handler handler = mNfcService.getHandler();
         Assert.assertNotNull(handler);
         Message msg = handler.obtainMessage(NfcService.MSG_RF_FIELD_ACTIVATED);
@@ -661,9 +661,9 @@ public final class NfcServiceTest {
         Assert.assertEquals(NfcAdapter.ACTION_REQUIRE_UNLOCK_FOR_NFC, intent.getAction());
     }
 
-    @EnableFlags(com.android.nfc.module.flags.Flags.FLAG_COALESCE_RF_FIELD_ON_OFF_BROADCASTS)
     @Test
     public void testMsg_Rf_Field_Deactivated() {
+        Assume.assumeTrue(com.android.nfc.flags.Flags.coalesceRfFieldOnOffBroadcasts());
         Handler handler = mNfcService.getHandler();
         Assert.assertNotNull(handler);
         Message msg = handler.obtainMessage(NfcService.MSG_RF_FIELD_DEACTIVATED);
@@ -682,9 +682,9 @@ public final class NfcServiceTest {
         Assert.assertEquals(RF_FIELD_ON_OFF_BROADCAST_OPTIONS, bundle);
     }
 
-    @DisableFlags(com.android.nfc.module.flags.Flags.FLAG_COALESCE_RF_FIELD_ON_OFF_BROADCASTS)
     @Test
     public void testMsg_Rf_Field_Deactivated_withBroadcastCoalescingDisabled() {
+        Assume.assumeFalse(com.android.nfc.flags.Flags.coalesceRfFieldOnOffBroadcasts());
         Handler handler = mNfcService.getHandler();
         Assert.assertNotNull(handler);
         Message msg = handler.obtainMessage(NfcService.MSG_RF_FIELD_DEACTIVATED);
@@ -1442,7 +1442,7 @@ public final class NfcServiceTest {
         verify(tagEndpoint).startPresenceChecking(anyInt(), any());
     }
 
-    @EnableFlags(com.android.nfc.module.flags.Flags.FLAG_COALESCE_RF_FIELD_ON_OFF_BROADCASTS)
+    @EnableFlags(com.android.nfc.flags.Flags.FLAG_COALESCE_RF_FIELD_ON_OFF_BROADCASTS)
     @Test
     public void testOnRemoteFieldActivated() throws RemoteException {
         createNfcServiceWithoutStatsdUtils();
@@ -1466,10 +1466,10 @@ public final class NfcServiceTest {
         verify(mNfcEventLog, atLeast(2)).logEvent(any());
     }
 
-    @DisableFlags(com.android.nfc.module.flags.Flags.FLAG_COALESCE_RF_FIELD_ON_OFF_BROADCASTS)
     @Test
     public void testOnRemoteFieldActivated_withBroadcastCoalesciingDisabled()
             throws RemoteException {
+        Assume.assumeFalse(com.android.nfc.flags.Flags.coalesceRfFieldOnOffBroadcasts());
         createNfcServiceWithoutStatsdUtils();
         List<String> userlist = new ArrayList<>();
         userlist.add("com.android.nfc");
@@ -1491,9 +1491,9 @@ public final class NfcServiceTest {
         verify(mNfcEventLog, atLeast(2)).logEvent(any());
     }
 
-    @EnableFlags(com.android.nfc.module.flags.Flags.FLAG_COALESCE_RF_FIELD_ON_OFF_BROADCASTS)
     @Test
     public void testOnRemoteFieldDeactivated() throws RemoteException {
+        Assume.assumeTrue(com.android.nfc.flags.Flags.coalesceRfFieldOnOffBroadcasts());
         createNfcServiceWithoutStatsdUtils();
         List<String> userlist = new ArrayList<>();
         userlist.add("com.android.nfc");
@@ -1515,10 +1515,10 @@ public final class NfcServiceTest {
         verify(mNfcEventLog, atLeast(2)).logEvent(any());
     }
 
-    @DisableFlags(com.android.nfc.module.flags.Flags.FLAG_COALESCE_RF_FIELD_ON_OFF_BROADCASTS)
     @Test
     public void testOnRemoteFieldDeactivated_withBroadcastCoalesciingDisabled()
             throws RemoteException {
+        Assume.assumeFalse(com.android.nfc.flags.Flags.coalesceRfFieldOnOffBroadcasts());
         createNfcServiceWithoutStatsdUtils();
         List<String> userlist = new ArrayList<>();
         userlist.add("com.android.nfc");
