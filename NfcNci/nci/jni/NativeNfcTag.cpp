@@ -137,6 +137,7 @@ void nativeNfcTag_doPresenceCheckResult(tNFA_STATUS status);
 static int reSelect(tNFA_INTF_TYPE rfInterface, bool fSwitchIfNeeded);
 extern bool gIsDtaEnabled;
 static tNFA_STATUS performHaltPICC();
+static bool sCheckNdefEventNotified = false;
 
 /*******************************************************************************
 **
@@ -1213,6 +1214,7 @@ void nativeNfcTag_doCheckNdefResult(tNFA_STATUS status, uint32_t maxSize,
     sCheckNdefCardReadOnly = false;
   }
   SyncEventGuard g(sCheckNdefEvent);
+  sCheckNdefEventNotified = true;
   sCheckNdefEvent.notifyOne();
   LOG(DEBUG) << StringPrintf("%s: exit", __func__);
 }
@@ -1257,6 +1259,11 @@ static jint nativeNfcTag_doCheckNdef(JNIEnv* e, jobject o, jintArray ndefInfo) {
   LOG(DEBUG) << StringPrintf("%s: try NFA_RwDetectNDef", __func__);
   sCheckNdefWaitingForComplete = JNI_TRUE;
 
+  {
+    SyncEventGuard g(sCheckNdefEvent);
+    sCheckNdefEventNotified = false;
+  }
+
   status = NFA_RwDetectNDef();
 
   if (status != NFA_STATUS_OK) {
@@ -1269,7 +1276,8 @@ static jint nativeNfcTag_doCheckNdef(JNIEnv* e, jobject o, jintArray ndefInfo) {
   LOG(DEBUG) << StringPrintf("%s: wait for check NDEF completion", __func__);
   {
     SyncEventGuard g(sCheckNdefEvent);
-    if (sCheckNdefEvent.wait(15000) == false)  // if timeout occurred
+    if (!sCheckNdefEventNotified &&
+        sCheckNdefEvent.wait(15000) == false)  // if timeout occurred
     {
       LOG(ERROR) << StringPrintf("%s: timeout waiting for CheckNdefEvent",
                                  __func__);
