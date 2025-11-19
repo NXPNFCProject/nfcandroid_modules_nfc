@@ -17,6 +17,7 @@
 package com.android.nfc.cardemulation;
 
 import android.annotation.NonNull;
+import android.annotation.Nullable;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.ActivityManager;
@@ -1512,6 +1513,18 @@ public class RegisteredAidCache {
             // return current preferred service
             return getPreferredPaymentService();
         }
+    }
+
+    @Nullable
+    public ApduServiceInfo getPreferredServiceInfo() {
+        ComponentNameAndUser service = getPreferredService();
+        if (service.getComponentName() == null) return null;
+        for (ApduServiceInfo serviceInfo : mUserApduServiceInfo.get(service.getUserId())) {
+            if (serviceInfo.getComponent().equals(service.getComponentName())) {
+                return serviceInfo;
+            }
+        }
+        return null;
     }
 
     @NonNull

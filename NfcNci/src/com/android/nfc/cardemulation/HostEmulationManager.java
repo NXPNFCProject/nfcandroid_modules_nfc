@@ -390,20 +390,16 @@ public class HostEmulationManager {
         });
     }
 
-    private Messenger getForegroundServiceOrDefault() {
-        Pair<Messenger, ComponentName> pair = getForegroundServiceAndNameOrDefault();
-        if (pair == null) {
-            return null;
-        }
-        return pair.first;
-    }
-
-    private Pair<Messenger, ComponentName> getForegroundServiceAndNameOrDefault() {
+    private Pair<Messenger, ComponentName> bindToForegroundServiceOrDefaultForPollingLoop() {
         ComponentNameAndUser preferredService = mAidCache.getPreferredService();
         int preferredServiceUserId = preferredService.getUserId();
         ComponentName preferredServiceName = preferredService.getComponentName();
 
         if (preferredServiceName == null || preferredServiceUserId < 0) {
+            return null;
+        }
+        ApduServiceInfo preferredServiceInfo = mAidCache.getPreferredServiceInfo();
+        if (preferredServiceInfo == null || !preferredServiceInfo.isOnHost()) {
             return null;
         }
         return new Pair<>(bindServiceIfNeededLocked(preferredServiceUserId, preferredServiceName),
@@ -644,7 +640,7 @@ public class HostEmulationManager {
                 } else if (pollingFrame.getType()
                         == PollingFrame.POLLING_LOOP_TYPE_F) {
                     Pair<Messenger, ComponentName> serviceAndName =
-                        getForegroundServiceAndNameOrDefault();
+                            bindToForegroundServiceOrDefaultForPollingLoop();
                     if (serviceAndName != null) {
                         sendFrameToServiceLocked(serviceAndName.first, serviceAndName.second,
                             pollingFrame);
@@ -741,7 +737,7 @@ public class HostEmulationManager {
                         }
                     } else {
                         Pair<Messenger, ComponentName> serviceAndName =
-                                getForegroundServiceAndNameOrDefault();
+                                bindToForegroundServiceOrDefaultForPollingLoop();
                         if (serviceAndName != null) {
                             sendFrameToServiceLocked(serviceAndName.first, serviceAndName.second,
                                 pollingFrame);
@@ -801,7 +797,7 @@ public class HostEmulationManager {
 
             if (mPollingLoopState == PollingLoopState.DELIVERING_TO_PREFERRED) {
                 Pair<Messenger, ComponentName> serviceAndName =
-                        getForegroundServiceAndNameOrDefault();
+                        bindToForegroundServiceOrDefaultForPollingLoop();
                 if (serviceAndName != null) {
                     sendFramesToServiceLocked(serviceAndName.first, serviceAndName.second,
                         mPendingPollingLoopFrames);

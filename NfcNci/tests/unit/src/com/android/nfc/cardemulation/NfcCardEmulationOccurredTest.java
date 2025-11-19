@@ -231,8 +231,12 @@ public final class NfcCardEmulationOccurredTest {
         when(pollingLoopTypeOffFrame.getType()).thenReturn(PollingFrame.POLLING_LOOP_TYPE_OFF);
         ComponentName componentName = mock(ComponentName.class);
         when(componentName.getPackageName()).thenReturn("com.android.nfc");
+        ApduServiceInfo service = mock(ApduServiceInfo.class);
+        when(service.isOnHost()).thenReturn(true);
         when(mockAidCache.getPreferredService())
                 .thenReturn(new ComponentNameAndUser(0, componentName));
+        when(mockAidCache.getPreferredServiceInfo())
+                .thenReturn(service);
         IBinder iBinder = new Binder();
         ServiceConnection serviceConnection = mHostEmulation.getServiceConnection();
         serviceConnection.onServiceConnected(componentName, iBinder);
