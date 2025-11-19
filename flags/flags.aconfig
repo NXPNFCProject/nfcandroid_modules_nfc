@@ -12,7 +12,7 @@ flag {
 flag {
     name: "reader_mode_annotations"
     is_exported: true
-    namespace: "wallet_integration"
+    namespace: "nfc"
     description: "Enables NFC-A polling loop annotations in reader mode"
     bug: "398910589"
 }
