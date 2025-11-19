@@ -2641,16 +2641,16 @@ public class CardEmulationTest {
         Activity activity = createAndResumeActivity();
         final CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
         runWithRole(mContext, WALLET_HOLDER_PACKAGE_NAME, () -> {
+            final Intent intent = new Intent();
+            intent.setAction("com.cts.SetShouldDefaultToObserveModeForService");
+            intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+            intent.setComponent(
+                    new ComponentName("com.android.test.walletroleholder",
+                            "com.android.test.walletroleholder.WalletRoleBroadcastReceiver"));
+            mContext.sendBroadcast(intent);
+            ComponentName backgroundService =
+                    new ComponentName(mContext, CustomHostApduService.class);
             try {
-                final Intent intent = new Intent();
-                intent.setAction("com.cts.SetShouldDefaultToObserveModeForService");
-                intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-                intent.setComponent(
-                        new ComponentName("com.android.test.walletroleholder",
-                                "com.android.test.walletroleholder.WalletRoleBroadcastReceiver"));
-                mContext.sendBroadcast(intent);
-                ComponentName backgroundService =
-                        new ComponentName(mContext, CustomHostApduService.class);
                 assertTrue(cardEmulation.setShouldDefaultToObserveModeForService(
                                 backgroundService, true));
 
@@ -2688,10 +2688,11 @@ public class CardEmulationTest {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             } finally {
+                cardEmulation.setShouldDefaultToObserveModeForService(
+                                                backgroundService, false);
                 cardEmulation.unsetPreferredService(activity);
                 activity.finish();
                 adapter.notifyHceDeactivated();
-                final Intent intent = new Intent();
                 intent.setAction("com.cts.UnsetShouldDefaultToObserveModeForService");
                 intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
                 intent.setComponent(
