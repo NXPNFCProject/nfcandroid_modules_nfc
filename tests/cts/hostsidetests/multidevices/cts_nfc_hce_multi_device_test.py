@@ -192,6 +192,8 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
                 raise Exception("Must define payment_default_service for payment tests.")
             self.emulator.nfc_emulator.waitForService(payment_default_service)
 
+        time.sleep(3) # Let NFC stack complete set up emulator
+
     def _set_up_reader_and_assert_transaction(self, expected_service=None):
         """
         Sets up reader, and asserts successful APDU transaction
@@ -406,7 +408,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             payment_default_service=_PAYMENT_SERVICE_1,
             should_disable_services_on_destroy=False # Don't disable services on shutdown.
         )
-        time.sleep(3) # Let NFC stack complete set up emulator
+
         self._reboot(self.emulator)
         # Setup the payment service activity to handle the transaction after
         # reboot.
@@ -865,6 +867,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         """
         self._set_up_emulator(service_list=[_TRANSPORT_SERVICE_1,_TRANSPORT_SERVICE_2],
                               expected_service=_TRANSPORT_SERVICE_2, is_payment=False)
+
         command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator, _TRANSPORT_SERVICE_2)
         poll_and_transact(self.pn532, command_apdus[:1], response_apdus[:1])
 
@@ -1374,8 +1377,6 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         self._set_up_emulator(
             start_emulator_fun=self.emulator.nfc_emulator.startPollingFrameEmulatorActivity
         )
-
-        time.sleep(3) # Let NFC stack complete onServicesUpdated.
 
         timed_pn532 = TimedWrapper(self.pn532)
         testcases = [
