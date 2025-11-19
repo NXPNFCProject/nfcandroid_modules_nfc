@@ -82,3 +82,13 @@ flag {
     description: "Deprecate isDeviceFoldable"
     bug: "395695630"
 }
+
+flag {
+    name: "coalesce_rf_field_on_off_broadcasts"
+    namespace: "nfc"
+    description: "Set delivery group policy to coalesce RF field on/off broadcasts."
+    bug: "447360447"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}

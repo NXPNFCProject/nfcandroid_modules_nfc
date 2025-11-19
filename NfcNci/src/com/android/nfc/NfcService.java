@@ -26,6 +26,7 @@ import static android.nfc.OemLogItems.EVENT_ENABLE;
 
 import static com.android.nfc.ScreenStateHelper.SCREEN_STATE_ON_LOCKED;
 import static com.android.nfc.ScreenStateHelper.SCREEN_STATE_ON_UNLOCKED;
+import static com.android.nfc.module.flags.Flags.coalesceRfFieldOnOffBroadcasts;
 
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
@@ -168,6 +169,7 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -321,6 +323,24 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             "com.android.nfc_extras.action.RF_FIELD_ON_DETECTED";
     public static final String ACTION_RF_FIELD_OFF_DETECTED =
             "com.android.nfc_extras.action.RF_FIELD_OFF_DETECTED";
+
+    /**
+     * BroadcastOptions used for sending the broadcasts {@link #ACTION_RF_FIELD_ON_DETECTED}
+     * and {@link #ACTION_RF_FIELD_OFF_DETECTED}.
+     *
+     * Adding {@link BroadcastOptions#DELIVERY_GROUP_POLICY_MOST_RECENT} as the delivery group
+     * policy allows the broadcasting system to discard broadcasts waiting to be delivered
+     * to a process. The delivery group matching key set via
+     * {@link BroadcastOptions#setDeliveryGroupMatchingKey(String, String)} determines which older
+     * broadcasts can be discarded. We are using the same key for both broadcasts, which means
+     * a {@link #ACTION_RF_FIELD_OFF_DETECTED} broadcast can result in discarding of older
+     * {@link #ACTION_RF_FIELD_ON_DETECTED} broadcasts.
+     */
+    @VisibleForTesting
+    static final Bundle RF_FIELD_ON_OFF_BROADCAST_OPTIONS = BroadcastOptions.makeBasic()
+            .setDeliveryGroupPolicy(BroadcastOptions.DELIVERY_GROUP_POLICY_MOST_RECENT)
+            .setDeliveryGroupMatchingKey(UUID.randomUUID().toString(), ACTION_RF_FIELD_ON_DETECTED)
+            .toBundle();
 
     public static final String APP_NAME_ENABLING_NFC =
             "com.android.nfc.PACKAGE_NAME_ENABLING_NFC";
@@ -5479,8 +5499,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     if (mCardEmulationManager != null) {
                         mCardEmulationManager.onFieldChangeDetected(true);
                     }
-                    Intent fieldOnIntent = new Intent(ACTION_RF_FIELD_ON_DETECTED);
-                    sendNfcPermissionProtectedBroadcast(fieldOnIntent);
+                    sendRfFieldOnOffDetectedBroadcast(ACTION_RF_FIELD_ON_DETECTED);
                     if (mIsSecureNfcEnabled) {
                         sendRequireUnlockIntent();
                     }
@@ -5493,8 +5512,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     if (mCardEmulationManager != null) {
                         mCardEmulationManager.onFieldChangeDetected(false);
                     }
-                    Intent fieldOffIntent = new Intent(ACTION_RF_FIELD_OFF_DETECTED);
-                    sendNfcPermissionProtectedBroadcast(fieldOffIntent);
+                    sendRfFieldOnOffDetectedBroadcast(ACTION_RF_FIELD_OFF_DETECTED);
                     break;
                 case MSG_RESUME_POLLING:
                     Log.d(TAG, "handleMessage: MSG_RESUME_POLLING");
@@ -5791,12 +5809,14 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             }
         }
 
-        private void sendNfcPermissionProtectedBroadcast(Intent intent) {
+        private void sendRfFieldOnOffDetectedBroadcast(String action) {
             if (mNfcEventInstalledPackages.isEmpty()) {
                 return;
             }
+            Intent intent = new Intent(action);
             intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-
+            Bundle rfFieldBroadcastOptions = coalesceRfFieldOnOffBroadcasts()
+                    ? RF_FIELD_ON_OFF_BROADCAST_OPTIONS : null;
             Runnable task = () -> {
                 Map<Integer, List<String>> packagesCopy = new HashMap<>(mNfcEventInstalledPackages);
                 Intent broadcastIntent = new Intent(intent);
@@ -5804,7 +5824,10 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     List<String> pkgList = new ArrayList<>(packagesCopy.get(userId));
                     for (String packageName : pkgList) {
                         broadcastIntent.setPackage(packageName);
-                        mContext.sendBroadcastAsUser(broadcastIntent, UserHandle.of(userId));
+                        mContext.sendBroadcastAsUser(broadcastIntent,
+                                UserHandle.of(userId),
+                                null /* receiverPermission */,
+                                rfFieldBroadcastOptions);
                     }
                 }
                 Log.d(TAG, "Background task sendBroadcast " + intent.getAction());
