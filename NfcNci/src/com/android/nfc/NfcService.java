@@ -1915,7 +1915,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             WatchDogThread watchDog = new WatchDogThread("enableInternal", INIT_WATCHDOG_MS);
             watchDog.start();
 
-            mCardEmulationManager.updateForDefaultSwpToEuicc();
+            if (mIsHceCapable) {
+                mCardEmulationManager.updateForDefaultSwpToEuicc();
+            }
             try {
                 mRoutingWakeLock.acquire();
                 try {
