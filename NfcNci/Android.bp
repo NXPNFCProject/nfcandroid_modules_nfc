@@ -111,7 +111,8 @@ android_app {
         // These flag libs are statically included in framework-nfc.jar
         "android.nfc.flags-aconfig-java",
         "android.permission.flags-aconfig-java",
-        "com.android.nfc.module.flags-aconfig-java",
+        "com.android.nfc.module.flags-aconfig-exported-java",
+        "com.android.nfc.module.flags-aconfig-non-exported-java",
         "framework-annotations-lib",
         "framework-bluetooth.stubs.module_lib",
         "framework-configinfrastructure.stubs.module_lib",

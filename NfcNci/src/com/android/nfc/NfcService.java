@@ -26,7 +26,7 @@ import static android.nfc.OemLogItems.EVENT_ENABLE;
 
 import static com.android.nfc.ScreenStateHelper.SCREEN_STATE_ON_LOCKED;
 import static com.android.nfc.ScreenStateHelper.SCREEN_STATE_ON_UNLOCKED;
-import static com.android.nfc.flags.Flags.coalesceRfFieldOnOffBroadcasts;
+import static com.android.nfc.module.nonexported.flags.Flags.coalesceRfFieldOnOffBroadcasts;
 
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;

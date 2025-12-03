@@ -28,6 +28,7 @@ import static com.android.nfc.NfcService.PREF_NFC_ON;
 import static com.android.nfc.NfcService.RF_FIELD_ON_OFF_BROADCAST_OPTIONS;
 import static com.android.nfc.NfcService.SOUND_END;
 import static com.android.nfc.NfcService.SOUND_ERROR;
+import static com.android.nfc.module.nonexported.flags.Flags.coalesceRfFieldOnOffBroadcasts;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -612,7 +613,7 @@ public final class NfcServiceTest {
 
     @Test
     public void testMsg_Rf_Field_Activated() {
-        Assume.assumeTrue(com.android.nfc.flags.Flags.coalesceRfFieldOnOffBroadcasts());
+        Assume.assumeTrue(coalesceRfFieldOnOffBroadcasts());
         Handler handler = mNfcService.getHandler();
         Assert.assertNotNull(handler);
         Message msg = handler.obtainMessage(NfcService.MSG_RF_FIELD_ACTIVATED);
@@ -639,7 +640,7 @@ public final class NfcServiceTest {
 
     @Test
     public void testMsg_Rf_Field_Activated_withBroadcastCoalescingDisabled() {
-        Assume.assumeFalse(com.android.nfc.flags.Flags.coalesceRfFieldOnOffBroadcasts());
+        Assume.assumeFalse(coalesceRfFieldOnOffBroadcasts());
         Handler handler = mNfcService.getHandler();
         Assert.assertNotNull(handler);
         Message msg = handler.obtainMessage(NfcService.MSG_RF_FIELD_ACTIVATED);
@@ -663,7 +664,7 @@ public final class NfcServiceTest {
 
     @Test
     public void testMsg_Rf_Field_Deactivated() {
-        Assume.assumeTrue(com.android.nfc.flags.Flags.coalesceRfFieldOnOffBroadcasts());
+        Assume.assumeTrue(coalesceRfFieldOnOffBroadcasts());
         Handler handler = mNfcService.getHandler();
         Assert.assertNotNull(handler);
         Message msg = handler.obtainMessage(NfcService.MSG_RF_FIELD_DEACTIVATED);
@@ -684,7 +685,7 @@ public final class NfcServiceTest {
 
     @Test
     public void testMsg_Rf_Field_Deactivated_withBroadcastCoalescingDisabled() {
-        Assume.assumeFalse(com.android.nfc.flags.Flags.coalesceRfFieldOnOffBroadcasts());
+        Assume.assumeFalse(coalesceRfFieldOnOffBroadcasts());
         Handler handler = mNfcService.getHandler();
         Assert.assertNotNull(handler);
         Message msg = handler.obtainMessage(NfcService.MSG_RF_FIELD_DEACTIVATED);
@@ -1442,7 +1443,7 @@ public final class NfcServiceTest {
         verify(tagEndpoint).startPresenceChecking(anyInt(), any());
     }
 
-    @EnableFlags(com.android.nfc.flags.Flags.FLAG_COALESCE_RF_FIELD_ON_OFF_BROADCASTS)
+    @EnableFlags(com.android.nfc.module.nonexported.flags.Flags.FLAG_COALESCE_RF_FIELD_ON_OFF_BROADCASTS)
     @Test
     public void testOnRemoteFieldActivated() throws RemoteException {
         createNfcServiceWithoutStatsdUtils();
@@ -1469,7 +1470,7 @@ public final class NfcServiceTest {
     @Test
     public void testOnRemoteFieldActivated_withBroadcastCoalesciingDisabled()
             throws RemoteException {
-        Assume.assumeFalse(com.android.nfc.flags.Flags.coalesceRfFieldOnOffBroadcasts());
+        Assume.assumeFalse(coalesceRfFieldOnOffBroadcasts());
         createNfcServiceWithoutStatsdUtils();
         List<String> userlist = new ArrayList<>();
         userlist.add("com.android.nfc");
@@ -1493,7 +1494,7 @@ public final class NfcServiceTest {
 
     @Test
     public void testOnRemoteFieldDeactivated() throws RemoteException {
-        Assume.assumeTrue(com.android.nfc.flags.Flags.coalesceRfFieldOnOffBroadcasts());
+        Assume.assumeTrue(coalesceRfFieldOnOffBroadcasts());
         createNfcServiceWithoutStatsdUtils();
         List<String> userlist = new ArrayList<>();
         userlist.add("com.android.nfc");
@@ -1518,7 +1519,7 @@ public final class NfcServiceTest {
     @Test
     public void testOnRemoteFieldDeactivated_withBroadcastCoalesciingDisabled()
             throws RemoteException {
-        Assume.assumeFalse(com.android.nfc.flags.Flags.coalesceRfFieldOnOffBroadcasts());
+        Assume.assumeFalse(coalesceRfFieldOnOffBroadcasts());
         createNfcServiceWithoutStatsdUtils();
         List<String> userlist = new ArrayList<>();
         userlist.add("com.android.nfc");
