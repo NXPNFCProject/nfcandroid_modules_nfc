@@ -1325,7 +1325,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         mIsEuiccCapable = mContext.getResources().getBoolean(R.bool.enable_euicc_support)
                 && NfcInjector.NfcProperties.isEuiccSupported();
         mForegroundUtils = mNfcInjector.getForegroundUtils();
-        mIsSecureNfcCapable = mDeviceConfigFacade.isSecureNfcCapable();
+        mIsSecureNfcCapable = mIsHceCapable && mDeviceConfigFacade.isSecureNfcCapable();
         mIsSecureNfcEnabled = mPrefs.getBoolean(PREF_SECURE_NFC_ON,
             mDeviceConfigFacade.getDefaultSecureNfcState())
             && mIsSecureNfcCapable;
