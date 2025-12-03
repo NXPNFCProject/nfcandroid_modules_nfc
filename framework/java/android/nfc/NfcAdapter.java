@@ -280,7 +280,7 @@ public final class NfcAdapter {
      * This polling loop annotation will be included as a non-standard polling frame which will be
      * reported to via {@link android.nfc.cardemulation.HostApduService#processPollingFrames(List)}
      */
-    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_READER_MODE_ANNOTATIONS)
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_READER_MODE_ANNOTATIONS_API)
     public static final String EXTRA_READER_TECH_A_POLLING_LOOP_ANNOTATION =
             "android.nfc.extra.READER_TECH_A_POLLING_LOOP_ANNOTATION";
     /**
@@ -1216,7 +1216,7 @@ public final class NfcAdapter {
      * {@link #setObserveModeEnabled(boolean)} .
      * @return true if the mode is supported, false otherwise.
      */
-    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_READER_MODE_ANNOTATIONS)
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_READER_MODE_ANNOTATIONS_API)
     public boolean isReaderModeAnnotationSupported() {
         return callServiceReturn(() ->  sService.isReaderModeAnnotationSupported(), false);
     }

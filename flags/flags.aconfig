@@ -10,7 +10,7 @@ flag {
 }
 
 flag {
-    name: "reader_mode_annotations"
+    name: "reader_mode_annotations_api"
     is_exported: true
     namespace: "nfc"
     description: "Enables NFC-A polling loop annotations in reader mode"
