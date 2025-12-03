@@ -359,6 +359,8 @@ bool RoutingManager::addAidRouting(const uint8_t* aid, uint8_t aidLen,
   tNFA_STATUS nfaStat =
       NFA_EeAddAidRouting(route, aidLen, (uint8_t*)aid, powerState, aidInfo);
   if (nfaStat == NFA_STATUS_OK) {
+    LOG(DEBUG) << StringPrintf("%s: wait for mAidAddRemoveEvent completion",
+                               fn);
     mAidAddRemoveEvent.wait();
   }
   if (mAidRoutingConfigured) {
@@ -394,6 +396,8 @@ bool RoutingManager::removeAidRouting(const uint8_t* aid, uint8_t aidLen) {
   mAidRoutingConfigured = false;
   tNFA_STATUS nfaStat = NFA_EeRemoveAidRouting(aidLen, (uint8_t*)aid);
   if (nfaStat == NFA_STATUS_OK) {
+    LOG(DEBUG) << StringPrintf("%s: wait for mAidAddRemoveEvent completion",
+                               fn);
     mAidAddRemoveEvent.wait();
   }
   if (mAidRoutingConfigured) {
@@ -507,6 +511,7 @@ void RoutingManager::onNfccShutdown() {
   {
     SyncEventGuard guard(mAidAddRemoveEvent);
     mAidAddRemoveEvent.notifyOne();
+    LOG(DEBUG) << StringPrintf("%s: mAidAddRemoveEvent notified", fn);
   }
 }
 
@@ -1348,6 +1353,7 @@ void RoutingManager::nfaEeCallback(tNFA_EE_EVT event,
       routingManager.mAidRoutingConfigured =
           (eventData->status == NFA_STATUS_OK);
       routingManager.mAidAddRemoveEvent.notifyOne();
+      LOG(DEBUG) << StringPrintf("%s: NFA_EE_ADD_AID_EVT notified", fn);
     } break;
 
     case NFA_EE_ADD_SYSCODE_EVT: {
@@ -1371,6 +1377,7 @@ void RoutingManager::nfaEeCallback(tNFA_EE_EVT event,
       routingManager.mAidRoutingConfigured =
           (eventData->status == NFA_STATUS_OK);
       routingManager.mAidAddRemoveEvent.notifyOne();
+      LOG(DEBUG) << StringPrintf("%s: NFA_EE_REMOVE_AID_EVT notified", fn);
     } break;
 
     case NFA_EE_NEW_EE_EVT: {
