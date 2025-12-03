@@ -283,6 +283,15 @@ public final class NfcAdapter {
     @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_READER_MODE_ANNOTATIONS_API)
     public static final String EXTRA_READER_TECH_A_POLLING_LOOP_ANNOTATION =
             "android.nfc.extra.READER_TECH_A_POLLING_LOOP_ANNOTATION";
+
+    /**
+     * @hide
+     * Add vendor specific bytes to be added at the end of annotation.
+     */
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_READER_MODE_ANNOTATIONS_API)
+    public static final String EXTRA_READER_TECH_A_POLLING_LOOP_ANNOTATION_VENDOR_EXTENSION =
+            "android.nfc.extra.READER_TECH_A_POLLING_LOOP_ANNOTATION_VENDOR_EXTENSION";
+
     /**
      * Nfc is enabled and the preferred payment aids are registered.
      */

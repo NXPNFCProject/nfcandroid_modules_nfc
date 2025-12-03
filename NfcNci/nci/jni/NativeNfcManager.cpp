@@ -1831,34 +1831,45 @@ static bool isReaderModeAnnotationSupported(JNIEnv* e, jobject o) {
 }
 
 static tNFA_STATUS setTechAPollingLoopAnnotation(JNIEnv* env, jobject o,
-                                                  const uint8_t* annotation_data,
-                                                  size_t annotation_size) {
-    std::vector<uint8_t> command;
-    command.push_back(NCI_ANDROID_SET_TECH_A_POLLING_LOOP_ANNOTATION);
-    if (annotation_data == NULL || annotation_size == 0) {
-      // Annotation is null or size is 0, setting 0 annotations
-      command.push_back(0x00);
-    } else {
-      command.push_back(0x01);                 // Number of frame entries.
-      command.push_back(0x20);                 // Position and type.
-      command.push_back(annotation_size + 1);  // Length
-      command.push_back(0x0a);                 // Waiting time
-      command.insert(command.end(), annotation_data, annotation_data + annotation_size);
+                                                 const uint8_t* annotation_data,
+                                                 size_t annotation_size,
+                                                 const uint8_t* extra_annotation_data,
+                                                 size_t extra_annotation_size) {
+  std::vector<uint8_t> command;
+  command.push_back(NCI_ANDROID_SET_TECH_A_POLLING_LOOP_ANNOTATION);
+  if (annotation_data == NULL || annotation_size == 0) {
+    // Annotation is null or size is 0, setting 0 annotations
+    command.push_back(0x00);
+  } else {
+    command.push_back(0x01);                 // Number of frame entries.
+    command.push_back(0x20);                 // Position and type.
+    command.push_back(annotation_size + 1);  // Length
+    command.push_back(0x0a);                 // Waiting time
+    command.insert(command.end(), annotation_data,
+                   annotation_data + annotation_size);
+    // vendor specific extra bytes vendor should check if data is more than
+    // annotation bytes
+    if (extra_annotation_size > 0 && extra_annotation_data != NULL) {
+      command.push_back(extra_annotation_size);
+      command.insert(command.end(), extra_annotation_data,
+                     extra_annotation_data + extra_annotation_size);
     }
-    SyncEventGuard guard(gNfaVsCommand);
-    tNFA_STATUS status =
-        NFA_SendVsCommand(NCI_MSG_PROP_ANDROID, command.size(), command.data(), nfaVSCallback);
-    if (status == NFA_STATUS_OK) {
-      if (!gNfaVsCommand.wait(1000)) {
-        LOG(ERROR) << StringPrintf(
-            "%s: Timed out waiting for a response to setting a polling loop annotation ",
-            __FUNCTION__);
-        gVSCmdStatus = NFA_STATUS_FAILED;
-      }
-    } else {
-      gVSCmdStatus = status;
+  }
+  SyncEventGuard guard(gNfaVsCommand);
+  tNFA_STATUS status = NFA_SendVsCommand(NCI_MSG_PROP_ANDROID, command.size(),
+                                         command.data(), nfaVSCallback);
+  if (status == NFA_STATUS_OK) {
+    if (!gNfaVsCommand.wait(1000)) {
+      LOG(ERROR) << StringPrintf(
+          "%s: Timed out waiting for a response to setting a polling loop "
+          "annotation ",
+          __FUNCTION__);
+      gVSCmdStatus = NFA_STATUS_FAILED;
     }
-    return gVSCmdStatus;
+  } else {
+    gVSCmdStatus = status;
+  }
+  return gVSCmdStatus;
 }
 
 /*******************************************************************************
@@ -1882,6 +1893,7 @@ static void nfcManager_enableDiscovery(JNIEnv* e, jobject o,
                                        jboolean reader_mode,
                                        jboolean enable_host_routing,
                                        jbyteArray tech_a_polling_loop_annotation,
+                                       jbyteArray extra_vendor_annotation,
                                        jboolean restart) {
   if (sIsShuttingDown || sIsRecovering || sIsDisabling || !sIsNfaEnabled)
     return;
@@ -1911,16 +1923,25 @@ static void nfcManager_enableDiscovery(JNIEnv* e, jobject o,
     if (isReaderModeAnnotationSupported(e, o)) {
       if (reader_mode) {
         if (tech_a_polling_loop_annotation == NULL) {
-          setTechAPollingLoopAnnotation(e, o, NULL, 0);
+          setTechAPollingLoopAnnotation(e, o, NULL, 0, NULL, 0);
         } else {
           ScopedByteArrayRO annotationBytes(e, tech_a_polling_loop_annotation);
-          setTechAPollingLoopAnnotation(e, o,
-                                        (const uint8_t*)annotationBytes.get(),
-                                        annotationBytes.size());
+          if (extra_vendor_annotation == NULL) {
+            setTechAPollingLoopAnnotation(e, o,
+                                          (const uint8_t*)annotationBytes.get(),
+                                          annotationBytes.size(), NULL, 0);
+          } else {
+            ScopedByteArrayRO extra_annotationBytes(e, extra_vendor_annotation);
+            setTechAPollingLoopAnnotation(
+                e, o, (const uint8_t*)annotationBytes.get(),
+                annotationBytes.size(),
+                (const uint8_t*)extra_annotationBytes.get(),
+                extra_annotationBytes.size());
+          }
         }
       } else if (reader_mode_ignore_frame()) {
         uint8_t ignoreFrame[] = {0x6a, 0x01, 0xcf, 0x00, 0x00};
-        setTechAPollingLoopAnnotation(e, 0, ignoreFrame, 5);
+        setTechAPollingLoopAnnotation(e, 0, ignoreFrame, 5, NULL, 0);
       }
     }
 
@@ -2926,7 +2947,7 @@ static JNINativeMethod gMethods[] = {
 
     {"getLfT3tMax", "()I", (void*)nfcManager_getLfT3tMax},
 
-    {"doEnableDiscovery", "(IZZZ[BZ)V", (void*)nfcManager_enableDiscovery},
+    {"doEnableDiscovery", "(IZZZ[B[BZ)V", (void*)nfcManager_enableDiscovery},
 
     {"doStartStopPolling", "(Z)V", (void*)nfcManager_doStartStopPolling},
 
