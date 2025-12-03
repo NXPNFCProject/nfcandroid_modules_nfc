@@ -884,6 +884,10 @@ jboolean nativeNfcTag_doDisconnect(JNIEnv*, jobject) {
     LOG(ERROR) << StringPrintf("%s: NFC disabling in progress", __func__);
     return JNI_FALSE;
   }
+  if (nfcManager_isNfcActive() == false) {
+    LOG(DEBUG) << StringPrintf("%s: NFC is no longer active", __func__);
+    return JNI_FALSE;
+  }
   sIsDisconnecting = true;
   NfcTag::getInstance().resetAllTransceiveTimeouts(false);
   sReselectTagIdle = false;
