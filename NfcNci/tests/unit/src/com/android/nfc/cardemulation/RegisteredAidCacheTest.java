@@ -106,6 +106,10 @@ public class RegisteredAidCacheTest {
             new ComponentName(
                     NFC_FOREGROUND_PACKAGE_NAME,
                     "com.android.test.foregroundnfc.ForegroundApduService");
+    private static final ComponentName FOREGROUND_SERVICE_2 =
+            new ComponentName(
+                    NFC_FOREGROUND_PACKAGE_NAME,
+                    "com.android.test.foregroundnfc.ForegroundApduService2");
     private static final ComponentName NON_PAYMENT_SERVICE =
             new ComponentName(
                     NON_PAYMENT_NFC_PACKAGE_NAME,
@@ -190,6 +194,7 @@ public class RegisteredAidCacheTest {
         mStaticMockSession =
                 ExtendedMockito.mockitoSession()
                         .mockStatic(ActivityManager.class)
+                        .mockStatic(com.android.nfc.module.nonexported.flags.Flags.class)
                         .mockStatic(NfcService.class)
                         .mockStatic(Flags.class)
                         .strictness(Strictness.LENIENT)
@@ -208,7 +213,9 @@ public class RegisteredAidCacheTest {
 
     @After
     public void tearDown() {
-        mStaticMockSession.finishMocking();
+        if (mStaticMockSession != null) {
+            mStaticMockSession.finishMocking();
+        }
     }
 
     @Test
@@ -1453,5 +1460,212 @@ public class RegisteredAidCacheTest {
         when(mWalletRoleObserver.isWalletRoleFeatureEnabled()).thenReturn(false);
 
         assertFalse(mRegisteredAidCache.isPreferredServicePackageNameForUser(packageName, USER_ID));
+    }
+
+    @Test
+    public void testIsForegroundPreferred_flagEnabled_matchesPackageName() {
+        // Setup: Flag for package name matching is enabled.
+        ExtendedMockito
+                .when(com.android.nfc.module.nonexported.flags.Flags
+                        .foregroundAppPackageNameMatching())
+                .thenReturn(true);
+        mRegisteredAidCache =
+                new RegisteredAidCache(mContext, mWalletRoleObserver, mAidRoutingManager);
+
+        // Set the preferred foreground service to FOREGROUND_SERVICE.
+        mRegisteredAidCache.onPreferredForegroundServiceChanged(
+                new ComponentNameAndUser(USER_ID, FOREGROUND_SERVICE));
+
+        // Create a service with a different component name but the same package name.
+        ApduServiceInfo serviceWithSamePackage = createServiceInfoForAidRouting(
+                FOREGROUND_SERVICE_2, // Different component, same package
+                true,
+                List.of(PAYMENT_AID_1),
+                List.of(CardEmulation.CATEGORY_PAYMENT),
+                false, false, USER_ID, true);
+
+        List<ApduServiceInfo> conflictingServices = new ArrayList<>();
+        conflictingServices.add(serviceWithSamePackage);
+        conflictingServices.add(createServiceInfoForAidRouting(
+                WALLET_PAYMENT_SERVICE, // A different service
+                true,
+                List.of(PAYMENT_AID_1),
+                List.of(CardEmulation.CATEGORY_PAYMENT),
+                false, false, USER_ID, true));
+
+        // Action: Resolve conflict.
+        ApduServiceInfo resolvedService =
+                mRegisteredAidCache.resolvePollingLoopFilterConflict(conflictingServices);
+
+        // Assert: The service with the matching package name is selected.
+        assertNotNull(resolvedService);
+        assertEquals(FOREGROUND_SERVICE_2, resolvedService.getComponent());
+    }
+
+    @Test
+    public void testIsForegroundPreferred_flagDisabled_matchesSameComponent() {
+        // Setup: Flag for package name matching is disabled.
+        ExtendedMockito
+                .when(com.android.nfc.module.nonexported.flags.Flags
+                        .foregroundAppPackageNameMatching())
+                .thenReturn(false);
+        mRegisteredAidCache =
+                new RegisteredAidCache(mContext, mWalletRoleObserver, mAidRoutingManager);
+
+        // Set the preferred foreground service to FOREGROUND_SERVICE.
+        mRegisteredAidCache.onPreferredForegroundServiceChanged(
+                new ComponentNameAndUser(USER_ID, FOREGROUND_SERVICE));
+
+        // Create a service with the exact same component name.
+        ApduServiceInfo serviceWithSameComponent = createServiceInfoForAidRouting(
+                FOREGROUND_SERVICE, // Exact same component
+                true,
+                List.of(PAYMENT_AID_1),
+                List.of(CardEmulation.CATEGORY_PAYMENT),
+                false, false, USER_ID, true);
+
+        List<ApduServiceInfo> conflictingServices = new ArrayList<>();
+        conflictingServices.add(serviceWithSameComponent);
+        conflictingServices.add(createServiceInfoForAidRouting(
+                WALLET_PAYMENT_SERVICE, // A different service
+                true,
+                List.of(PAYMENT_AID_1),
+                List.of(CardEmulation.CATEGORY_PAYMENT),
+                false, false, USER_ID, true));
+
+        // Action: Resolve conflict.
+        ApduServiceInfo resolvedService =
+                mRegisteredAidCache.resolvePollingLoopFilterConflict(conflictingServices);
+
+        // Assert: The service with the matching component name is selected.
+        assertNotNull(resolvedService);
+        assertEquals(FOREGROUND_SERVICE, resolvedService.getComponent());
+    }
+
+    @Test
+    public void testIsForegroundPreferred_flagDisabled_doesNotMatchDifferentComponent() {
+        // Setup: Flag for package name matching is disabled.
+        ExtendedMockito
+                .when(com.android.nfc.module.nonexported.flags.Flags
+                        .foregroundAppPackageNameMatching())
+                .thenReturn(false);
+        setWalletRoleFlag(true); // Enable wallet role to have a fallback winner
+        mRegisteredAidCache =
+                new RegisteredAidCache(mContext, mWalletRoleObserver, mAidRoutingManager);
+
+        // Set the preferred foreground service to FOREGROUND_SERVICE.
+        mRegisteredAidCache.onPreferredForegroundServiceChanged(
+                new ComponentNameAndUser(USER_ID, FOREGROUND_SERVICE));
+        // Set wallet role holder as a fallback.
+        mRegisteredAidCache.onWalletRoleHolderChanged(WALLET_HOLDER_PACKAGE_NAME, USER_ID);
+
+        // Create a service with a different component name but the same package name.
+        ApduServiceInfo serviceWithSamePackage = createServiceInfoForAidRouting(
+                FOREGROUND_SERVICE_2, // Different component, same package
+                true,
+                List.of(PAYMENT_AID_1),
+                List.of(CardEmulation.CATEGORY_PAYMENT),
+                false, false, USER_ID, true);
+        ApduServiceInfo walletService = createServiceInfoForAidRouting(
+                WALLET_PAYMENT_SERVICE, // The wallet service
+                true,
+                List.of(PAYMENT_AID_1),
+                List.of(CardEmulation.CATEGORY_PAYMENT),
+                false, false, USER_ID, true);
+
+        List<ApduServiceInfo> conflictingServices = new ArrayList<>();
+        conflictingServices.add(serviceWithSamePackage);
+        conflictingServices.add(walletService);
+
+        // Action: Resolve conflict.
+        ApduServiceInfo resolvedService =
+                mRegisteredAidCache.resolvePollingLoopFilterConflict(conflictingServices);
+
+        // Assert: The service with the different component name is NOT selected,
+        // and the wallet service is chosen instead.
+        assertNotNull(resolvedService);
+        assertEquals(WALLET_PAYMENT_SERVICE, resolvedService.getComponent());
+    }
+
+    @Test
+    public void testIsForegroundPreferred_userIdMismatch() {
+        // Setup: Flag doesn't matter here, can be either.
+        ExtendedMockito
+                .when(com.android.nfc.module.nonexported.flags.Flags
+                        .foregroundAppPackageNameMatching())
+                .thenReturn(true);
+        setWalletRoleFlag(true); // Enable wallet role to have a fallback winner
+        mRegisteredAidCache =
+                new RegisteredAidCache(mContext, mWalletRoleObserver, mAidRoutingManager);
+
+        // Set the preferred foreground service with USER_ID.
+        mRegisteredAidCache.onPreferredForegroundServiceChanged(
+                new ComponentNameAndUser(USER_ID, FOREGROUND_SERVICE));
+        // Set wallet role holder as a fallback.
+        mRegisteredAidCache.onWalletRoleHolderChanged(WALLET_HOLDER_PACKAGE_NAME, USER_ID);
+
+        // Create a service with a different user ID (UID 100000 corresponds to user 1).
+        final int otherUserUid = 100000;
+        ApduServiceInfo serviceWithDifferentUser = createServiceInfoForAidRouting(
+                FOREGROUND_SERVICE,
+                true,
+                List.of(PAYMENT_AID_1),
+                List.of(CardEmulation.CATEGORY_PAYMENT),
+                false, false, otherUserUid, true);
+        ApduServiceInfo walletService = createServiceInfoForAidRouting(
+                WALLET_PAYMENT_SERVICE, // The wallet service
+                true,
+                List.of(PAYMENT_AID_1),
+                List.of(CardEmulation.CATEGORY_PAYMENT),
+                false, false, USER_ID, true);
+
+        List<ApduServiceInfo> conflictingServices = new ArrayList<>();
+        conflictingServices.add(serviceWithDifferentUser);
+        conflictingServices.add(walletService);
+
+        // Action: Resolve conflict.
+        ApduServiceInfo resolvedService =
+                mRegisteredAidCache.resolvePollingLoopFilterConflict(conflictingServices);
+
+        // Assert: The service with the different user ID is NOT selected,
+        // and the wallet service is chosen instead.
+        assertNotNull(resolvedService);
+        assertEquals(WALLET_PAYMENT_SERVICE, resolvedService.getComponent());
+    }
+
+    @Test
+    public void testIsForegroundPreferred_nullPreferredService() {
+        // Setup: No preferred foreground service is set.
+        setWalletRoleFlag(true); // Enable wallet role to have a fallback winner
+        mRegisteredAidCache =
+                new RegisteredAidCache(mContext, mWalletRoleObserver, mAidRoutingManager);
+
+        // Set wallet role holder as a fallback.
+        mRegisteredAidCache.onWalletRoleHolderChanged(WALLET_HOLDER_PACKAGE_NAME, USER_ID);
+
+        ApduServiceInfo foregroundService = createServiceInfoForAidRouting(
+                FOREGROUND_SERVICE,
+                true,
+                List.of(PAYMENT_AID_1),
+                List.of(CardEmulation.CATEGORY_PAYMENT),
+                false, false, USER_ID, true);
+        ApduServiceInfo walletService = createServiceInfoForAidRouting(
+                WALLET_PAYMENT_SERVICE, // The wallet service
+                true,
+                List.of(PAYMENT_AID_1),
+                List.of(CardEmulation.CATEGORY_PAYMENT),
+                false, false, USER_ID, true);
+
+        List<ApduServiceInfo> conflictingServices = new ArrayList<>();
+        conflictingServices.add(foregroundService);
+        conflictingServices.add(walletService);
+
+        // Action: Resolve conflict.
+        ApduServiceInfo resolvedService =
+                mRegisteredAidCache.resolvePollingLoopFilterConflict(conflictingServices);
+
+        // Assert: Since there's no foreground preference, the wallet service is chosen.
+        assertNotNull(resolvedService);
+        assertEquals(WALLET_PAYMENT_SERVICE, resolvedService.getComponent());
     }
 }
