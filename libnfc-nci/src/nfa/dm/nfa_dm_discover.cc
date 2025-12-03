@@ -30,6 +30,7 @@
 #include "nfa_api.h"
 #include "nfa_dm_int.h"
 #include "nfa_hci_int.h"
+#include "nfc_config.h"
 
 #if (NFC_NFCEE_INCLUDED == TRUE)
 #include "nfa_ee_api.h"
@@ -1678,8 +1679,12 @@ tNFC_STATUS nfa_dm_disc_start_kovio_presence_check(void) {
       nfa_sys_start_timer(&nfa_dm_cb.disc_cb.kovio_tle, 0,
                           NFA_DM_DISC_TIMEOUT_KOVIO_PRESENCE_CHECK);
 
-      /* Deactivate to discovery mode */
-      status = nfa_dm_send_deactivate_cmd(NFC_DEACTIVATE_TYPE_DISCOVERY);
+      if (NfcConfig::getUnsigned(NAME_KOVIO_PRESENCE_CHECK_TYPE, 0))
+        /* Deactivate to idle mode */
+        status = nfa_dm_send_deactivate_cmd(NFC_DEACTIVATE_TYPE_IDLE);
+      else
+        /* Deactivate to discovery mode */
+        status = nfa_dm_send_deactivate_cmd(NFC_DEACTIVATE_TYPE_DISCOVERY);
 
       if (status == NFC_STATUS_OK) {
         /* deactivate to sleep is sent on behalf of sleep wakeup.
