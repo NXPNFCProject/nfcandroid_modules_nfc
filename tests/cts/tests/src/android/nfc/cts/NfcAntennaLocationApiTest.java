@@ -18,6 +18,7 @@ package android.nfc.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
@@ -90,6 +91,8 @@ public class NfcAntennaLocationApiTest {
         NfcAntennaInfo nfcAntennaInfo = mAdapter.getNfcAntennaInfo();
 
         assertNotNull(nfcAntennaInfo);
+        assertTrue(nfcAntennaInfo.getDeviceWidth() > 0);
+        assertTrue(nfcAntennaInfo.getDeviceHeight() > 0);
         logAntennaInfo(Thread.currentThread().getStackTrace()[1].getMethodName(), nfcAntennaInfo);
     }
 
