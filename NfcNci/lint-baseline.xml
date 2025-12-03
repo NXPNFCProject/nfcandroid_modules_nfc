@@ -2,6 +2,83 @@
 <issues format="6" by="lint 8.4.0-alpha08" type="baseline" client="" dependencies="true" name="" variant="all" version="8.4.0-alpha08">
 
     <issue
+        id="NewApi"
+        message="Call requires API level 36.1 (current min is 36): `android.app.KeyguardManager#addDeviceLockedStateListener`"
+        errorLine1="            mKeyguard.addDeviceLockedStateListener("
+        errorLine2="                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="packages/modules/Nfc/NfcNci/src/com/android/nfc/NfcService.java"
+            line="4685"
+            column="23"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Class requires API level 36.1 (current min is 36): `android.app.KeyguardManager.DeviceLockedStateListener`"
+        errorLine1="            new DeviceLockedStateListener() {"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="packages/modules/Nfc/NfcNci/src/com/android/nfc/NfcService.java"
+            line="4734"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36.1 (current min is 36): `new android.nfc.cardemulation.ApduServiceInfo`"
+        errorLine1="            ApduServiceInfo ndefNfceeAidService = new ApduServiceInfo("
+        errorLine2="                                                  ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="packages/modules/Nfc/NfcNci/src/com/android/nfc/cardemulation/RegisteredServicesCache.java"
+            line="577"
+            column="51"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36.1 (current min is 36): `android.nfc.cardemulation.ApduServiceInfo#setRequiresScreenOn`"
+        errorLine1="                        serviceInfo.setRequiresScreenOn("
+        errorLine2="                                    ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="packages/modules/Nfc/NfcNci/src/com/android/nfc/cardemulation/RegisteredServicesCache.java"
+            line="663"
+            column="37"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36.1 (current min is 36): `android.nfc.cardemulation.ApduServiceInfo#setRequiresUnlock`"
+        errorLine1="                        serviceInfo.setRequiresUnlock("
+        errorLine2="                                    ~~~~~~~~~~~~~~~~~">
+        <location
+            file="packages/modules/Nfc/NfcNci/src/com/android/nfc/cardemulation/RegisteredServicesCache.java"
+            line="670"
+            column="37"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36.1 (current min is 36): `android.nfc.cardemulation.ApduServiceInfo#setRequiresScreenOn`"
+        errorLine1="                serviceInfo.setRequiresScreenOn(enable);"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="packages/modules/Nfc/NfcNci/src/com/android/nfc/cardemulation/RegisteredServicesCache.java"
+            line="1352"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36.1 (current min is 36): `android.nfc.cardemulation.ApduServiceInfo#setRequiresUnlock`"
+        errorLine1="                serviceInfo.setRequiresUnlock(enable);"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~">
+        <location
+            file="packages/modules/Nfc/NfcNci/src/com/android/nfc/cardemulation/RegisteredServicesCache.java"
+            line="1387"
+            column="29"/>
+    </issue>
+
+    <issue
         id="ApplySharedPref"
         message="Consider using `apply()` instead; `commit` writes its data to persistent storage immediately, whereas `apply` will handle it in the background"
         errorLine1="            mSubscriptionPrefs.edit().putInt(PREF_PREFERRED_SUB_ID, subscriptionId).commit();"

@@ -21,6 +21,9 @@ android_library {
         "//packages/modules/Nfc:__subpackages__",
         "//vendor:__subpackages__",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 android_test {
