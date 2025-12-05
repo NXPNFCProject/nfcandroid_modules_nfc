@@ -176,6 +176,7 @@ static bool sIsShuttingDown = false;
 #define DEFAULT_DISCOVERY_DURATION 500
 #define READER_MODE_DISCOVERY_DURATION 200
 #define FLAG_SET_DEFAULT_TECH 0x40000000
+#define NFC_INTERFACE_SE_READER 0x83
 
 static void nfaConnectionCallback(uint8_t event, tNFA_CONN_EVT_DATA* eventData);
 static void nfaDeviceManagementCallback(uint8_t event,
@@ -462,6 +463,13 @@ static void nfaConnectionCallback(uint8_t connEvent,
 
     case NFA_ACTIVATED_EVT:  // NFC link/protocol activated
     {
+      if (eventData->activated.activate_ntf.intf_param.type ==
+          NFC_INTERFACE_SE_READER) {
+        LOG(INFO) << StringPrintf(
+            "%s: NFA_ACTIVATED_EVT: RF_Interface is %02X, ignoring", __func__,
+            eventData->activated.activate_ntf.intf_param.type);
+        break;
+      }
       bool notListen = !isListenMode(eventData->activated);
       LOG(DEBUG) << StringPrintf(
           "%s: NFA_ACTIVATED_EVT: gIsSelectingRfInterface=%d, sIsDisabling=%d",
