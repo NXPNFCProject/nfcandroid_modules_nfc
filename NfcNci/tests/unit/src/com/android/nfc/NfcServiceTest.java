@@ -2554,4 +2554,64 @@ public final class NfcServiceTest {
         verify(mDeviceHost, never()).disableDiscovery();
         verify(mDeviceHost, never()).commitRouting();
     }
+
+    @Test
+    public void testDeviceSupportsNfcSecure_HceAndSecureNfcCapable_ReturnsTrue() {
+        // Arrange: HCE is capable and secure NFC is configured as capable
+        when(mPackageManager.hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION))
+                .thenReturn(true);
+        when(mDeviceConfigFacade.isSecureNfcCapable()).thenReturn(true);
+
+        // Act: Create a new NfcService instance to apply the new configuration
+        createNfcService();
+
+        // Assert: deviceSupportsNfcSecure should be true
+        assertTrue(mNfcService.mNfcAdapter.deviceSupportsNfcSecure());
+    }
+
+    @Test
+    public void testDeviceSupportsNfcSecure_HceCapableAndNotSecureNfcCapable_ReturnsFalse() {
+        // Arrange: HCE is capable but secure NFC is not configured as capable
+        when(mPackageManager.hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION))
+                .thenReturn(true);
+        when(mDeviceConfigFacade.isSecureNfcCapable()).thenReturn(false);
+
+        // Act: Create a new NfcService instance to apply the new configuration
+        createNfcService();
+
+        // Assert: deviceSupportsNfcSecure should be false
+        assertFalse(mNfcService.mNfcAdapter.deviceSupportsNfcSecure());
+    }
+
+    @Test
+    public void testDeviceSupportsNfcSecure_NotHceCapableAndSecureNfcCapable_ReturnsFalse() {
+        // Arrange: HCE is not capable but secure NFC is configured as capable
+        when(mPackageManager.hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION))
+                .thenReturn(false);
+        when(mPackageManager.hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION_NFCF))
+                .thenReturn(false);
+        when(mDeviceConfigFacade.isSecureNfcCapable()).thenReturn(true);
+
+        // Act: Create a new NfcService instance to apply the new configuration
+        createNfcService();
+
+        // Assert: deviceSupportsNfcSecure should be false
+        assertFalse(mNfcService.mNfcAdapter.deviceSupportsNfcSecure());
+    }
+
+    @Test
+    public void testDeviceSupportsNfcSecure_NotHceCapableAndNotSecureNfcCapable_ReturnsFalse() {
+        // Arrange: HCE is not capable and secure NFC is not configured as capable
+        when(mPackageManager.hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION))
+                .thenReturn(false);
+        when(mPackageManager.hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION_NFCF))
+                .thenReturn(false);
+        when(mDeviceConfigFacade.isSecureNfcCapable()).thenReturn(false);
+
+        // Act: Create a new NfcService instance to apply the new configuration
+        createNfcService();
+
+        // Assert: deviceSupportsNfcSecure should be false
+        assertFalse(mNfcService.mNfcAdapter.deviceSupportsNfcSecure());
+    }
 }
