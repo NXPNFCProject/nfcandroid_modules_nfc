@@ -454,6 +454,10 @@ static void nfaConnectionCallback(uint8_t connEvent,
     case NFA_DEACTIVATE_FAIL_EVT:
       LOG(DEBUG) << StringPrintf("%s: NFA_DEACTIVATE_FAIL_EVT: status = %d",
                                  __func__, eventData->status);
+      {
+        SyncEventGuard g(gDeactivatedEvent);
+        gDeactivatedEvent.notifyOne();
+      }
       break;
 
     case NFA_ACTIVATED_EVT:  // NFC link/protocol activated
