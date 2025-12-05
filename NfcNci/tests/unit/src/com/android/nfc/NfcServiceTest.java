@@ -2441,7 +2441,7 @@ public final class NfcServiceTest {
         mNfcService.mNfcAdapter.registerOemExtensionCallback(oemExtensionCallback);
         callback.onTagDisconnected();
         assertThat(mNfcService.mCookieUpToDate).isLessThan(0);
-        verify(oemExtensionCallback).onTagConnected(anyBoolean());
+        verify(oemExtensionCallback).onTagConnected(false);
     }
 
     @Test
