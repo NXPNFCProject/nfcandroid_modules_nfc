@@ -28,6 +28,7 @@ import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.app.PendingIntent.CanceledException;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProtoEnums;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -140,7 +141,9 @@ class NfcDispatcher {
         mNfcInjector = nfcInjector;
         mScreenStateHelper = new ScreenStateHelper(context);
         mNfcUnlockManager = NfcUnlockManager.getInstance();
-        mDeviceSupportsBluetooth = BluetoothAdapter.getDefaultAdapter() != null;
+        BluetoothManager bluetoothManager = mContext.getSystemService(BluetoothManager.class);
+        mDeviceSupportsBluetooth =
+                (bluetoothManager != null && bluetoothManager.getAdapter() != null);
         mForegroundUid = Process.INVALID_UID;
         mForegroundUtils = ForegroundUtils.getInstance(
                 context.getSystemService(ActivityManager.class));

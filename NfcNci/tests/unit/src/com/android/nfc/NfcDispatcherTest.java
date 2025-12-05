@@ -35,6 +35,8 @@ import android.app.ActivityManager;
 import android.app.KeyguardManager;
 import android.app.PendingIntent;
 import android.app.PendingIntent.CanceledException;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProtoEnums;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -123,6 +125,10 @@ public final class NfcDispatcherTest {
     @Mock
     UserManager mUserManager;
     @Mock
+    BluetoothManager mBluetoothManager;
+    @Mock
+    BluetoothAdapter mBluetoothAdapter;
+    @Mock
     ActivityManager mActivityManager;
     @Mock
     NfcAdapter mNfcAdapter;
@@ -156,6 +162,8 @@ public final class NfcDispatcherTest {
         when(mockContext.getSystemService(KeyguardManager.class)).thenReturn(mKeyguardManager);
         when(mockContext.getSystemService(DisplayManager.class)).thenReturn(mDisplayManager);
         when(mockContext.getSystemService(UserManager.class)).thenReturn(mUserManager);
+        when(mockContext.getSystemService(BluetoothManager.class)).thenReturn(mBluetoothManager);
+        when(mBluetoothManager.getAdapter()).thenReturn(mBluetoothAdapter);
         when(mockContext.getSystemService(ActivityManager.class)).thenReturn(mActivityManager);
         when(ForegroundUtils.getInstance(mActivityManager)).thenReturn(mForegroundUtils);
         when(mockContext.createPackageContextAsUser(anyString(), anyInt(), any()))
