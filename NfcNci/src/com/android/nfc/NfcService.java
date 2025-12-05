@@ -3967,6 +3967,59 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 }
             }
         }
+
+        @Override
+        public void allowOneTransaction() {
+            synchronized (NfcService.this) {
+                if (!isNfcEnabled()) {
+                    Log.e(TAG, "allowOneTransaction: NFC must be enabled but is: " + mState.get());
+                    return;
+                }
+
+                int callingUid = Binder.getCallingUid();
+                UserHandle callingUser = Binder.getCallingUserHandle();
+
+                if (!NfcInjector.isPrivileged(callingUid)) {
+                    NfcPermissions.enforceUserPermissions(mContext);
+
+                    String[] packages = mContext.getPackageManager().getPackagesForUid(callingUid);
+                    if (packages == null || packages.length == 0) {
+                        throw new SecurityException("Caller with UID " + callingUid
+                                + " is not the Wallet Role holder or the "
+                                + "preferred payment service.");
+                    }
+
+                    boolean isAllowed = false;
+                    if (mCardEmulationManager != null) {
+                        for (String packageName : packages) {
+                            if (mCardEmulationManager.isPreferredServicePackageNameForUser(
+                                    packageName, callingUser.getIdentifier())) {
+                                isAllowed = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!isAllowed) {
+                        throw new SecurityException("Caller with UID " + callingUid
+                                + " is not the Wallet Role holder or the "
+                                + "preferred payment service.");
+                    }
+                }
+
+                if (mCardEmulationManager.isHostCardEmulationActivated()) {
+                    Log.w(TAG, "allowOneTransaction: Cannot allow transaction "
+                            + "while one is already active.");
+                    return;
+                }
+
+                if (mCardEmulationManager != null) {
+                    mCardEmulationManager.allowOneTransaction();
+                } else {
+                    Log.e(TAG, "CardEmulationManager not available.");
+                }
+            }
+        }
     }
 
     private final IBinder.DeathRecipient mOemExtensionCbDeathRecipient = () -> {

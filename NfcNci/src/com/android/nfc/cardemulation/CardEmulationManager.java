@@ -2088,4 +2088,15 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
             mRoutingChangeFuture = null;
         }
     }
+
+    /**
+     * Forwards the request to allow a single transaction to the HostEmulationManager.
+     */
+    public void allowOneTransaction() {
+        if (mHostEmulationManager != null) {
+            mHostEmulationManager.allowOneTransaction();
+        } else {
+            Log.e("CardEmulationManager", "HostEmulationManager is not available.");
+        }
+    }
 }

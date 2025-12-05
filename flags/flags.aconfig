@@ -82,3 +82,11 @@ flag {
     description: "Tap to X API for Android 17"
     bug: "416517337"
 }
+
+flag {
+    name: "nfcstack_26q2_updates"
+    is_exported: true
+    namespace: "nfc"
+    description: "This flags controls updates to nfc stack for 26Q2"
+    bug: "446675679"
+}

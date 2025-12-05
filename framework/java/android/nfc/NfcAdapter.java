@@ -3106,4 +3106,29 @@ public final class NfcAdapter {
         return callServiceReturn(() ->  sService.getGestureExchangeAid(), null);
     }
 
+    /**
+     * Temporarily disables observe mode to allow a single Host Card Emulation (HCE)
+     * transaction to proceed.
+     *
+     * <p>This is typically used in scenarios where an application, such as a digital wallet,
+     * needs to perform a tap-to-pay transaction while observe mode is active. After
+     * calling this method, observe mode will be disabled, allowing the HCE service
+     * to be selected by the reader. Observe mode will be automatically re-enabled
+     * after the transaction is complete or if the NFC field is lost.
+     *
+     */
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_NFCSTACK_26Q2_UPDATES)
+    public void allowOneTransaction() {
+        try {
+            INfcAdapter service = getService();
+            if (service != null) {
+                service.allowOneTransaction();
+            } else {
+                Log.e(TAG, "NFC service is not available.");
+            }
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
 }

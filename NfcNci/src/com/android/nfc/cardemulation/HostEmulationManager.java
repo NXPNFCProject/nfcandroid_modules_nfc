@@ -808,7 +808,20 @@ public class HostEmulationManager {
         }
     }
 
-    private void allowOneTransaction() {
+    /**
+     * Temporarily disables observe mode to allow a single Host Card Emulation (HCE)
+     * transaction to proceed.
+     *
+     * <p>This method is typically invoked when an application, such as a digital wallet, needs
+     * to perform a tap-to-pay transaction while observe mode is active. It immediately posts
+     * a request to disable observe mode, allowing the HCE service to be selected by the reader.
+     *
+     * <p>Internal flags ({@code mEnableObserveModeAfterTransaction} and
+     * {@code mEnableObserveModeOnFieldOff}) are set to ensure that observe mode is
+     * automatically re-enabled after the transaction is complete or if the NFC field is lost
+     * before a transaction begins.
+     */
+    public void allowOneTransaction() {
         Log.d(TAG, "allowOneTransaction");
         mEnableObserveModeAfterTransaction = true;
         // This is needed to ensure that we re-enable observe mode

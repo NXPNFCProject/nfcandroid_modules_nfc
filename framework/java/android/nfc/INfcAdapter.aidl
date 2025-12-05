@@ -136,4 +136,5 @@ interface INfcAdapter
     void registerGestureExchangeCallback(in IReaderCallback callback);
     void unregisterGestureExchangeCallback(in IReaderCallback callback);
     String getGestureExchangeAid();
+    void allowOneTransaction();
 }
