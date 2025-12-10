@@ -1,0 +1,19 @@
+package: "com.android.nfc.flags"
+container: "system"
+
+flag {
+    name: "coalesce_rf_events"
+    namespace: "wallet_integration"
+    description: "Combine RF field activated and deactivated events to reduce excessive broadcasts."
+    bug: "365533082"
+}
+
+flag {
+    name: "exit_frames"
+    namespace: "wallet_integration"
+    description: "Enable exit frames to improve autotransact performance."
+    bug: "380455428"
+}
+
+# Don't add any new flags for Android 16+ targeting features. Use the flags
+# in com.android.nfc.module.flags (packages/modules/Nfc/flags) instead.

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="app_name" msgid="6065635506543927196">"NFC service"</string>
+    <string name="nfcUserLabel" msgid="8399413714687124782">"NFC"</string>
+    <string name="accessibility_nfc_enabled" msgid="830589378553181410">"NFC enabled."</string>
+    <string name="tap_to_beam" msgid="2022424274840394451">"Tap to beam"</string>
+    <string name="beam_progress" msgid="1929294166633309327">"Incoming beam..."</string>
+    <string name="beam_outgoing" msgid="5219329384828480018">"Beaming..."</string>
+    <string name="beam_complete" msgid="6147496341809579439">"Beam complete"</string>
+    <string name="beam_failed" msgid="4211620610434373359">"Beam did not complete"</string>
+    <string name="beam_canceled" msgid="512339558899479458">"Beam cancelled"</string>
+    <string name="cancel" msgid="2441041247172250936">"Cancel"</string>
+    <string name="beam_tap_to_view" msgid="9147455481297418801">"Tap to view"</string>
+    <string name="beam_handover_not_supported" msgid="3930703977696510905">"The receiver\'s device doesn\'t support large file transfer via beam."</string>
+    <string name="beam_try_again" msgid="1962556612448345422">"Bring devices together again"</string>
+    <string name="beam_busy" msgid="8179024484757185047">"Beam is currently busy. Try again when the previous transfer completes."</string>
+    <string name="device" msgid="6859793408635712424">"device"</string>
+    <string name="connecting_peripheral" msgid="5023158537894294802">"Connecting <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
+    <string name="connected_peripheral" msgid="2496731052957541047">"Connected <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
+    <string name="connect_peripheral_failed" msgid="368937385551413385">"Could not connect <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
+    <string name="disconnecting_peripheral" msgid="1121670272906082527">"Disconnecting <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
+    <string name="disconnected_peripheral" msgid="9009042963082667744">"Disconnected <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
+    <string name="pairing_peripheral" msgid="5319926791325775305">"Pairing <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
+    <string name="pairing_peripheral_failed" msgid="5905500974914016272">"Could not pair <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
+    <string name="failed_to_enable_bt" msgid="5978409523818027926">"Could not enable Bluetooth"</string>
+    <string name="confirm_pairing" msgid="6587809107551647782">"Are you sure you want to pair the Bluetooth device <xliff:g id="DEVICE_NAME">%1$s</xliff:g>?"</string>
+    <string name="pair_yes" msgid="3624986519335168604">"Yes"</string>
+    <string name="pair_no" msgid="1333098406083837138">"No"</string>
+    <string name="tap_again_to_pay" msgid="4338572813931564301">"Tap again to pay with <xliff:g id="APP">%1$s</xliff:g>"</string>
+    <string name="tap_again_to_complete" msgid="6649361012821973200">"Tap again to complete with <xliff:g id="APP">%1$s</xliff:g>"</string>
+    <string name="tap_again_description" msgid="7062073825398109427">"Hold to reader"</string>
+    <string name="appchooser_description" msgid="4568068957993132082">"Choose app to scan"</string>
+    <string name="transaction_failure" msgid="6933419514549792555">"This transaction couldn\'t be completed with <xliff:g id="APP">%1$s</xliff:g>."</string>
+    <string name="could_not_use_app" msgid="2945389413330489607">"Couldn\'t use <xliff:g id="APP">%1$s</xliff:g>."</string>
+    <string name="pay_with" msgid="5104112137995621262">"Pay with:"</string>
+    <string name="complete_with" msgid="6624789011610610450">"Complete with"</string>
+    <string name="default_pay_app_removed" msgid="4678760785647557185">"Your preferred service for tap &amp; pay was removed. Choose another?"</string>
+    <string name="ask_nfc_tap" msgid="7921925213499063051">"Tap another device to complete"</string>
+    <string name="wifi_connect" msgid="2726973850576310336">"Connect"</string>
+    <string name="status_unable_to_connect" msgid="3282224066213036023">"Unable to connect to network"</string>
+    <string name="status_wifi_connected" msgid="8878112079913521399">"Connected"</string>
+    <string name="title_connect_to_network" msgid="5617055452888255705">"Connect to network"</string>
+    <string name="prompt_connect_to_network" msgid="6954936151128422990">"Connect to network <xliff:g id="NETWORK_SSID">%1$s</xliff:g>?"</string>
+    <string name="beam_requires_nfc_enabled" msgid="1943159298389147033">"Android Beam requires NFC to be enabled. Do you want to enable it?"</string>
+    <string name="android_beam" msgid="5505991354821548221">"Android Beam"</string>
+    <string name="beam_requires_external_storage_permission" msgid="1414485338750858306">"Application does not have External Storage Permission. This is required to Beam this file"</string>
+    <string name="title_confirm_url_open" msgid="5517813934880640232">"Open link?"</string>
+    <string name="summary_confirm_url_open" msgid="7945693255033907131">"Your phone received a link through NFC:"</string>
+    <string name="summary_confirm_url_open_tablet" msgid="7988255063558403447">"Your tablet received a link through NFC:"</string>
+    <string name="action_confirm_url_open" msgid="2280097397376867615">"Open link"</string>
+    <string name="tag_read_error" msgid="8591844088497440515">"NFC read error. Try again."</string>
+    <string name="tag_dispatch_failed" msgid="1105926115269578595">"No supported application for this NFC Tag"</string>
+    <string name="nfc_blocking_alert_title" msgid="3361011027125473371">"NFC may be blocked"</string>
+    <string name="nfc_blocking_alert_message" msgid="6427327924471665520">"Tap to learn how to fix."</string>
+    <string name="tag_app_alert_title" msgid="6761163540731807246">"Allow apps to read NFC tags"</string>
+    <string name="tag_app_alert_message" msgid="5518729638341784348">"<xliff:g id="APPNAMES">%1$s</xliff:g> can read NFC tags."</string>
+    <string name="tag_app_alert_message_multiple" msgid="6989858224684960030">"The following apps can read NFC tags:<xliff:g id="APPNAMES">%1$s</xliff:g>"</string>
+    <string name="tag_app_alert_action_button" msgid="1442462487575846704">"Tap to learn how to disable it."</string>
+    <string name="nfc_logging_alert_title" msgid="7355334076019926549">"NFC data is being recorded"</string>
+    <string name="nfc_logging_alert_message" msgid="3833608086332697579">"Tap to stop recording."</string>
+    <string name="title_package_enabling_nfc" msgid="7797373366778008307">"Allow <xliff:g id="PKG">%1$s</xliff:g> to enable NFC?"</string>
+    <string name="enable_nfc_yes" msgid="3514504441883079276">"Yes"</string>
+    <string name="enable_nfc_no" msgid="4272144216339787073">"No"</string>
+    <string name="device_ndef_nfcee_service_name" msgid="1035872251333915624">"Embedded tag"</string>
+</resources>

@@ -1,0 +1,23 @@
+{
+  "presubmit": [
+    {
+      "name": "NfcTestCases"
+    },
+    {
+      "name": "CtsNfcTestCases"
+    },
+    {
+      "name": "NfcNciUnitTests"
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "NfcNciUnitTests",
+      "keywords": ["primary-device"]
+    },
+    {
+      "name": "libnfc-nci-jni-tests",
+      "keywords": ["primary-device"]
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="app_name" msgid="6065635506543927196">"NFC-услуга"</string>
+    <string name="nfcUserLabel" msgid="8399413714687124782">"NFC"</string>
+    <string name="accessibility_nfc_enabled" msgid="830589378553181410">"NFC е овозможена."</string>
+    <string name="tap_to_beam" msgid="2022424274840394451">"Допри за пренесување"</string>
+    <string name="beam_progress" msgid="1929294166633309327">"Дојдовен зрак..."</string>
+    <string name="beam_outgoing" msgid="5219329384828480018">"Зрачење..."</string>
+    <string name="beam_complete" msgid="6147496341809579439">"Зракот е целосен"</string>
+    <string name="beam_failed" msgid="4211620610434373359">"Зракот не се заврши"</string>
+    <string name="beam_canceled" msgid="512339558899479458">"Зракот е откажан"</string>
+    <string name="cancel" msgid="2441041247172250936">"Откажи"</string>
+    <string name="beam_tap_to_view" msgid="9147455481297418801">"Допри за приказ"</string>
+    <string name="beam_handover_not_supported" msgid="3930703977696510905">"Уредот на примачот не поддржува пренос на големи датотеки преку зрак."</string>
+    <string name="beam_try_again" msgid="1962556612448345422">"Повторно спој ги уредите"</string>
+    <string name="beam_busy" msgid="8179024484757185047">"Beam е моментално зафатен. Обидете се повторно кога ќе заврши претходниот пренос."</string>
+    <string name="device" msgid="6859793408635712424">"уред"</string>
+    <string name="connecting_peripheral" msgid="5023158537894294802">"Се поврзува <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
+    <string name="connected_peripheral" msgid="2496731052957541047">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> e поврзан"</string>
+    <string name="connect_peripheral_failed" msgid="368937385551413385">"Не може да се поврзе со <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
+    <string name="disconnecting_peripheral" msgid="1121670272906082527">"Се исклучува <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
+    <string name="disconnected_peripheral" msgid="9009042963082667744">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> е исклучен"</string>
+    <string name="pairing_peripheral" msgid="5319926791325775305">"Се спарува <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
+    <string name="pairing_peripheral_failed" msgid="5905500974914016272">"Не може да се спари <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
+    <string name="failed_to_enable_bt" msgid="5978409523818027926">"Не може да се овозможи Bluetooth"</string>
+    <string name="confirm_pairing" msgid="6587809107551647782">"Дали сте сигурни дека сакате да го спарите Bluetooth-уредот <xliff:g id="DEVICE_NAME">%1$s</xliff:g>?"</string>
+    <string name="pair_yes" msgid="3624986519335168604">"Да"</string>
+    <string name="pair_no" msgid="1333098406083837138">"Не"</string>
+    <string name="tap_again_to_pay" msgid="4338572813931564301">"Допрете повторно за да платите со <xliff:g id="APP">%1$s</xliff:g>"</string>
+    <string name="tap_again_to_complete" msgid="6649361012821973200">"Допрете повторно за да заврши со <xliff:g id="APP">%1$s</xliff:g>"</string>
+    <string name="tap_again_description" msgid="7062073825398109427">"Држете го уредот на читачот"</string>
+    <string name="appchooser_description" msgid="4568068957993132082">"Изберете апликација за скенирање"</string>
+    <string name="transaction_failure" msgid="6933419514549792555">"Оваа трансакција не може да се заврши со <xliff:g id="APP">%1$s</xliff:g>."</string>
+    <string name="could_not_use_app" msgid="2945389413330489607">"Не може да користи <xliff:g id="APP">%1$s</xliff:g>."</string>
+    <string name="pay_with" msgid="5104112137995621262">"Плати со"</string>
+    <string name="complete_with" msgid="6624789011610610450">"Заврши со"</string>
+    <string name="default_pay_app_removed" msgid="4678760785647557185">"Претпочитаната услуга за допирање и плаќање е отстранета. Избери друга?"</string>
+    <string name="ask_nfc_tap" msgid="7921925213499063051">"Допрете друг уред за да се заврши"</string>
+    <string name="wifi_connect" msgid="2726973850576310336">"Поврзи се"</string>
+    <string name="status_unable_to_connect" msgid="3282224066213036023">"Не може да се поврзе со мрежата."</string>
+    <string name="status_wifi_connected" msgid="8878112079913521399">"Поврзано"</string>
+    <string name="title_connect_to_network" msgid="5617055452888255705">"Поврзи се на мрежа"</string>
+    <string name="prompt_connect_to_network" msgid="6954936151128422990">"Да се поврзе со мрежата <xliff:g id="NETWORK_SSID">%1$s</xliff:g>?"</string>
+    <string name="beam_requires_nfc_enabled" msgid="1943159298389147033">"Android Beam бара да се овозможи NFC. Дали сакате да го овозможите?"</string>
+    <string name="android_beam" msgid="5505991354821548221">"Android Beam"</string>
+    <string name="beam_requires_external_storage_permission" msgid="1414485338750858306">"Апликацијата нема дозвола за надворешната меморија. Тоа е неопходно за пренесување на датотекава"</string>
+    <string name="title_confirm_url_open" msgid="5517813934880640232">"Да се отвори линкот?"</string>
+    <string name="summary_confirm_url_open" msgid="7945693255033907131">"Вашиот телефон доби линк преку NFC:"</string>
+    <string name="summary_confirm_url_open_tablet" msgid="7988255063558403447">"Вашиот таблет доби линк преку NFC:"</string>
+    <string name="action_confirm_url_open" msgid="2280097397376867615">"Отвори ја врската"</string>
+    <string name="tag_read_error" msgid="8591844088497440515">"Грешка при читањето со NFC. Обидете се повторно."</string>
+    <string name="tag_dispatch_failed" msgid="1105926115269578595">"Нема поддржана апликација за оваа ознака за NFC"</string>
+    <string name="nfc_blocking_alert_title" msgid="3361011027125473371">"NFC можеби е блокирано"</string>
+    <string name="nfc_blocking_alert_message" msgid="6427327924471665520">"Допрете за да дознаете како да го решите проблемот."</string>
+    <string name="tag_app_alert_title" msgid="6761163540731807246">"Дозволете апликациите да читаат ознаки за NFC"</string>
+    <string name="tag_app_alert_message" msgid="5518729638341784348">"<xliff:g id="APPNAMES">%1$s</xliff:g> може да чита ознаки за NFC."</string>
+    <string name="tag_app_alert_message_multiple" msgid="6989858224684960030">"Следниве апликации може да читаат ознаки за NFC:<xliff:g id="APPNAMES">%1$s</xliff:g>"</string>
+    <string name="tag_app_alert_action_button" msgid="1442462487575846704">"Допрете за да дознаете како се оневозможува."</string>
+    <string name="nfc_logging_alert_title" msgid="7355334076019926549">"Се снимаат податоци од NFC"</string>
+    <string name="nfc_logging_alert_message" msgid="3833608086332697579">"Допрете за да престане снимањето."</string>
+    <string name="title_package_enabling_nfc" msgid="7797373366778008307">"Да се дозволи <xliff:g id="PKG">%1$s</xliff:g> да овозможи NFC?"</string>
+    <string name="enable_nfc_yes" msgid="3514504441883079276">"Да"</string>
+    <string name="enable_nfc_no" msgid="4272144216339787073">"Не"</string>
+    <string name="device_ndef_nfcee_service_name" msgid="1035872251333915624">"Вметната ознака"</string>
+</resources>

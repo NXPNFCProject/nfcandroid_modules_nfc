@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="app_name" msgid="6065635506543927196">"Usluga NFC"</string>
+    <string name="nfcUserLabel" msgid="8399413714687124782">"NFC"</string>
+    <string name="accessibility_nfc_enabled" msgid="830589378553181410">"NFC je omogućen."</string>
+    <string name="tap_to_beam" msgid="2022424274840394451">"Dodirnite za prenos"</string>
+    <string name="beam_progress" msgid="1929294166633309327">"Dolazni prijenos..."</string>
+    <string name="beam_outgoing" msgid="5219329384828480018">"Prenošenje..."</string>
+    <string name="beam_complete" msgid="6147496341809579439">"Prenos je završen."</string>
+    <string name="beam_failed" msgid="4211620610434373359">"Prenos nije završen."</string>
+    <string name="beam_canceled" msgid="512339558899479458">"Prenos je otkazan."</string>
+    <string name="cancel" msgid="2441041247172250936">"Otkaži"</string>
+    <string name="beam_tap_to_view" msgid="9147455481297418801">"Dodirnite za prikaz"</string>
+    <string name="beam_handover_not_supported" msgid="3930703977696510905">"Uređaj primaoca ne podržava prenos velikih fajlova putem emitiranja."</string>
+    <string name="beam_try_again" msgid="1962556612448345422">"Opet spojite uređaje"</string>
+    <string name="beam_busy" msgid="8179024484757185047">"Prenos je trenutno zauzet. Pokušajte ponovo kada se prethodni transfer završi."</string>
+    <string name="device" msgid="6859793408635712424">"uređaj"</string>
+    <string name="connecting_peripheral" msgid="5023158537894294802">"Povezivanje <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
+    <string name="connected_peripheral" msgid="2496731052957541047">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> povezan"</string>
+    <string name="connect_peripheral_failed" msgid="368937385551413385">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> se ne može povezati"</string>
+    <string name="disconnecting_peripheral" msgid="1121670272906082527">"Prekidanje veze <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
+    <string name="disconnected_peripheral" msgid="9009042963082667744">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> je diskonektovan."</string>
+    <string name="pairing_peripheral" msgid="5319926791325775305">"Uparivanje <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
+    <string name="pairing_peripheral_failed" msgid="5905500974914016272">"Ne može upariti <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
+    <string name="failed_to_enable_bt" msgid="5978409523818027926">"Bluetooth se ne može omogućiti"</string>
+    <string name="confirm_pairing" msgid="6587809107551647782">"Jeste li sigurni da želite upariti Bluetooth uređaj <xliff:g id="DEVICE_NAME">%1$s</xliff:g>?"</string>
+    <string name="pair_yes" msgid="3624986519335168604">"Da"</string>
+    <string name="pair_no" msgid="1333098406083837138">"Ne"</string>
+    <string name="tap_again_to_pay" msgid="4338572813931564301">"Dodirnite o pet da platite pomoću <xliff:g id="APP">%1$s</xliff:g>"</string>
+    <string name="tap_again_to_complete" msgid="6649361012821973200">"Dodirnite o pet da završite pomoću <xliff:g id="APP">%1$s</xliff:g>"</string>
+    <string name="tap_again_description" msgid="7062073825398109427">"Prislonite na čitač"</string>
+    <string name="appchooser_description" msgid="4568068957993132082">"Odaberite aplikaciju za skeniranje"</string>
+    <string name="transaction_failure" msgid="6933419514549792555">"Ova  transakcija se nije mogla završiti putem <xliff:g id="APP">%1$s</xliff:g>."</string>
+    <string name="could_not_use_app" msgid="2945389413330489607">"<xliff:g id="APP">%1$s</xliff:g> se ne može koristiti."</string>
+    <string name="pay_with" msgid="5104112137995621262">"Platite upotrebom"</string>
+    <string name="complete_with" msgid="6624789011610610450">"Dovrši pomoću"</string>
+    <string name="default_pay_app_removed" msgid="4678760785647557185">"Vaša preferirana usluga za kucni i plati je uklonjena. Izabrati drugu?"</string>
+    <string name="ask_nfc_tap" msgid="7921925213499063051">"Dodirnite još jedan uređaj da završite"</string>
+    <string name="wifi_connect" msgid="2726973850576310336">"Poveži se"</string>
+    <string name="status_unable_to_connect" msgid="3282224066213036023">"Nije se moguće povezati na mrežu"</string>
+    <string name="status_wifi_connected" msgid="8878112079913521399">"Povezano"</string>
+    <string name="title_connect_to_network" msgid="5617055452888255705">"Spoji se na mrežu"</string>
+    <string name="prompt_connect_to_network" msgid="6954936151128422990">"Povezati se na mrežu <xliff:g id="NETWORK_SSID">%1$s</xliff:g>?"</string>
+    <string name="beam_requires_nfc_enabled" msgid="1943159298389147033">"Android prenošnje zahtijeva da NFC bude omogućen. Da li ga želite omogućiti?"</string>
+    <string name="android_beam" msgid="5505991354821548221">"Android Beam"</string>
+    <string name="beam_requires_external_storage_permission" msgid="1414485338750858306">"Aplikacija nema odobrenje za vanjsku pohranu. Ovo je potrebno kako biste ovaj fajl mogli prenijeti koristeći funkciju Beam."</string>
+    <string name="title_confirm_url_open" msgid="5517813934880640232">"Otvoriti link?"</string>
+    <string name="summary_confirm_url_open" msgid="7945693255033907131">"Vaš telefon je primio link preko NFC-a:"</string>
+    <string name="summary_confirm_url_open_tablet" msgid="7988255063558403447">"Tablet je primio link putem NFC-a:"</string>
+    <string name="action_confirm_url_open" msgid="2280097397376867615">"Otvori link"</string>
+    <string name="tag_read_error" msgid="8591844088497440515">"Greška prilikom čitanja NFC-a. Pokušajte ponovo."</string>
+    <string name="tag_dispatch_failed" msgid="1105926115269578595">"Nema podržane aplikacije za ovu NFC oznaku"</string>
+    <string name="nfc_blocking_alert_title" msgid="3361011027125473371">"NFC je možda blokiran"</string>
+    <string name="nfc_blocking_alert_message" msgid="6427327924471665520">"Dodirnite da saznate kako ispraviti problem."</string>
+    <string name="tag_app_alert_title" msgid="6761163540731807246">"Dozvolite aplikacijama da čitaju NFC oznake"</string>
+    <string name="tag_app_alert_message" msgid="5518729638341784348">"Aplikacije <xliff:g id="APPNAMES">%1$s</xliff:g> mogu čitati NFC oznake."</string>
+    <string name="tag_app_alert_message_multiple" msgid="6989858224684960030">"Sljedeće aplikacije mogu čitati NFC oznake: <xliff:g id="APPNAMES">%1$s</xliff:g>"</string>
+    <string name="tag_app_alert_action_button" msgid="1442462487575846704">"Dodirnite da saznate kako ovo onemogućiti."</string>
+    <string name="nfc_logging_alert_title" msgid="7355334076019926549">"NFC podaci se trenutno bilježe"</string>
+    <string name="nfc_logging_alert_message" msgid="3833608086332697579">"Dodirnite da zaustavite bilježenje."</string>
+    <string name="title_package_enabling_nfc" msgid="7797373366778008307">"Dozvoliti da <xliff:g id="PKG">%1$s</xliff:g> omogući NFC?"</string>
+    <string name="enable_nfc_yes" msgid="3514504441883079276">"Da"</string>
+    <string name="enable_nfc_no" msgid="4272144216339787073">"Ne"</string>
+    <string name="device_ndef_nfcee_service_name" msgid="1035872251333915624">"Ugrađena oznaka"</string>
+</resources>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="app_name" msgid="6065635506543927196">"NFC পরিষেবা"</string>
+    <string name="nfcUserLabel" msgid="8399413714687124782">"NFC"</string>
+    <string name="accessibility_nfc_enabled" msgid="830589378553181410">"NFC সক্ষম হয়েছে।"</string>
+    <string name="tap_to_beam" msgid="2022424274840394451">"বীম করতে আলতো চাপ দিন"</string>
+    <string name="beam_progress" msgid="1929294166633309327">"আগত বীম..."</string>
+    <string name="beam_outgoing" msgid="5219329384828480018">"বীম হচ্ছে..."</string>
+    <string name="beam_complete" msgid="6147496341809579439">"বীম সম্পূর্ণ"</string>
+    <string name="beam_failed" msgid="4211620610434373359">"বীম সস্পূর্ণ হয়নি"</string>
+    <string name="beam_canceled" msgid="512339558899479458">"বিম বাতিল হয়েছে"</string>
+    <string name="cancel" msgid="2441041247172250936">"বাতিল"</string>
+    <string name="beam_tap_to_view" msgid="9147455481297418801">"দেখতে আলতো চাপ দিন"</string>
+    <string name="beam_handover_not_supported" msgid="3930703977696510905">"রিসিভার এর ডিভাইস বীমের মাধ্যমে বড় ফাইল স্থানান্তর সমর্থন করে না।"</string>
+    <string name="beam_try_again" msgid="1962556612448345422">"ডিভাইসগুলিকে আবার একত্র করুন"</string>
+    <string name="beam_busy" msgid="8179024484757185047">"বীম বর্তমানে ব্যস্ত রয়েছে৷ পূর্ববর্তী স্থানন্তরণটি সম্পূর্ণ হলে আবার চেষ্টা করুন৷"</string>
+    <string name="device" msgid="6859793408635712424">"ডিভাইস"</string>
+    <string name="connecting_peripheral" msgid="5023158537894294802">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> এর সাথে সংযোগ করা হচ্ছে"</string>
+    <string name="connected_peripheral" msgid="2496731052957541047">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> সংযুক্ত হয়েছে"</string>
+    <string name="connect_peripheral_failed" msgid="368937385551413385">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> সংযোগ করা যায়নি"</string>
+    <string name="disconnecting_peripheral" msgid="1121670272906082527">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> থেকে সংযোগ বিচ্ছিন্ন করা হচ্ছে"</string>
+    <string name="disconnected_peripheral" msgid="9009042963082667744">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> থেকে সংযোগ বিচ্ছিন্ন হয়েছে"</string>
+    <string name="pairing_peripheral" msgid="5319926791325775305">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> চেনানো হচ্ছে"</string>
+    <string name="pairing_peripheral_failed" msgid="5905500974914016272">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> চেনানো যায়নি"</string>
+    <string name="failed_to_enable_bt" msgid="5978409523818027926">"ব্লুটুথ সক্ষম করা যায়নি"</string>
+    <string name="confirm_pairing" msgid="6587809107551647782">"আপনি কি <xliff:g id="DEVICE_NAME">%1$s</xliff:g> ব্লুটুথ ডিভাইসটি যুক্ত করার ব্যাপারে নিশ্চিত?"</string>
+    <string name="pair_yes" msgid="3624986519335168604">"হ্যাঁ"</string>
+    <string name="pair_no" msgid="1333098406083837138">"না"</string>
+    <string name="tap_again_to_pay" msgid="4338572813931564301">"<xliff:g id="APP">%1$s</xliff:g> এর মাধ্যমে পেমেন্টের জন্য আবার আলতো চাপুন"</string>
+    <string name="tap_again_to_complete" msgid="6649361012821973200">"<xliff:g id="APP">%1$s</xliff:g> এর মাধ্যমে সম্পূর্ণ করতে আবার আলতো চাপুন"</string>
+    <string name="tap_again_description" msgid="7062073825398109427">"রিডারের সামনে ধরুন"</string>
+    <string name="appchooser_description" msgid="4568068957993132082">"স্ক্যান করার জন্য অ্যাপ বেছে নিন"</string>
+    <string name="transaction_failure" msgid="6933419514549792555">"<xliff:g id="APP">%1$s</xliff:g> এর সঙ্গে লেনদেন সম্পন্ন করা যায়নি।"</string>
+    <string name="could_not_use_app" msgid="2945389413330489607">"<xliff:g id="APP">%1$s</xliff:g> ব্যবহার করা যায়নি।"</string>
+    <string name="pay_with" msgid="5104112137995621262">"এর মাধ্যমে অর্থ পরিশোধ করুন"</string>
+    <string name="complete_with" msgid="6624789011610610450">"এর সঙ্গে সম্পূর্ণ করুন"</string>
+    <string name="default_pay_app_removed" msgid="4678760785647557185">"আপনার পছন্দের “আলতো চাপুন ও পেমেন্ট করুন” পরিষেবা সরানো হয়েছে। অন্য কিছু চয়ন করবেন?"</string>
+    <string name="ask_nfc_tap" msgid="7921925213499063051">"সম্পূর্ণ করতে অন্য ডিভাইস আলতো চাপুন"</string>
+    <string name="wifi_connect" msgid="2726973850576310336">"সংযুক্ত করুন"</string>
+    <string name="status_unable_to_connect" msgid="3282224066213036023">"নেটওয়ার্কের সাথে সংযুক্ত হওয়া যায়নি"</string>
+    <string name="status_wifi_connected" msgid="8878112079913521399">"সংযুক্ত হয়েছে"</string>
+    <string name="title_connect_to_network" msgid="5617055452888255705">"নেটওয়ার্কের সাথে সংযোগ করুন"</string>
+    <string name="prompt_connect_to_network" msgid="6954936151128422990">"<xliff:g id="NETWORK_SSID">%1$s</xliff:g> নেটওয়ার্কে সংযোগ করবেন?"</string>
+    <string name="beam_requires_nfc_enabled" msgid="1943159298389147033">"Android Beam সক্ষম করতে NFC আবশ্যক। আপনি কি এটি সক্ষম করতে চান?"</string>
+    <string name="android_beam" msgid="5505991354821548221">"Android বীম"</string>
+    <string name="beam_requires_external_storage_permission" msgid="1414485338750858306">"ডিভাইসের বাইরের মেমরি ব্যবহার করার অনুমতি এই অ্যাপ্লিকেশানটিকে দেওয়া হয়নি। এই ফাইলটি বিম করার জন্য অনুমতিটি প্রয়োজন"</string>
+    <string name="title_confirm_url_open" msgid="5517813934880640232">"লিঙ্কটি খুলবেন?"</string>
+    <string name="summary_confirm_url_open" msgid="7945693255033907131">"আপনার ফোন NFC এর মাধ্যমে একটি লিঙ্ক পেয়েছে:"</string>
+    <string name="summary_confirm_url_open_tablet" msgid="7988255063558403447">"আপনার ট্যাবলেট NFC-এর মাধ্যমে একটি লিঙ্ক পেয়েছে:"</string>
+    <string name="action_confirm_url_open" msgid="2280097397376867615">"লিঙ্ক খুলুন"</string>
+    <string name="tag_read_error" msgid="8591844088497440515">"NFC পড়তে সমস্যা হয়েছে। আবার চেষ্টা করুন।"</string>
+    <string name="tag_dispatch_failed" msgid="1105926115269578595">"এই NFC ট্যাগ ব্যবহার করার মতো কোনও অ্যাপ্লিকেশন নেই"</string>
+    <string name="nfc_blocking_alert_title" msgid="3361011027125473371">"NFC হয়ত ব্লক করা আছে"</string>
+    <string name="nfc_blocking_alert_message" msgid="6427327924471665520">"কীভাবে সমস্যার সমাধান করবেন তা জানতে ট্যাপ করুন।"</string>
+    <string name="tag_app_alert_title" msgid="6761163540731807246">"NFC ট্যাগ পড়ার জন্য অ্যাপকে অনুমতি দিন"</string>
+    <string name="tag_app_alert_message" msgid="5518729638341784348">"<xliff:g id="APPNAMES">%1$s</xliff:g> NFC ট্যাগ পড়তে পারবে।"</string>
+    <string name="tag_app_alert_message_multiple" msgid="6989858224684960030">"নিচে উল্লেখ করা অ্যাপ NFC ট্যাগ পড়তে পারবে:<xliff:g id="APPNAMES">%1$s</xliff:g>"</string>
+    <string name="tag_app_alert_action_button" msgid="1442462487575846704">"এটি কীভাবে বন্ধ করা যায় তা জানতে ট্যাপ করুন।"</string>
+    <string name="nfc_logging_alert_title" msgid="7355334076019926549">"NFC ডেটা রেকর্ড করা হচ্ছে"</string>
+    <string name="nfc_logging_alert_message" msgid="3833608086332697579">"রেকর্ডিং বন্ধ করতে ট্যাপ করুন।"</string>
+    <string name="title_package_enabling_nfc" msgid="7797373366778008307">"NFC চালু করার জন্য <xliff:g id="PKG">%1$s</xliff:g>-কে অনুমতি দেবেন?"</string>
+    <string name="enable_nfc_yes" msgid="3514504441883079276">"হ্যাঁ"</string>
+    <string name="enable_nfc_no" msgid="4272144216339787073">"না"</string>
+    <string name="device_ndef_nfcee_service_name" msgid="1035872251333915624">"এম্বেড করা ট্যাগ"</string>
+</resources>

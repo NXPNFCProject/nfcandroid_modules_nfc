@@ -1,0 +1,36 @@
+package: "com.android.nfc.module.flags"
+container: "com.android.nfcservices"
+
+flag {
+    name: "nfc_hce_latency_events"
+    is_exported: true
+    namespace: "wallet_integration"
+    description: "Enables tracking latency for HCE"
+    bug: "379849603"
+}
+
+flag {
+    name: "reader_mode_annotations"
+    is_exported: true
+    namespace: "wallet_integration"
+    description: "Enables NFC-A polling loop annotations in reader mode"
+    bug: "398910589"
+}
+
+flag {
+    name: "reader_mode_ignore_frame"
+    namespace: "wallet_integration"
+    description: "Enable ignore frames in the default reader mode polling loop."
+    bug: "383047950"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+
+flag {
+    name: "oem_extension_25q4"
+    namespace: "nfc"
+    description: "OEM extensions for Android 25Q4 release"
+    bug: "402346002"
+}

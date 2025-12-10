@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="app_name" msgid="6065635506543927196">"Услуга NFC"</string>
+    <string name="nfcUserLabel" msgid="8399413714687124782">"NFC"</string>
+    <string name="accessibility_nfc_enabled" msgid="830589378553181410">"NFC е активирана."</string>
+    <string name="tap_to_beam" msgid="2022424274840394451">"Докоснете за излъчване"</string>
+    <string name="beam_progress" msgid="1929294166633309327">"Входящо излъчване..."</string>
+    <string name="beam_outgoing" msgid="5219329384828480018">"Излъчва се..."</string>
+    <string name="beam_complete" msgid="6147496341809579439">"Излъчването завърши"</string>
+    <string name="beam_failed" msgid="4211620610434373359">"Излъчването не завърши"</string>
+    <string name="beam_canceled" msgid="512339558899479458">"Излъчването бе анулирано"</string>
+    <string name="cancel" msgid="2441041247172250936">"Отказ"</string>
+    <string name="beam_tap_to_view" msgid="9147455481297418801">"Докоснете за преглед"</string>
+    <string name="beam_handover_not_supported" msgid="3930703977696510905">"Устройството на получателя не поддържа прехвърляне на големи файлове чрез излъчване."</string>
+    <string name="beam_try_again" msgid="1962556612448345422">"Приближете отново устройствата едно до друго"</string>
+    <string name="beam_busy" msgid="8179024484757185047">"Понастоящем Android Лъч работи. Опитайте отново, когато предишното прехвърляне завърши."</string>
+    <string name="device" msgid="6859793408635712424">"устройството"</string>
+    <string name="connecting_peripheral" msgid="5023158537894294802">"Установява се връзка с/ъс <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
+    <string name="connected_peripheral" msgid="2496731052957541047">"Установена е връзка с/ъс <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
+    <string name="connect_peripheral_failed" msgid="368937385551413385">"Не можа да се установи връзка с/ъс <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
+    <string name="disconnecting_peripheral" msgid="1121670272906082527">"Връзката с/ъс <xliff:g id="DEVICE_NAME">%1$s</xliff:g> се прекратява"</string>
+    <string name="disconnected_peripheral" msgid="9009042963082667744">"Връзката с/ъс <xliff:g id="DEVICE_NAME">%1$s</xliff:g> е прекратена"</string>
+    <string name="pairing_peripheral" msgid="5319926791325775305">"Извършва се сдвояване с/ъс <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
+    <string name="pairing_peripheral_failed" msgid="5905500974914016272">"Неуспешно сдвояване с/ъс <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
+    <string name="failed_to_enable_bt" msgid="5978409523818027926">"Bluetooth не можа да се активира"</string>
+    <string name="confirm_pairing" msgid="6587809107551647782">"Наистина ли искате да сдвоите устройството с Bluetooth <xliff:g id="DEVICE_NAME">%1$s</xliff:g>?"</string>
+    <string name="pair_yes" msgid="3624986519335168604">"Да"</string>
+    <string name="pair_no" msgid="1333098406083837138">"Не"</string>
+    <string name="tap_again_to_pay" msgid="4338572813931564301">"Докоснете отново за плащане със: <xliff:g id="APP">%1$s</xliff:g>"</string>
+    <string name="tap_again_to_complete" msgid="6649361012821973200">"Докоснете отново за извършване със: <xliff:g id="APP">%1$s</xliff:g>"</string>
+    <string name="tap_again_description" msgid="7062073825398109427">"Приближете до четеца"</string>
+    <string name="appchooser_description" msgid="4568068957993132082">"Изберете приложение за сканиране"</string>
+    <string name="transaction_failure" msgid="6933419514549792555">"Тази транзакция не можа да бъде извършена със: <xliff:g id="APP">%1$s</xliff:g>."</string>
+    <string name="could_not_use_app" msgid="2945389413330489607">"<xliff:g id="APP">%1$s</xliff:g> не можа да се използва."</string>
+    <string name="pay_with" msgid="5104112137995621262">"Плащане със:"</string>
+    <string name="complete_with" msgid="6624789011610610450">"Извършване със:"</string>
+    <string name="default_pay_app_removed" msgid="4678760785647557185">"Предпочитаната от вас услуга за функцията „докоснете и платете“ бе премахната. Ще изберете ли друга?"</string>
+    <string name="ask_nfc_tap" msgid="7921925213499063051">"Докоснете друго устройство, за да завършите"</string>
+    <string name="wifi_connect" msgid="2726973850576310336">"Свързване"</string>
+    <string name="status_unable_to_connect" msgid="3282224066213036023">"Не може да се установи връзка с мрежата"</string>
+    <string name="status_wifi_connected" msgid="8878112079913521399">"Установена е връзка"</string>
+    <string name="title_connect_to_network" msgid="5617055452888255705">"Установяване на връзка с мрежата"</string>
+    <string name="prompt_connect_to_network" msgid="6954936151128422990">"Да се установи ли връзка с мрежата „<xliff:g id="NETWORK_SSID">%1$s</xliff:g>“?"</string>
+    <string name="beam_requires_nfc_enabled" msgid="1943159298389147033">"Функцията „Android Лъч“ изисква да активирате NFC. Искате ли да го направите?"</string>
+    <string name="android_beam" msgid="5505991354821548221">"Android Лъч"</string>
+    <string name="beam_requires_external_storage_permission" msgid="1414485338750858306">"Приложението няма разрешение за външно хранилище. То се изисква за излъчването на този файл"</string>
+    <string name="title_confirm_url_open" msgid="5517813934880640232">"Да се отвори ли връзката?"</string>
+    <string name="summary_confirm_url_open" msgid="7945693255033907131">"Телефонът ви получи връзка през NFC:"</string>
+    <string name="summary_confirm_url_open_tablet" msgid="7988255063558403447">"Таблетът ви получи връзка през NFC:"</string>
+    <string name="action_confirm_url_open" msgid="2280097397376867615">"Отваряне на връзката"</string>
+    <string name="tag_read_error" msgid="8591844088497440515">"Грешка при четене за NFC. Опитайте отново."</string>
+    <string name="tag_dispatch_failed" msgid="1105926115269578595">"Няма приложение, което поддържа този маркер за NFC"</string>
+    <string name="nfc_blocking_alert_title" msgid="3361011027125473371">"Функцията NFC може да е блокирана"</string>
+    <string name="nfc_blocking_alert_message" msgid="6427327924471665520">"Докоснете, за да научите как да отстраните проблема."</string>
+    <string name="tag_app_alert_title" msgid="6761163540731807246">"Разрешаване на приложенията да четат маркери за NFC"</string>
+    <string name="tag_app_alert_message" msgid="5518729638341784348">"<xliff:g id="APPNAMES">%1$s</xliff:g> може да чете маркери за NFC."</string>
+    <string name="tag_app_alert_message_multiple" msgid="6989858224684960030">"Следните приложения могат да четат маркери за NFC: <xliff:g id="APPNAMES">%1$s</xliff:g>"</string>
+    <string name="tag_app_alert_action_button" msgid="1442462487575846704">"Докоснете, за да научите как да деактивирате."</string>
+    <string name="nfc_logging_alert_title" msgid="7355334076019926549">"Записват се данни посредством NFC"</string>
+    <string name="nfc_logging_alert_message" msgid="3833608086332697579">"Докоснете за спиране на записването."</string>
+    <string name="title_package_enabling_nfc" msgid="7797373366778008307">"Да се разреши ли на <xliff:g id="PKG">%1$s</xliff:g> да активира NFC?"</string>
+    <string name="enable_nfc_yes" msgid="3514504441883079276">"Да"</string>
+    <string name="enable_nfc_no" msgid="4272144216339787073">"Не"</string>
+    <string name="device_ndef_nfcee_service_name" msgid="1035872251333915624">"Вграден маркер"</string>
+</resources>

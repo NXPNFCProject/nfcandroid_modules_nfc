@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="app_name" msgid="6065635506543927196">"NFC સેવા"</string>
+    <string name="nfcUserLabel" msgid="8399413714687124782">"NFC"</string>
+    <string name="accessibility_nfc_enabled" msgid="830589378553181410">"NFC સક્ષમ."</string>
+    <string name="tap_to_beam" msgid="2022424274840394451">"બીમ કરવા માટે ટૅપ કરો"</string>
+    <string name="beam_progress" msgid="1929294166633309327">"ઇનકમિંગ બીમ ..."</string>
+    <string name="beam_outgoing" msgid="5219329384828480018">"બીમિંગ..."</string>
+    <string name="beam_complete" msgid="6147496341809579439">"બીમ પૂર્ણ"</string>
+    <string name="beam_failed" msgid="4211620610434373359">"બીમ પૂર્ણ થયું નહોતું"</string>
+    <string name="beam_canceled" msgid="512339558899479458">"બીમ રદ કર્યું"</string>
+    <string name="cancel" msgid="2441041247172250936">"રદ કરો"</string>
+    <string name="beam_tap_to_view" msgid="9147455481297418801">"જોવા માટે ટૅપ કરો"</string>
+    <string name="beam_handover_not_supported" msgid="3930703977696510905">"પ્રાપ્તિકર્તાનું ડિવાઇસ બીમ દ્વારા મોટી ફાઇલનાં ટ્રાન્સફરને સપોર્ટ કરતું નથી."</string>
+    <string name="beam_try_again" msgid="1962556612448345422">"ઉપકરણોને ફરીથી એકસાથે લાવો"</string>
+    <string name="beam_busy" msgid="8179024484757185047">"બીમ હાલમાં વ્યસ્ત છે. પહેલાંના સ્થાનાંતરણ પૂર્ણ થાય ત્યારે ફરીથી પ્રયાસ કરો."</string>
+    <string name="device" msgid="6859793408635712424">"ઉપકરણ"</string>
+    <string name="connecting_peripheral" msgid="5023158537894294802">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> કનેક્ટ થઈ રહ્યું છે"</string>
+    <string name="connected_peripheral" msgid="2496731052957541047">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> કનેક્ટ કર્યું"</string>
+    <string name="connect_peripheral_failed" msgid="368937385551413385">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> થી કનેક્ટ કરી શકાયું નથી"</string>
+    <string name="disconnecting_peripheral" msgid="1121670272906082527">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> ડિસ્કનેક્ટ થઈ રહ્યું છે"</string>
+    <string name="disconnected_peripheral" msgid="9009042963082667744">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> ડિસ્કનેક્ટ કર્યું"</string>
+    <string name="pairing_peripheral" msgid="5319926791325775305">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> ની જોડી કરી રહ્યું છે"</string>
+    <string name="pairing_peripheral_failed" msgid="5905500974914016272">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> ની જોડી કરી શકાઈ નથી"</string>
+    <string name="failed_to_enable_bt" msgid="5978409523818027926">"બ્લૂટૂથ સક્ષમ કરી શકાયું નથી"</string>
+    <string name="confirm_pairing" msgid="6587809107551647782">"શું તમે ખરેખર બ્લૂટૂથ ડિવાઇસ <xliff:g id="DEVICE_NAME">%1$s</xliff:g> સાથે જોડી કરવા માંગો છો?"</string>
+    <string name="pair_yes" msgid="3624986519335168604">"હા"</string>
+    <string name="pair_no" msgid="1333098406083837138">"નહીં"</string>
+    <string name="tap_again_to_pay" msgid="4338572813931564301">"<xliff:g id="APP">%1$s</xliff:g> થી ચૂકવણી કરવા માટે ફરીથી ટેપ કરો"</string>
+    <string name="tap_again_to_complete" msgid="6649361012821973200">"<xliff:g id="APP">%1$s</xliff:g> સાથે પૂર્ણ કરવા માટે ટેપ કરો"</string>
+    <string name="tap_again_description" msgid="7062073825398109427">"રીડરની નજીક પકડી રાખો"</string>
+    <string name="appchooser_description" msgid="4568068957993132082">"સ્કૅન કરવા માટે ઍપ પસંદ કરો"</string>
+    <string name="transaction_failure" msgid="6933419514549792555">"આ વ્યવહાર <xliff:g id="APP">%1$s</xliff:g> સાથે પૂર્ણ કરી શકાયો નથી."</string>
+    <string name="could_not_use_app" msgid="2945389413330489607">"<xliff:g id="APP">%1$s</xliff:g> નો ઉપયોગ કરી શકાયો નથી."</string>
+    <string name="pay_with" msgid="5104112137995621262">"આનાથી ચૂકવો"</string>
+    <string name="complete_with" msgid="6624789011610610450">"આની સાથે પૂર્ણ કરો"</string>
+    <string name="default_pay_app_removed" msgid="4678760785647557185">"ટેપ કરો અને ચૂકવો માટેની તમારી પસંદ કરેલ સેવા દૂર કરવામાં આવી હતી. બીજી પસંદ કરીએ?"</string>
+    <string name="ask_nfc_tap" msgid="7921925213499063051">"પૂર્ણ કરવા માટે બીજા ઉપકરણને ટેપ કરો"</string>
+    <string name="wifi_connect" msgid="2726973850576310336">"કનેક્ટ"</string>
+    <string name="status_unable_to_connect" msgid="3282224066213036023">"નેટવર્ક સાથે જોડાવવામાં અસમર્થ"</string>
+    <string name="status_wifi_connected" msgid="8878112079913521399">"કનેક્ટ કર્યું"</string>
+    <string name="title_connect_to_network" msgid="5617055452888255705">"નેટવર્ક સાથે કનેક્ટ કરો"</string>
+    <string name="prompt_connect_to_network" msgid="6954936151128422990">"<xliff:g id="NETWORK_SSID">%1$s</xliff:g> નેટવર્કથી કનેક્ટ કરીએ?"</string>
+    <string name="beam_requires_nfc_enabled" msgid="1943159298389147033">"Android બીમને NFC સક્ષમ કરવાની જરૂર છે. શું તમે તેને સક્ષમ કરવા માંગો છો?"</string>
+    <string name="android_beam" msgid="5505991354821548221">"Android બીમ"</string>
+    <string name="beam_requires_external_storage_permission" msgid="1414485338750858306">"આ ઍપ્લિકેશન પાસે બાહ્ય સ્ટોરેજની પરવાનગી નથી. આ ફાઇલને બીમ કરવા માટે એ જરૂરી છે"</string>
+    <string name="title_confirm_url_open" msgid="5517813934880640232">"લિંક ખોલીએ?"</string>
+    <string name="summary_confirm_url_open" msgid="7945693255033907131">"તમારા ફોનને NFC મારફતે એક લિંક પ્રાપ્ત થઈ છે:"</string>
+    <string name="summary_confirm_url_open_tablet" msgid="7988255063558403447">"તમારા ટૅબ્લેટને NFC મારફતે એક લિંક પ્રાપ્ત થઈ છે:"</string>
+    <string name="action_confirm_url_open" msgid="2280097397376867615">"લિંક ખોલો"</string>
+    <string name="tag_read_error" msgid="8591844088497440515">"NFC વાંચનમાં ભૂલ. ફરી પ્રયાસ કરો."</string>
+    <string name="tag_dispatch_failed" msgid="1105926115269578595">"આ NFC ટૅગ માટે કોઈ સહાયક ઍપ્લિકેશન નથી"</string>
+    <string name="nfc_blocking_alert_title" msgid="3361011027125473371">"NFC કદાચ બ્લૉક કરવામાં આવ્યું હોય"</string>
+    <string name="nfc_blocking_alert_message" msgid="6427327924471665520">"સુધારવાની રીતે વિશે જાણવા માટે ટૅપ કરો."</string>
+    <string name="tag_app_alert_title" msgid="6761163540731807246">"ઍપને NFC ટૅગ વાંચવાની મંજૂરી આપો"</string>
+    <string name="tag_app_alert_message" msgid="5518729638341784348">"<xliff:g id="APPNAMES">%1$s</xliff:g> NFC ટૅગ વાંચી શકે છે."</string>
+    <string name="tag_app_alert_message_multiple" msgid="6989858224684960030">"નીચે આપેલી ઍપ NFC ટૅગ વાંચી શકે છે:<xliff:g id="APPNAMES">%1$s</xliff:g>"</string>
+    <string name="tag_app_alert_action_button" msgid="1442462487575846704">"તેને બંધ કરવાની રીત વિશે જાણવા માટે ટૅપ કરો."</string>
+    <string name="nfc_logging_alert_title" msgid="7355334076019926549">"NFC ડેટા રેકોર્ડ કરવામાં આવી રહ્યો છે"</string>
+    <string name="nfc_logging_alert_message" msgid="3833608086332697579">"રેકોર્ડિંગ રોકવા માટે ટૅપ કરો."</string>
+    <string name="title_package_enabling_nfc" msgid="7797373366778008307">"શું <xliff:g id="PKG">%1$s</xliff:g>ને NFC ચાલુ કરવાની મંજૂરી આપીએ?"</string>
+    <string name="enable_nfc_yes" msgid="3514504441883079276">"હા"</string>
+    <string name="enable_nfc_no" msgid="4272144216339787073">"ના"</string>
+    <string name="device_ndef_nfcee_service_name" msgid="1035872251333915624">"શામેલ કરેલો ટૅગ"</string>
+</resources>
