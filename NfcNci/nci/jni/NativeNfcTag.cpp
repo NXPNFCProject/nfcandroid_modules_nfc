@@ -1254,6 +1254,12 @@ static jint nativeNfcTag_doCheckNdef(JNIEnv* e, jobject o, jintArray ndefInfo) {
     ndef[1] = NDEF_MODE_READ_ONLY;
     e->ReleaseIntArrayElements(ndefInfo, ndef, 0);
     return NFA_STATUS_FAILED;
+  } else if (sCurrentConnectedTargetProtocol == NFC_PROTOCOL_MIFARE) {
+    if (NFCSTATUS_SUCCESS != nativeNfcTag_doReconnect(e, o)) {
+      LOG(ERROR) << StringPrintf("%s; Reconnect failed so return error",
+                                 __func__);
+      return NFA_STATUS_FAILED;
+    }
   }
 
   if (NfcTag::getInstance().getActivationState() != NfcTag::Active) {
