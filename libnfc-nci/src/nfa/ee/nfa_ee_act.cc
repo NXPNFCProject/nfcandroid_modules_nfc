@@ -730,7 +730,7 @@ tNFA_EE_ECB* nfa_ee_find_aid_offset(uint8_t aid_len, uint8_t* p_aid,
     if (p_ecb->aid_entries) {
       offset = 0;
       for (xx = 0; xx < p_ecb->aid_entries; xx++) {
-        if ((p_ecb->aid_cfg[offset + aid_len_offset] == aid_len) &&
+        if ((p_ecb->aid_cfg && p_ecb->aid_cfg[offset + aid_len_offset] == aid_len) &&
             (memcmp(&p_ecb->aid_cfg[offset + aid_len_offset + 1], p_aid,
                     aid_len) == 0)) {
           p_ret = p_ecb;
