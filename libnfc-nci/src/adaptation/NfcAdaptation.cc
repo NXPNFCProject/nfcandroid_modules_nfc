@@ -927,7 +927,7 @@ void NfcAdaptation::InitializeHalDeviceContext() {
   if (mHal == nullptr) {
     // Try get AIDL
     mAidlHal = waitForNfcServiceAsync();
-    if (mAidlHal != nullptr) {
+    if (mAidlHal != nullptr && AIBinder_isAlive(mAidlHal->asBinder().get())) {
       use_aidl = true;
       AIBinder_linkToDeath(mAidlHal->asBinder().get(), mDeathRecipient.get(),
                            nullptr /* cookie */);
@@ -1001,7 +1001,7 @@ void NfcAdaptation::HalOpenInternal(tHAL_NFC_CBACK* p_hal_cback,
   if (sVndExtnsPresent) {
     sNfcVendorExtn->setNciCallback(p_hal_cback, p_data_cback);
   }
-  if (mAidlHal != nullptr) {
+  if (mAidlHal != nullptr && AIBinder_isAlive(mAidlHal->asBinder().get())) {
     mAidlCallback = ::ndk::SharedRefBase::make<NfcAidlClientCallback>(
         p_hal_cback, p_data_cback);
     Status status = mAidlHal->open(mAidlCallback);
