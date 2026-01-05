@@ -1205,6 +1205,11 @@ public final class CardEmulation {
         if (technology >= PROTOCOL_AND_TECHNOLOGY_ROUTE_DEFAULT) {
             throw new IllegalArgumentException("Invalid technology inputs.");
         }
+        if (protocol == PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET
+                && technology == PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET) {
+            throw new IllegalArgumentException("At least one routing parameter must be set.");
+        }
+
         String protocolRoute = routeIntToString(protocol);
         String technologyRoute = routeIntToString(technology);
         callService(() ->

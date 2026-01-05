@@ -20,6 +20,7 @@ import static android.nfc.cardemulation.CardEmulation.PROTOCOL_AND_TECHNOLOGY_RO
 import static android.nfc.cardemulation.CardEmulation.PROTOCOL_AND_TECHNOLOGY_ROUTE_ESE;
 import static android.nfc.cardemulation.CardEmulation.PROTOCOL_AND_TECHNOLOGY_ROUTE_NDEF_NFCEE;
 import static android.nfc.cardemulation.CardEmulation.PROTOCOL_AND_TECHNOLOGY_ROUTE_UICC;
+import static android.nfc.cardemulation.CardEmulation.PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET;
 import static android.nfc.cardemulation.CardEmulation.routeIntToString;
 
 import android.Manifest;
@@ -884,14 +885,17 @@ public final class NfcOemExtension {
      * when calling this API, otherwise throw {@link IllegalArgumentException}.
      *
      * @param protocol ISO-DEP route destination, where the possible inputs are defined in
-     *                 {@link ProtocolAndTechnologyRoute}.
+     *                 {@link ProtocolAndTechnologyRoute}. However
+     *                 {@link #PROTOCOL_AND_TECHNOLOGY_ROUTE_NDEF_NFCEE} is an invalid input.
      * @param technology Tech-A, Tech-B, and Tech-F route destination, where the possible inputs
-     *                     are defined in
-     *                     {@link ProtocolAndTechnologyRoute}
+     *                   are defined in {@link ProtocolAndTechnologyRoute}. However
+     *                   {@link #PROTOCOL_AND_TECHNOLOGY_ROUTE_NDEF_NFCEE} is an invalid input.
      * @param emptyAid Zero-length AID route destination, where the possible inputs are defined in
-     *                 {@link ProtocolAndTechnologyRoute}
+     *                 {@link ProtocolAndTechnologyRoute}. However
+     *                 {@link #PROTOCOL_AND_TECHNOLOGY_ROUTE_NDEF_NFCEE} is an invalid input.
      * @param systemCode System Code route destination, where the possible inputs are defined in
-     *                   {@link ProtocolAndTechnologyRoute}
+     *                   {@link ProtocolAndTechnologyRoute}. However
+     *                   {@link #PROTOCOL_AND_TECHNOLOGY_ROUTE_NDEF_NFCEE} is an invalid input.
      * @throws IllegalArgumentException if the input parameters are invalid
      * @throws IllegalStateException if routing table is already overridden by fg app
      */
@@ -902,6 +906,26 @@ public final class NfcOemExtension {
             @CardEmulation.ProtocolAndTechnologyRoute int technology,
             @CardEmulation.ProtocolAndTechnologyRoute int emptyAid,
             @CardEmulation.ProtocolAndTechnologyRoute int systemCode) {
+
+        if (protocol == PROTOCOL_AND_TECHNOLOGY_ROUTE_NDEF_NFCEE) {
+            throw new IllegalArgumentException("Invalid protocol route input.");
+        }
+        if (technology == PROTOCOL_AND_TECHNOLOGY_ROUTE_NDEF_NFCEE) {
+            throw new IllegalArgumentException("Invalid technology route input.");
+        }
+        if (emptyAid == PROTOCOL_AND_TECHNOLOGY_ROUTE_NDEF_NFCEE) {
+            throw new IllegalArgumentException("Invalid default AID route input.");
+        }
+        if (systemCode == PROTOCOL_AND_TECHNOLOGY_ROUTE_NDEF_NFCEE) {
+            throw new IllegalArgumentException("Invalid system Code route input.");
+        }
+
+        if (protocol == PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET
+                && technology == PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET
+                && emptyAid == PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET
+                && systemCode == PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET) {
+            throw new IllegalArgumentException("At least one routing parameter must be set.");
+        }
 
         String protocolRoute = routeIntToString(protocol);
         String technologyRoute = routeIntToString(technology);
