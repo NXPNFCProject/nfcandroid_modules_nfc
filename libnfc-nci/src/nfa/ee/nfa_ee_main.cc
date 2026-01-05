@@ -555,7 +555,7 @@ void nfa_ee_sys_disable(void) {
 
   nfa_ee_cb.num_ee_expecting = 0;
   p_cb = nfa_ee_cb.ecb;
-  for (xx = 0; xx < nfa_ee_cb.cur_ee; xx++, p_cb++) {
+  for (xx = 0; xx < nfa_ee_cb.cur_ee && xx < NFA_EE_NUM_ECBS; xx++, p_cb++) {
     if (p_cb->conn_st == NFA_EE_CONN_ST_CONN) {
       if (nfa_sys_is_graceful_disable()) {
         /* Disconnect NCI connection on graceful shutdown */

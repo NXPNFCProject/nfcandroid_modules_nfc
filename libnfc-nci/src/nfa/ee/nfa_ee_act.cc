@@ -2818,8 +2818,14 @@ void nfa_ee_get_tech_route(uint8_t power_state, uint8_t* p_handles) {
 
   for (xx = 0; xx < NFA_EE_MAX_TECH_ROUTE; xx++) {
     p_handles[xx] = NFC_DH_ID;
-    if (nfa_ee_cb.cur_ee > 0) p_cb = &nfa_ee_cb.ecb[nfa_ee_cb.cur_ee - 1];
-    for (yy = 0; yy < nfa_ee_cb.cur_ee; yy++, p_cb--) {
+    if (nfa_ee_cb.cur_ee > 0 && nfa_ee_cb.cur_ee <= NFA_EE_NUM_ECBS) {
+      p_cb = &nfa_ee_cb.ecb[nfa_ee_cb.cur_ee - 1];
+    }
+    if (p_cb == nullptr) {
+      LOG(ERROR) << StringPrintf("%s:p_cb is null", __func__);
+      return;
+    }
+    for (yy = 0; yy < NFA_EE_NUM_ECBS; yy++, p_cb--) {
       if ((p_cb->ee_status & ~NFA_EE_STATUS_MEP_MASK) ==
           NFC_NFCEE_STATUS_ACTIVE) {
         switch (power_state) {
