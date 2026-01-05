@@ -710,6 +710,7 @@ static int reSelect(tNFA_INTF_TYPE rfInterface, bool fSwitchIfNeeded) {
       {
         LOG(ERROR) << StringPrintf("%s: timeout waiting for deactivate",
                                    __func__);
+        break;
       }
     }
 
