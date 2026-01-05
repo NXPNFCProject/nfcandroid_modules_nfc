@@ -1228,7 +1228,7 @@ void nfa_ee_api_add_aid(tNFA_EE_MSG* p_data) {
   if (p_chk_cb) {
     LOG(WARNING) << StringPrintf("%s: The AID entry is already in the database",
                                  __func__);
-    if (p_chk_cb == p_cb) {
+    if (p_chk_cb == p_cb && p_cb->aid_rt_info && p_cb->aid_info) {
       p_cb->aid_rt_info[entry] |= NFA_EE_AE_ROUTE;
       p_cb->aid_info[entry] = p_add->aidInfo;
       new_size = nfa_ee_total_lmrt_size();
@@ -1269,17 +1269,25 @@ void nfa_ee_api_add_aid(tNFA_EE_MSG* p_data) {
         evt_data.status = NFA_STATUS_BUFFER_FULL;
       } else {
         /* add AID */
-        p_cb->aid_pwr_cfg[p_cb->aid_entries] = p_add->power_state;
-        p_cb->aid_info[p_cb->aid_entries] = p_add->aidInfo;
-        p_cb->aid_rt_info[p_cb->aid_entries] = NFA_EE_AE_ROUTE;
+        if (p_cb->aid_pwr_cfg) {
+          p_cb->aid_pwr_cfg[p_cb->aid_entries] = p_add->power_state;
+        }
+        if (p_cb->aid_info) {
+          p_cb->aid_info[p_cb->aid_entries] = p_add->aidInfo;
+        }
+        if (p_cb->aid_rt_info) {
+          p_cb->aid_rt_info[p_cb->aid_entries] = NFA_EE_AE_ROUTE;
+        }
         p = p_cb->aid_cfg + len;
-        p_start = p;
-        *p++ = NFA_EE_AID_CFG_TAG_NAME;
-        *p++ = p_add->aid_len;
-        memcpy(p, p_add->p_aid, p_add->aid_len);
-        p += p_add->aid_len;
+        if (p) {
+          p_start = p;
+          *p++ = NFA_EE_AID_CFG_TAG_NAME;
+          *p++ = p_add->aid_len;
+          memcpy(p, p_add->p_aid, p_add->aid_len);
+          p += p_add->aid_len;
 
-        p_cb->aid_len[p_cb->aid_entries++] = (uint8_t)(p - p_start);
+          p_cb->aid_len[p_cb->aid_entries++] = (uint8_t)(p - p_start);
+        }
       }
     } else {
       LOG(ERROR) << StringPrintf("%s: Exceed NFA_EE_MAX_AID_ENTRIES=%d",
