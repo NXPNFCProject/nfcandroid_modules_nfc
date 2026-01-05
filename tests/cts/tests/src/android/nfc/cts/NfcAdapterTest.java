@@ -1157,7 +1157,7 @@ public class NfcAdapterTest {
                 NfcAdapter.FLAG_READER_NFC_B, NfcAdapter.FLAG_LISTEN_NFC_PASSIVE_A);
         List<RfDiscoverConfig> config2 = nfcOemExtension.getRfDiscoverConfigurations();
         // There should be at least one Poll tech and one Listen tech
-        assertThat(config2.size()).isGreaterThan(2);
+        assertThat(config2.size()).isAtLeast(2);
 
         for (RfDiscoverConfig c: config2) {
             // There should be no Tech-A Poll configuration
