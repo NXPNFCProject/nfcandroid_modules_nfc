@@ -2825,7 +2825,7 @@ void nfa_ee_get_tech_route(uint8_t power_state, uint8_t* p_handles) {
       LOG(ERROR) << StringPrintf("%s:p_cb is null", __func__);
       return;
     }
-    for (yy = 0; yy < NFA_EE_NUM_ECBS; yy++, p_cb--) {
+    for (yy = 0; yy < nfa_ee_cb.cur_ee && yy < NFA_EE_NUM_ECBS; yy++, p_cb--) {
       if ((p_cb->ee_status & ~NFA_EE_STATUS_MEP_MASK) ==
           NFC_NFCEE_STATUS_ACTIVE) {
         switch (power_state) {
