@@ -560,9 +560,10 @@ public class RegisteredServicesCache {
                 .getSystemService(UserManager.class);
         boolean isManagedProfile = um.isManagedProfile(userId);
         boolean isCloneProfile = um.isCloneProfile();
+        boolean isPrivateProfile = um.isPrivateProfile();
         // Add NDEF-NFCEE AID - Only if NDEF-NFCEE feature supported
         // And only for user 0 to avoid adding several times (if multiple profiles)
-        if (!isManagedProfile && !isCloneProfile
+        if (!isManagedProfile && !isCloneProfile & !isPrivateProfile
                 && NfcService.getInstance().isNdefNfceefeatureEnabled()) {
             ResolveInfo ndefNfceeAppInfo = new ResolveInfo();
             ndefNfceeAppInfo.resolvePackageName = "NdefNfceeAidRoute";
