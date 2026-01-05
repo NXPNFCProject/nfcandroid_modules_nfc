@@ -23,6 +23,7 @@
  ******************************************************************************/
 #include <android-base/logging.h>
 #include <android-base/stringprintf.h>
+#include <pthread.h>
 #include <string.h>
 
 #include "nfa_dm_int.h"
