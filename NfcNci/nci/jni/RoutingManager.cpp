@@ -395,10 +395,12 @@ bool RoutingManager::removeAidRouting(const uint8_t* aid, uint8_t aidLen) {
   SyncEventGuard guard(mAidAddRemoveEvent);
   mAidRoutingConfigured = false;
   tNFA_STATUS nfaStat = NFA_EeRemoveAidRouting(aidLen, (uint8_t*)aid);
-  if (nfaStat == NFA_STATUS_OK) {
-    LOG(DEBUG) << StringPrintf("%s: wait for mAidAddRemoveEvent completion",
-                               fn);
-    mAidAddRemoveEvent.wait();
+  if (!sIsRecovering) {
+    if (nfaStat == NFA_STATUS_OK) {
+      LOG(DEBUG) << StringPrintf("%s: wait for mAidAddRemoveEvent completion",
+                                fn);
+      mAidAddRemoveEvent.wait();
+    }
   }
   if (mAidRoutingConfigured) {
     return true;
