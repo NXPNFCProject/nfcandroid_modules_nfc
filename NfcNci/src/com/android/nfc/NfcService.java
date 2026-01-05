@@ -2244,14 +2244,13 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     private void clearListenPollTech(boolean keepListenTech) {
         if (getNfcListenTech() != DEFAULT_LISTEN_TECH) {
             int listenTech = -1;
-            int pollTech = NfcAdapter.FLAG_READER_KEEP;
+            int pollTech = (NfcAdapter.FLAG_READER_KEEP | NfcAdapter.FLAG_USE_ALL_TECH
+                    | NfcAdapter.FLAG_SET_DEFAULT_TECH);
             if (keepListenTech) {
                 Log.d(TAG, "clearListenPollTech: keep listenTech");
                 listenTech = NfcAdapter.FLAG_LISTEN_KEEP;
             } else {
                 Log.d(TAG, "clearListenPollTech: clear listenTech");
-                pollTech = (NfcAdapter.FLAG_READER_KEEP | NfcAdapter.FLAG_USE_ALL_TECH
-                    | NfcAdapter.FLAG_SET_DEFAULT_TECH);
                 listenTech = (NfcAdapter.FLAG_LISTEN_KEEP | NfcAdapter.FLAG_USE_ALL_TECH
                     | NfcAdapter.FLAG_SET_DEFAULT_TECH);
             }
