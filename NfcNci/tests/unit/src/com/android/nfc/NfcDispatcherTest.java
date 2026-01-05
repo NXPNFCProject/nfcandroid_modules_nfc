@@ -147,7 +147,7 @@ public final class NfcDispatcherTest {
         mStaticMockSession = ExtendedMockito.mockitoSession()
                 .mockStatic(NfcStatsLog.class)
                 .mockStatic(android.nfc.Flags.class)
-                .mockStatic(com.android.nfc.flags.Flags.class)
+                .mockStatic(com.android.nfc.module.flags.Flags.class)
                 .mockStatic(NfcAdapter.class)
                 .mockStatic(Ndef.class)
                 .mockStatic(ForegroundUtils.class)
@@ -176,8 +176,9 @@ public final class NfcDispatcherTest {
         when(mockContext.getResources()).thenReturn(mResources);
         when(NfcAdapter.getDefaultAdapter(mockContext)).thenReturn(mNfcAdapter);
         when(mNfcInjector.createAtomicBoolean()).thenReturn(mAtomicBoolean);
-        when(mNfcInjector.createNfcTagAllowNotification(any(), any()))
+        when(mNfcInjector.createNfcTagAllowNotification(any(), any(), eq(true)))
                 .thenReturn(mNfcTagAllowNotification);
+        when(com.android.nfc.module.flags.Flags.nfcstack26q2Updates()).thenReturn(false);
 
         mNfcDispatcher = new NfcDispatcher(mockContext,
                 new HandoverDataParser(), mNfcInjector, true, mDeviceConfigFacade);

@@ -20,6 +20,7 @@ import static android.content.pm.PackageManager.MATCH_CLONE_PROFILE;
 import static android.content.pm.PackageManager.MATCH_DEFAULT_ONLY;
 import static android.nfc.Flags.enableNfcMainline;
 
+import static com.android.nfc.module.flags.Flags.nfcstack26q2Updates;
 import static com.android.nfc.NfcService.WAIT_FOR_OEM_CALLBACK_TIMEOUT_MS;
 
 import android.app.Activity;
@@ -378,9 +379,17 @@ class NfcDispatcher {
                         if (DBG) Log.d(TAG, "checkPrefList: allow:" + pkgName);
                     }
                 } else {
-                    // Default sets allow to the preference list
-                    if (DBG) Log.d(TAG, "checkPrefList: add:" + pkgName);
-                    mNfcAdapter.setTagIntentAppPreferenceForUser(userId, pkgName, true);
+                    if (nfcstack26q2Updates()
+                            && intent.getAction() != NfcAdapter.ACTION_NDEF_DISCOVERED) {
+                        if (DBG) Log.d(TAG, "checkPrefList: mute:" + pkgName);
+                        muteAppCount++;
+                        filtered.remove(resolveInfo);
+                        mNfcAdapter.setTagIntentAppPreferenceForUser(userId, pkgName, false);
+                        logMuteApp(activityInfo.applicationInfo.uid);
+                    } else {
+                        if (DBG) Log.d(TAG, "checkPrefList: allow:" + pkgName);
+                        mNfcAdapter.setTagIntentAppPreferenceForUser(userId, pkgName, true);
+                    }
                     notifyAppNames.add(appName);
                 }
             }
@@ -398,7 +407,11 @@ class NfcDispatcher {
                 }
             }
             if (notifyAppNames.size() > 0) {
-                mInjector.createNfcTagAllowNotification(context, notifyAppNames)
+                boolean allowed = true;
+                if (intent.getAction() != NfcAdapter.ACTION_NDEF_DISCOVERED) {
+                    allowed = !nfcstack26q2Updates();
+                }
+                mInjector.createNfcTagAllowNotification(context, notifyAppNames, allowed)
                         .startNotification();
             }
             return filtered;
@@ -1078,14 +1091,20 @@ class NfcDispatcher {
                             Map<String, Boolean> preflist =
                                     mNfcAdapter.getTagIntentAppPreferenceForUser(userId);
                             if (preflist.getOrDefault(pkgName, true)) {
-                                matches.add(info.resolveInfo);
                                 if (!preflist.containsKey(pkgName)) {
-                                    // Default sets allow to the preference list
-                                    if (DBG) Log.d(TAG, "tryTech: add:" + pkgName);
+                                    if (!nfcstack26q2Updates()) {
+                                        matches.add(info.resolveInfo);
+                                    }
+                                    if (DBG) {
+                                        Log.d(TAG, "tryTech: "
+                                                + (nfcstack26q2Updates() ? "mute: " : "allow: ")
+                                                + pkgName);
+                                    }
                                     mNfcAdapter.setTagIntentAppPreferenceForUser(userId,
-                                            pkgName, true);
+                                            pkgName, !nfcstack26q2Updates());
                                     notifyAppNames.add(appName);
                                 } else {
+                                    matches.add(info.resolveInfo);
                                     if (DBG) Log.d(TAG, "tryTech: allow:" + pkgName);
                                 }
                             } else {
@@ -1098,8 +1117,8 @@ class NfcDispatcher {
         }
 
         if (notifyAppNames.size() > 0) {
-            mNfcInjector.createNfcTagAllowNotification(mContext, notifyAppNames)
-                    .startNotification();
+            mNfcInjector.createNfcTagAllowNotification(mContext, notifyAppNames,
+                    !nfcstack26q2Updates()).startNotification();
         }
 
         if (matches.size() == 1) {

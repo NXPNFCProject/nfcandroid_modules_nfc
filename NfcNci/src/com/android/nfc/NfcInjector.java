@@ -401,7 +401,8 @@ public class NfcInjector {
 
     /** Creates a NfcTagAllowNotification object */
     public NfcTagAllowNotification createNfcTagAllowNotification(
-            Context context, List<String> appNames) {
-        return new NfcTagAllowNotification(context, appNames);
+            Context context, List<String> appNames, boolean allow) {
+        return new NfcTagAllowNotification(context, appNames, allow);
     }
+
 }

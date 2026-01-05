@@ -26,6 +26,7 @@ import static android.nfc.OemLogItems.EVENT_ENABLE;
 
 import static com.android.nfc.ScreenStateHelper.SCREEN_STATE_ON_LOCKED;
 import static com.android.nfc.ScreenStateHelper.SCREEN_STATE_ON_UNLOCKED;
+import static com.android.nfc.module.flags.Flags.nfcstack26q2Updates;
 import static com.android.nfc.module.nonexported.flags.Flags.coalesceRfFieldOnOffBroadcasts;
 
 import android.annotation.FlaggedApi;
@@ -195,8 +196,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     private static final String SYSTEM_UI = "com.android.systemui";
 
     public static final String PREF = "NfcServicePrefs";
-    public static final String PREF_TAG_APP_LIST = "TagIntentAppPreferenceListPrefs";
-
+    public static final String PREF_TAG_APP_LIST = nfcstack26q2Updates()
+                ? "TagIntentAppPreferenceListPrefsV2" : "TagIntentAppPreferenceListPrefs";
     public static final String GESTURE_EXCHAGE_AID = "A00000047609";
     static final String PREF_NFC_ON = "nfc_on";
 
