@@ -1932,10 +1932,14 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             try {
                 mRoutingWakeLock.acquire();
                 try {
-                    if (!mIsAlwaysOnSupported || mIsRecovering
+                    boolean isRecovering;
+                    synchronized (NfcService.this) {
+                        isRecovering = mIsRecovering;
+                    }
+                    if (!mIsAlwaysOnSupported || isRecovering
                             || (mAlwaysOnState != NfcAdapter.STATE_ON
                                 && mAlwaysOnState != NfcAdapter.STATE_TURNING_OFF)) {
-                        if (mIsRecovering) {
+                        if (isRecovering) {
                             // Recovering needs the full init. Put default value
                             mAlwaysOnState = NfcAdapter.STATE_OFF;
                             synchronized (mPowerSavingModeLock) {
@@ -2021,11 +2025,12 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     mCardEmulationManager.onNfcEnabled();
                 }
             }
-
-            if (mIsRecovering) {
-                 // Intents for all users
-                registerGlobalBroadcastsReceiver();
-                mIsRecovering = false;
+            synchronized (NfcService.this) {
+                if (mIsRecovering) {
+                    // Intents for all users
+                    registerGlobalBroadcastsReceiver();
+                    mIsRecovering = false;
+                }
             }
 
             if (DBG) Log.d(TAG, "EnableDisableTask.enableInternal: end");
@@ -2071,6 +2076,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             // to avoid the tag being discovered again.
             maybeDisconnectTarget();
 
+            boolean isRecovering;
             synchronized (NfcService.this) {
                 // Disable delay polling when disabling
                 mPollDelayed = false;
@@ -2080,11 +2086,14 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 mPollingDisableDeathRecipients.clear();
                 mReaderModeParams = null;
                 mDiscoveryTechParams = null;
+
+                // Handle mIsRecovering under synchronized lock
+                isRecovering = mIsRecovering;
             }
             mNfcDispatcher.resetForegroundDispatch();
 
             boolean result;
-            if (!mIsAlwaysOnSupported || mIsRecovering
+            if (!mIsAlwaysOnSupported || isRecovering
                     || (mAlwaysOnState == NfcAdapter.STATE_OFF)
                     || (mAlwaysOnState == NfcAdapter.STATE_TURNING_OFF)) {
                 result = mDeviceHost.deinitialize();
