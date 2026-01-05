@@ -2786,4 +2786,45 @@ public class CardEmulationTest {
                 NfcFCardEmulationActivity.class.getName(), topComponentName.getClassName());
         return activity;
     }
+
+    /**
+     * Tests that setDefaultForNextTap API can be called with proper permissions.
+     */
+    @Test
+    @RequiresFlagsEnabled(com.android.nfc.module.flags.Flags.FLAG_NFCSTACK_26Q2_UPDATES)
+    public void testSetDefaultForNextTap() {
+        CardEmulation instance = CardEmulation.getInstance(mAdapter);
+
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(android.Manifest.permission.WRITE_SECURE_SETTINGS);
+
+        try {
+            assertTrue("setDefaultForNextTap failed", instance.setDefaultForNextTap(mService));
+        } finally {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    /**
+     * Tests that setDefaultForNextTap API with explicit user ID can be called with proper
+     * permissions.
+     */
+    @Test
+    @RequiresFlagsEnabled(com.android.nfc.module.flags.Flags.FLAG_NFCSTACK_26Q2_UPDATES)
+    public void testSetDefaultForNextTapWithUserId() {
+        CardEmulation instance = CardEmulation.getInstance(mAdapter);
+        int userId = mContext.getUser().getIdentifier();
+
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(android.Manifest.permission.WRITE_SECURE_SETTINGS);
+
+        try {
+            assertTrue("setDefaultForNextTap with userId failed",
+                    instance.setDefaultForNextTap(userId, mService));
+        } finally {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
 }

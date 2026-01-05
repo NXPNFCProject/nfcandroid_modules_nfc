@@ -247,6 +247,8 @@ package android.nfc.cardemulation {
     method @FlaggedApi("android.nfc.enable_nfc_mainline") @NonNull public java.util.List<android.nfc.cardemulation.ApduServiceInfo> getServices(@NonNull String, int);
     method @FlaggedApi("android.nfc.nfc_override_recover_routing_table") @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) public void overrideRoutingTable(@NonNull android.app.Activity, int, int);
     method @FlaggedApi("android.nfc.nfc_override_recover_routing_table") @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) public void recoverRoutingTable(@NonNull android.app.Activity);
+    method @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) public boolean setDefaultForNextTap(@NonNull android.content.ComponentName);
+    method @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) public boolean setDefaultForNextTap(int, @NonNull android.content.ComponentName);
     method @FlaggedApi("android.nfc.enable_card_emulation_euicc") @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) public int setDefaultNfcSubscriptionId(int);
     method @FlaggedApi("android.nfc.nfc_set_service_enabled_for_category_other") @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) public int setServiceEnabledForCategoryOther(@NonNull android.content.ComponentName, boolean);
     field @FlaggedApi("android.nfc.nfc_set_service_enabled_for_category_other") public static final int SET_SERVICE_ENABLED_STATUS_FAILURE_ALREADY_SET = 3; // 0x3
