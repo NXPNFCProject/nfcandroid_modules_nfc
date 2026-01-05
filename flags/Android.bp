@@ -44,6 +44,7 @@ java_aconfig_library {
     visibility: [
         "//packages/modules/Nfc:__subpackages__",
         "//frameworks/base:__subpackages__",
+        "//packages/modules/Permission:__subpackages__",
     ],
 }
 
