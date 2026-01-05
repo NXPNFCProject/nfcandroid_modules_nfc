@@ -354,6 +354,33 @@ public final class NfcServiceTest {
     }
 
     @Test
+    public void testEnable_noHceCapability_doesNotCrash() throws Exception {
+        // Set up mocks to simulate a device without HCE capability.
+        when(mPackageManager.hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION))
+                .thenReturn(false);
+        when(mPackageManager.hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION_NFCF))
+                .thenReturn(false);
+
+        // Create a new NfcService instance with the updated mock configuration.
+        // This will create an NfcService with mIsHceCapable = false, and
+        // mCardEmulationManager will be null.
+        createNfcService();
+
+        // Mock dependencies required for the enable() flow.
+        when(mDeviceHost.initialize()).thenReturn(true);
+        when(mPreferences.getBoolean(eq(PREF_NFC_ON), anyBoolean())).thenReturn(true);
+
+        // Execute the enable operation.
+        mNfcService.mNfcAdapter.enable(PKG_NAME);
+        mLooper.dispatchAll();
+
+        // Verify that the NFC stack initialization proceeds without crashing.
+        // The primary goal of this test is to ensure no NullPointerException is thrown
+        // when mCardEmulationManager is null.
+        verify(mDeviceHost).initialize();
+    }
+
+    @Test
     public void testEnable_WheOemExtensionEnabledAndNotInitialized() throws Exception {
         when(mDeviceConfigFacade.getEnableOemExtension()).thenReturn(true);
         when(NfcProperties.initialized()).thenReturn(Optional.of(Boolean.FALSE));
