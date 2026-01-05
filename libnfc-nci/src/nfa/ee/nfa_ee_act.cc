@@ -958,13 +958,9 @@ void nfa_ee_api_mode_set(tNFA_EE_MSG* p_data) {
     nfa_ee_report_event(nullptr, NFA_EE_MODE_SET_EVT, &nfa_ee_cback_data);
     return;
   }
-  /* set the NFA_EE_STATUS_PENDING bit to indicate the status is not exactly
-   * active */
-  if (p_data->mode_set.mode == NFC_MODE_ACTIVATE)
-    p_cb->ee_status = NFA_EE_STATUS_PENDING | NFA_EE_STATUS_ACTIVE;
-  else {
-    p_cb->ee_status = NFA_EE_STATUS_INACTIVE;
-    /* DH should release the NCI connection before deactivate the NFCEE */
+
+  /* DH should release the NCI connection before deactivate the NFCEE */
+  if (p_data->mode_set.mode != NFC_MODE_ACTIVATE) {
     if (p_cb->conn_st == NFA_EE_CONN_ST_CONN) {
       p_cb->conn_st = NFA_EE_CONN_ST_DISC;
       NFC_ConnClose(p_cb->conn_id);
