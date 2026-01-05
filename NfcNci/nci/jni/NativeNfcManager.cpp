@@ -231,7 +231,7 @@ void initializeGlobalDebugEnabledFlag() {
 }
 
 void initializeRecoveryOption() {
-  recovery_option = NfcConfig::getUnsigned(NAME_RECOVERY_OPTION, 0);
+  recovery_option = NfcConfig::getUnsigned(NAME_RECOVERY_OPTION, 1);
 
   LOG(DEBUG) << __func__ << ": recovery option=" << recovery_option;
 }
