@@ -64,6 +64,7 @@ import androidx.test.core.app.ApplicationProvider;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CommonTestUtils;
+import com.android.compatibility.common.util.ShellUtils;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
@@ -123,6 +124,7 @@ public class CardEmulationTest {
         mAdapter = NfcAdapter.getDefaultAdapter(mContext);
         assertNotNull("NFC Adapter is null", mAdapter);
         assertTrue("NFC Adapter could not be enabled", NfcUtils.enableNfc(mAdapter, mContext));
+        ShellUtils.runShellCommand("setprop log.tag.libnfc_nci VERBOSE");
     }
 
     @After
@@ -139,6 +141,7 @@ public class CardEmulationTest {
             Log.w("CardEmulationTest", "mAdapter or mContext is null");
         }
         sCurrentPollLoopReceiver = null;
+        ShellUtils.runShellCommand("setprop log.tag.libnfc_nci INFO");
     }
 
     @Test
