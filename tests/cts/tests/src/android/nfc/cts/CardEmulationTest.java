@@ -1726,6 +1726,8 @@ public class CardEmulationTest {
     @RequiresFlagsEnabled({com.android.nfc.flags.Flags.FLAG_AUTO_DISABLE_OBSERVE_MODE,
                            Flags.FLAG_NFC_OBSERVE_MODE,
                            android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
+    @RequiresFlagsDisabled({
+            com.android.nfc.module.nonexported.flags.Flags.FLAG_REVERT_AUTO_DISABLE_OBSERVE_MODE})
     public void testAutoDisableObserveMode() throws Exception {
         assumeVsrApiGreaterThanUdc();
         runWithRole(mContext, CTS_PACKAGE_NAME, () -> {

@@ -17,3 +17,13 @@ flag {
     description: "Use package name instead of component name for foreground app matching."
     bug: "433127912"
 }
+
+flag {
+    name: "revert_auto_disable_observe_mode"
+    namespace: "nfc"
+    description: "Revert 'auto-disable observe mode' feature"
+    bug: "468068051"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
