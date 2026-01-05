@@ -166,7 +166,12 @@ public final class NfcAdapter {
      *
      * <p>This intent will not be started when a tag is discovered if any activities respond to
      * {@link #ACTION_NDEF_DISCOVERED} or {@link #ACTION_TECH_DISCOVERED} for the current tag.
+     *
+     * @deprecated this intent action is deprecated, please use
+     * {@link #ACTION_NDEF_DISCOVERED} or {@link #ACTION_TECH_DISCOVERED} instead.
      */
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_NFCSTACK_26Q2_UPDATES)
+    @Deprecated
     @SdkConstant(SdkConstantType.ACTIVITY_INTENT_ACTION)
     public static final String ACTION_TAG_DISCOVERED = "android.nfc.action.TAG_DISCOVERED";
 
@@ -197,8 +202,12 @@ public final class NfcAdapter {
 
     /**
      * Broadcast to only the activity that handles ACTION_TAG_DISCOVERED
+     *
+     * @deprecated this is no longer used.
      * @hide
      */
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_NFCSTACK_26Q2_UPDATES)
+    @Deprecated
     public static final String ACTION_TAG_LEFT_FIELD = "android.nfc.action.TAG_LOST";
 
     /**
