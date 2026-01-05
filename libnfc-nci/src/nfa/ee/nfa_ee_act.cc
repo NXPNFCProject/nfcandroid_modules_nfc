@@ -2459,10 +2459,15 @@ void nfa_ee_nci_mode_set_rsp(tNFA_EE_MSG* p_data) {
     nfa_ee_report_event(p_cb->p_ee_cback, NFA_EE_MODE_SET_EVT,
                         &nfa_ee_cback_data);
 
-    if ((p_cb->ee_status == NFC_NFCEE_STATUS_INACTIVE) ||
-        (p_cb->ee_status == NFC_NFCEE_STATUS_ACTIVE)) {
-      /* Report NFA_EE_DISCOVER_REQ_EVT for all active NFCEE */
-      nfa_ee_report_discover_req_evt();
+    if (p_rsp->status == NFA_STATUS_OK) {
+      if ((p_cb->ee_status == NFC_NFCEE_STATUS_INACTIVE) ||
+          (p_cb->ee_status == NFC_NFCEE_STATUS_ACTIVE)) {
+        /* Report NFA_EE_DISCOVER_REQ_EVT for all active NFCEE */
+        nfa_ee_report_discover_req_evt();
+      }
+    } else {
+      LOG(WARNING) << StringPrintf("%s: status=%d do not update RT", __func__,
+                                   p_rsp->status);
     }
   }
   if (nfa_ee_cb.p_enable_cback)
