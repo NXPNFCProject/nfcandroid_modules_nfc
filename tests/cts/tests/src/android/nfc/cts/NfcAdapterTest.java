@@ -63,6 +63,7 @@ import android.nfc.tech.TagTechnology;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.os.ResultReceiver;
+import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -108,6 +109,10 @@ public class NfcAdapterTest {
     private boolean supportsHardware() {
         final PackageManager pm = mContext.getPackageManager();
         return pm.hasSystemFeature(PackageManager.FEATURE_NFC_ANY);
+    }
+
+    private int getVendorApiLevel() {
+        return SystemProperties.getInt("ro.board.api_level", 0);
     }
 
     @Before
@@ -379,6 +384,7 @@ public class NfcAdapterTest {
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
     @RequiresFlagsDisabled(android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED)
     public void testAllowTransaction() {
+        assumeTrue(getVendorApiLevel() > 202404);
         ComponentName originalDefault = null;
         NfcAdapter adapter = getDefaultAdapter();
         adapter.notifyHceDeactivated();
@@ -398,6 +404,7 @@ public class NfcAdapterTest {
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
     @RequiresFlagsDisabled(android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED)
     public void testDisallowTransaction() {
+        assumeTrue(getVendorApiLevel() > 202404);
         ComponentName originalDefault = null;
         NfcAdapter adapter = getDefaultAdapter();
         adapter.notifyHceDeactivated();
@@ -418,6 +425,7 @@ public class NfcAdapterTest {
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
     @RequiresFlagsDisabled(android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED)
     public void testDefaultObserveModePaymentDynamic() {
+        assumeTrue(getVendorApiLevel() > 202404);
         ComponentName originalDefault = null;
         NfcAdapter adapter = getDefaultAdapter();
         adapter.notifyHceDeactivated();
@@ -442,6 +450,7 @@ public class NfcAdapterTest {
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
     public void testDefaultObserveModeForegroundDynamic() {
+        assumeTrue(getVendorApiLevel() > 202404);
         NfcAdapter adapter = getDefaultAdapter();
         adapter.notifyHceDeactivated();
         assumeObserveModeSupported(adapter);
@@ -471,6 +480,7 @@ public class NfcAdapterTest {
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
     public void testDefaultObserveModeOnlyWithServiceChange() {
+        assumeTrue(getVendorApiLevel() > 202404);
         NfcAdapter adapter = getDefaultAdapter();
         adapter.notifyHceDeactivated();
         assumeObserveModeSupported(adapter);
@@ -517,6 +527,7 @@ public class NfcAdapterTest {
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
     @RequiresFlagsDisabled(android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED)
     public void testDefaultObserveModePayment() {
+        assumeTrue(getVendorApiLevel() > 202404);
         ComponentName originalDefault = null;
         NfcAdapter adapter = getDefaultAdapter();
         adapter.notifyHceDeactivated();
@@ -536,6 +547,7 @@ public class NfcAdapterTest {
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
     public void testDefaultObserveModeForeground() {
+        assumeTrue(getVendorApiLevel() > 202404);
         NfcAdapter adapter = getDefaultAdapter();
         CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
         cardEmulation.setShouldDefaultToObserveModeForService(
@@ -557,6 +569,7 @@ public class NfcAdapterTest {
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_OBSERVE_MODE,
             android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
     public void testAllowTransaction_walletRoleEnabled() {
+        assumeTrue(getVendorApiLevel() > 202404);
         WalletRoleTestUtils.runWithRole(mContext, WalletRoleTestUtils.CTS_PACKAGE_NAME, () -> {
             NfcAdapter adapter = getDefaultAdapter();
             adapter.notifyHceDeactivated();
@@ -585,6 +598,7 @@ public class NfcAdapterTest {
             android.nfc.Flags.FLAG_NFC_OBSERVE_MODE
     })
     public void testAllowOneTransaction() throws Exception {
+        assumeTrue(getVendorApiLevel() > 202404);
         NfcAdapter adapter = getDefaultAdapter();
         adapter.notifyHceDeactivated();
 
@@ -620,6 +634,7 @@ public class NfcAdapterTest {
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_OBSERVE_MODE,
             android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
     public void testDisallowTransaction_walletRoleEnabled() {
+        assumeTrue(getVendorApiLevel() > 202404);
         WalletRoleTestUtils.runWithRole(mContext, WalletRoleTestUtils.CTS_PACKAGE_NAME, () -> {
             NfcAdapter adapter = getDefaultAdapter();
             adapter.notifyHceDeactivated();
@@ -709,6 +724,7 @@ public class NfcAdapterTest {
 
     @Test
     public void testShouldDefaultToObserveModeAfterNfcOffOn() throws InterruptedException {
+        assumeTrue(getVendorApiLevel() > 202404);
         NfcAdapter adapter = getDefaultAdapter();
         adapter.notifyHceDeactivated();
         assumeObserveModeSupported(adapter);
@@ -738,6 +754,7 @@ public class NfcAdapterTest {
 
     @Test
     public void testShouldDefaultToObserveModeWithNfcOff() throws InterruptedException {
+        assumeTrue(getVendorApiLevel() > 202404);
         NfcAdapter adapter = getDefaultAdapter();
         adapter.notifyHceDeactivated();
         assumeObserveModeSupported(adapter);
