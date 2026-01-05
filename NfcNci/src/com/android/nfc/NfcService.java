@@ -467,6 +467,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     int mAlwaysOnState;  // one of NfcAdapter.STATE_ON, STATE_TURNING_ON, etc
     int mAlwaysOnMode; // one of NfcOemExtension.ENABLE_DEFAULT, ENABLE_TRANSPARENT, etc
     private final Object mOemExtensionCallbackLock = new Object();
+    private final Object mNfcVendorNciCallbackLock = new Object();
     private final Object mPowerSavingModeLock = new Object();
     @GuardedBy("mPowerSavingModeLock")
     private @NfcAdapter.AdapterState int mPowerSavingState = NfcAdapter.STATE_OFF;
@@ -3652,23 +3653,28 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         @Override
         public void registerVendorExtensionCallback(INfcVendorNciCallback callbacks)
                 throws RemoteException {
-            synchronized (NfcService.this) {
-                if (DBG) Log.i(TAG, "registerVendorExtensionCallback");
-                NfcPermissions.enforceAdminPermissions(mContext);
+            if (DBG) Log.i(TAG, "registerVendorExtensionCallback");
+            NfcPermissions.enforceAdminPermissions(mContext);
+            synchronized (mNfcVendorNciCallbackLock) {
                 mNfcVendorNciCallBack = callbacks;
-                mDeviceHost.enableVendorNciNotifications(true);
+                mNfcVendorNciCallBack.asBinder().linkToDeath(mNfcVendorNciCbDeathRecipient, 0);
             }
+            mDeviceHost.enableVendorNciNotifications(true);
         }
 
         @Override
         public void unregisterVendorExtensionCallback(INfcVendorNciCallback callbacks)
                 throws RemoteException {
-            synchronized (NfcService.this) {
-                if (DBG) Log.i(TAG, "unregisterVendorExtensionCallback");
-                NfcPermissions.enforceAdminPermissions(mContext);
+            if (DBG) Log.i(TAG, "unregisterVendorExtensionCallback");
+            NfcPermissions.enforceAdminPermissions(mContext);
+            synchronized (mNfcVendorNciCallbackLock) {
+                if (mNfcVendorNciCallBack == null) {
+                    return;
+                }
+                mNfcVendorNciCallBack.asBinder().unlinkToDeath(mNfcVendorNciCbDeathRecipient, 0);
                 mNfcVendorNciCallBack = null;
-                mDeviceHost.enableVendorNciNotifications(false);
             }
+            mDeviceHost.enableVendorNciNotifications(false);
         }
 
         @Override
@@ -4032,8 +4038,21 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         synchronized (mOemExtensionCallbackLock) {
             Log.w(TAG, "binderDied: OEM extension died");
             mNfcOemExtensionCallback = null;
+            if (mCardEmulationManager != null) {
+                mCardEmulationManager.setOemExtension(null);
+            }
+            if (mNfcDispatcher != null) {
+                mNfcDispatcher.setOemExtension(null);
+            }
         }
         restartStack();
+    };
+
+    private final IBinder.DeathRecipient mNfcVendorNciCbDeathRecipient = () -> {
+        synchronized (mNfcVendorNciCallbackLock) {
+            Log.w(TAG, "binderDied: OEM extension died (mNfcVendorNciCallBack)");
+            mNfcVendorNciCallBack = null;
+        }
     };
 
     final class SeServiceDeathRecipient implements IBinder.DeathRecipient {

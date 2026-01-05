@@ -1378,6 +1378,7 @@ public final class NfcServiceTest {
     @Test
     public void testOnVendorSpecificEvent() throws RemoteException {
         INfcVendorNciCallback callback = mock(INfcVendorNciCallback.class);
+        when(callback.asBinder()).thenReturn(mock(IBinder.class));
         mNfcService.mNfcAdapter.registerVendorExtensionCallback(callback);
         verify(mDeviceHost).enableVendorNciNotifications(true);
         mNfcService.onVendorSpecificEvent(1, 2, "test".getBytes());
