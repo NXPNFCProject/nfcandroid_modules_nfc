@@ -369,7 +369,9 @@ void rw_t3t_handle_nci_poll_ntf(uint8_t nci_status, uint8_t num_responses,
   if (p_cb->rw_state == RW_T3T_STATE_NOT_ACTIVATED) {
     // Tag was deactivated
     evt_data.status = nci_status;
-    (*(rw_cb.p_cback))(RW_T3T_INTF_ERROR_EVT, &evt_data);
+    if(rw_cb.p_cback){
+      (*(rw_cb.p_cback))(RW_T3T_INTF_ERROR_EVT, &evt_data);
+    }
     return;
   }
 
@@ -378,7 +380,9 @@ void rw_t3t_handle_nci_poll_ntf(uint8_t nci_status, uint8_t num_responses,
     p_cb->flags &= ~RW_T3T_FL_W4_PRESENCE_CHECK_POLL_RSP;
     evt_data.status = nci_status;
     p_cb->rw_state = RW_T3T_STATE_IDLE;
-    (*(rw_cb.p_cback))(RW_T3T_PRESENCE_CHECK_EVT, &evt_data);
+    if(rw_cb.p_cback){
+      (*(rw_cb.p_cback))(RW_T3T_PRESENCE_CHECK_EVT, &evt_data);
+    }
   } else if (p_cb->flags & RW_T3T_FL_W4_GET_SC_POLL_RSP) {
     /* Handle POLL ntf in response to get system codes */
     p_cb->flags &= ~RW_T3T_FL_W4_GET_SC_POLL_RSP;
@@ -408,7 +412,9 @@ void rw_t3t_handle_nci_poll_ntf(uint8_t nci_status, uint8_t num_responses,
     }
 
     p_cb->rw_state = RW_T3T_STATE_IDLE;
-    (*(rw_cb.p_cback))(RW_T3T_POLL_EVT, &evt_data);
+    if(rw_cb.p_cback){
+      (*(rw_cb.p_cback))(RW_T3T_POLL_EVT, &evt_data);
+    }
   }
 }
 
