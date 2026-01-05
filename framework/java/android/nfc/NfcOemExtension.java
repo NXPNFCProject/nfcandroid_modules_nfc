@@ -76,7 +76,6 @@ import java.util.function.Supplier;
  *
  * @hide
  */
-@FlaggedApi(Flags.FLAG_NFC_OEM_EXTENSION)
 @SystemApi
 public final class NfcOemExtension {
     private static final String TAG = "NfcOemExtension";
@@ -289,6 +288,67 @@ public final class NfcOemExtension {
     })
     @Retention(RetentionPolicy.SOURCE)
     public @interface CommitRoutingStatusCode {}
+
+    /**
+     * NFC-A (ISO 14443-3A) technology in passive poll mode.
+     */
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_NFCSTACK_26Q2_UPDATES)
+    public static final int NFC_A_PASSIVE_POLL_MODE = 0x0;
+
+    /**
+     * NFC-B (ISO 14443-3B) technology in passive poll mode.
+     */
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_NFCSTACK_26Q2_UPDATES)
+    public static final int NFC_B_PASSIVE_POLL_MODE = 0x1;
+
+    /**
+     * NFC-F (FeliCa) technology in passive poll mode.
+     */
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_NFCSTACK_26Q2_UPDATES)
+    public static final int NFC_F_PASSIVE_POLL_MODE = 0x2;
+
+    /**
+     * Active poll mode.
+     */
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_NFCSTACK_26Q2_UPDATES)
+    public static final int NFC_ACTIVE_POLL_MODE = 0x3;
+
+    /**
+     * NFC-V (ISO 15693) technology in passive poll mode.
+     */
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_NFCSTACK_26Q2_UPDATES)
+    public static final int NFC_V_PASSIVE_POLL_MODE = 0x6;
+
+    /**
+     * Kovio technology in poll mode.
+     */
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_NFCSTACK_26Q2_UPDATES)
+    public static final int NFC_A_KOVIO_POLL_MODE = 0x77;
+
+    /**
+     * NFC-A (ISO 14443-3A) technology in passive listen mode.
+     */
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_NFCSTACK_26Q2_UPDATES)
+    public static final int NFC_A_PASSIVE_LISTEN_MODE = 0x80;
+
+    /**
+     * NFC-B (ISO 14443-3B) technology in passive listen mode.
+     */
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_NFCSTACK_26Q2_UPDATES)
+    public static final int NFC_B_PASSIVE_LISTEN_MODE = 0x81;
+
+    /**
+     * NFC-F (FeliCa) technology in passive listen mode.
+     */
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_NFCSTACK_26Q2_UPDATES)
+    public static final int NFC_F_PASSIVE_LISTEN_MODE = 0x82;
+
+    /**
+     * Active listen mode.
+     */
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_NFCSTACK_26Q2_UPDATES)
+    public static final int NFC_ACTIVE_LISTEN_MODE = 0x83;
+
     /**
      * Interface for Oem extensions for NFC.
      */
@@ -856,6 +916,21 @@ public final class NfcOemExtension {
                 routeStringToInt(status.get(1)),
                 routeStringToInt(status.get(2)),
                 routeStringToInt(status.get(3)));
+    }
+
+    /**
+     * Get current Rf discover configurations.
+     *
+     * @return {@link RfDiscoverConfig}.
+     *
+     * @hide
+     */
+    @NonNull
+    @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_NFCSTACK_26Q2_UPDATES)
+    @SystemApi
+    public List<RfDiscoverConfig> getRfDiscoverConfigurations() {
+        return NfcAdapter.callServiceReturn(() ->
+                NfcAdapter.sService.getRfDiscoverConfigurations(), null);
     }
 
     /**

@@ -26,6 +26,7 @@
 
 #include <string>
 
+#include "debug_rf_discover.h"
 #include "nci_hmsgs.h"
 #include "nfa_api.h"
 #include "nfa_dm_int.h"
@@ -1825,6 +1826,7 @@ static void nfa_dm_disc_sm_idle(tNFA_DM_RF_DISC_SM_EVENT event,
       if (p_data->nfc_discover.status == NFC_STATUS_OK) {
         polling_start_cnt = 0;
         nfa_dm_disc_new_state(NFA_DM_RFST_DISCOVERY);
+        rf_discover_update();
 
         /* if RF discovery was stopped while waiting for response */
         if (nfa_dm_cb.disc_cb.disc_flags &

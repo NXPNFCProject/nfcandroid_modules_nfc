@@ -37,6 +37,7 @@ import android.nfc.INfcDta;
 import android.nfc.INfcWlcStateListener;
 import android.nfc.IReaderCallback;
 import android.nfc.NfcAntennaInfo;
+import android.nfc.RfDiscoverConfig;
 import android.nfc.WlcListenerDeviceInfo;
 import android.nfc.cardemulation.PollingFrame;
 import android.os.Bundle;
@@ -137,4 +138,5 @@ interface INfcAdapter
     void unregisterGestureExchangeCallback(in IReaderCallback callback);
     String getGestureExchangeAid();
     void allowOneTransaction();
+    List<RfDiscoverConfig> getRfDiscoverConfigurations();
 }

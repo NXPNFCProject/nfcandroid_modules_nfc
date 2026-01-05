@@ -353,4 +353,9 @@ public interface DeviceHost {
      * Send NCI config update command
      */
     void setNciConfig(int paramId, byte[] param, int length, boolean custom);
+
+    /**
+    * Get the committed rf discover configuration
+    */
+    byte[] getRfDiscoverConfig();
 }

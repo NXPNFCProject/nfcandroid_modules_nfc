@@ -71,6 +71,7 @@ public class NfcInjector {
     private final Looper mMainLooper;
     private final NfcEventLog mNfcEventLog;
     private final RoutingTableParser mRoutingTableParser;
+    private final RfDiscoverCmdParser mRfDiscoverCmdParser;
     private final ScreenStateHelper mScreenStateHelper;
     private final NfcUnlockManager mNfcUnlockManager;
     private final HandoverDataParser mHandoverDataParser;
@@ -106,6 +107,7 @@ public class NfcInjector {
         mContext = context;
         mMainLooper = mainLooper;
         mRoutingTableParser = new RoutingTableParser();
+        mRfDiscoverCmdParser = new RfDiscoverCmdParser();
         mScreenStateHelper = new ScreenStateHelper(mContext);
         mNfcUnlockManager = NfcUnlockManager.getInstance();
         mHandoverDataParser = new HandoverDataParser();
@@ -170,6 +172,10 @@ public class NfcInjector {
 
     public RoutingTableParser getRoutingTableParser() {
         return mRoutingTableParser;
+    }
+
+    public RfDiscoverCmdParser getRfDiscoverCmdParser() {
+        return mRfDiscoverCmdParser;
     }
 
     public NfcUnlockManager getNfcUnlockManager() {

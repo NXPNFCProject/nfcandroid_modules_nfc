@@ -41,6 +41,7 @@
 #include "ce_api.h"
 #include "com_android_nfc_module_flags.h"
 #include "debug_lmrt.h"
+#include "debug_rf_discover.h"
 #include "nfa_api.h"
 #include "nfa_ee_api.h"
 #include "nfa_nfcee_int.h"
@@ -2927,6 +2928,30 @@ static void nfcManager_setNciConfig(JNIEnv* e, jobject o, jint param_id,
   }
 }
 
+/*******************************************************************************
+**
+** Function:        nfcManager_doGetRfDiscoverConfig
+**
+** Description:     Retrieve current Rf discover configuration
+**                  e: JVM environment.
+**                  o: Java object.
+**
+** Returns:         Current RF discover configuration
+**
+*******************************************************************************/
+static jbyteArray nfcManager_doGetRfDiscoverConfig(JNIEnv* e, jobject o) {
+  if (sIsShuttingDown) return nullptr;
+  std::vector<uint8_t>* rfDiscoverConfig = rf_discover_get_configs();
+
+  CHECK(e);
+  jbyteArray rtJavaArray = e->NewByteArray((*rfDiscoverConfig).size());
+  CHECK(rtJavaArray);
+  e->SetByteArrayRegion(rtJavaArray, 0, (*rfDiscoverConfig).size(),
+                        (jbyte*)&(*rfDiscoverConfig)[0]);
+
+  return rtJavaArray;
+}
+
 /*****************************************************************************
 **
 ** JNI functions for android-4.0.1_r1
@@ -3036,6 +3061,7 @@ static JNINativeMethod gMethods[] = {
      (void*)nfcManager_setFirmwareExitFrameTable},
     {"doRestartRfDiscovery", "()V", (void*)nfcManager_restartRfDiscovery},
     {"setNciConfig", "(I[BIZ)V", (void*)nfcManager_setNciConfig},
+    {"getRfDiscoverConfig", "()[B", (void*)nfcManager_doGetRfDiscoverConfig},
 };
 
 /*******************************************************************************

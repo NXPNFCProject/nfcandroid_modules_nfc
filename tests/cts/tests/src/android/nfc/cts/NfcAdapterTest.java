@@ -46,6 +46,7 @@ import android.nfc.NfcAntennaInfo;
 import android.nfc.NfcOemExtension;
 import android.nfc.NfcRoutingTableEntry;
 import android.nfc.OemLogItems;
+import android.nfc.RfDiscoverConfig;
 import android.nfc.RoutingStatus;
 import android.nfc.RoutingTableAidEntry;
 import android.nfc.RoutingTableProtocolEntry;
@@ -1135,6 +1136,37 @@ public class NfcAdapterTest {
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().dropShellPermissionIdentity();
         }
+    }
+
+    @Test
+    @RequiresDevice
+    @RequiresFlagsEnabled(com.android.nfc.module.flags.Flags.FLAG_NFCSTACK_26Q2_UPDATES)
+    public void testOemExtensionGetRfDiscoverConfigurations()
+            throws InterruptedException, RemoteException {
+        NfcAdapter nfcAdapter = getDefaultAdapter();
+        assertNotNull(nfcAdapter);
+        NfcOemExtension nfcOemExtension = nfcAdapter.getNfcOemExtension();
+        assertNotNull(nfcOemExtension);
+
+        List<RfDiscoverConfig> config = nfcOemExtension.getRfDiscoverConfigurations();
+        assertNotNull(config);
+        assertThat(config.size()).isGreaterThan(0);
+
+        Activity activity = createAndResumeActivity();
+        nfcAdapter.setDiscoveryTechnology(activity,
+                NfcAdapter.FLAG_READER_NFC_B, NfcAdapter.FLAG_LISTEN_NFC_PASSIVE_A);
+        List<RfDiscoverConfig> config2 = nfcOemExtension.getRfDiscoverConfigurations();
+        // There should be at least one Poll tech and one Listen tech
+        assertThat(config2.size()).isGreaterThan(2);
+
+        for (RfDiscoverConfig c: config2) {
+            // There should be no Tech-A Poll configuration
+            if (c.getTechnologyMode() == NfcOemExtension.NFC_A_PASSIVE_POLL_MODE) {
+                assertTrue("Incorrect Rf Discover configuration", false);
+            }
+        }
+
+        nfcAdapter.resetDiscoveryTechnology(activity);
     }
 
     @Test
