@@ -264,7 +264,7 @@ void rw_t3t_process_error(tNFC_STATUS status) {
 
       /* allocate a new buffer for message */
       p_cmd_buf = rw_t3t_get_cmd_buf();
-      if (p_cmd_buf != nullptr) {
+      if (p_cmd_buf != nullptr && p_cb->p_cur_cmd_buf != nullptr) {
         memcpy(p_cmd_buf, p_cb->p_cur_cmd_buf,
                sizeof(NFC_HDR) + p_cb->p_cur_cmd_buf->offset +
                    p_cb->p_cur_cmd_buf->len);
