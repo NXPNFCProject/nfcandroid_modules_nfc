@@ -198,6 +198,16 @@ void HalAidlBinderDied(void* /* cookie */) {
   exit(0);
 }
 
+class NfcLoggerInitializer {
+ public:
+  NfcLoggerInitializer() {
+    // Init log tag
+    android::base::InitLogging(nullptr);
+    android::base::SetDefaultTag("libnfc_nci");
+  }
+};
+NfcLoggerInitializer gNfcLoggerInitializer;
+
 }  // namespace
 
 class NfcClientCallback : public INfcClientCallback {
@@ -586,9 +596,6 @@ void NfcAdaptation::Initialize() {
   if (sVndExtnsPresent) {
     sNfcVendorExtn->processEvent(HANDLE_NFC_ADAPTATION_INIT, HAL_NFC_STATUS_OK);
   }
-  // Init log tag
-  android::base::InitLogging(nullptr);
-  android::base::SetDefaultTag("libnfc_nci");
 
   initializeGlobalDebugEnabledFlag();
   initializeNciResetTypeFlag();
