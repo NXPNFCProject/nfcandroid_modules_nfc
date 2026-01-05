@@ -1520,7 +1520,10 @@ public class HostEmulationManager {
         if (DBG) {
             Log.d(TAG, "launchTapAgain: service=" + service.toString() + ", category=" + category);
         }
-        if (mNfcOemExtensionCallback != null) {
+        final boolean launchOemAppChooser = mContext.getResources().getBoolean(
+                com.android.nfc.R.bool.launch_oem_app_chooser);
+
+        if (mNfcOemExtensionCallback != null && launchOemAppChooser) {
             try {
                 mNfcOemExtensionCallback.onLaunchHceTapAgainActivity(service, category);
                 return;
@@ -1538,7 +1541,10 @@ public class HostEmulationManager {
 
     void launchResolver(String selectedAid, ArrayList<ApduServiceInfo> services,
         ComponentName failedComponent, String category) {
-        if (mNfcOemExtensionCallback != null) {
+        final boolean launchOemAppChooser = mContext.getResources().getBoolean(
+                com.android.nfc.R.bool.launch_oem_app_chooser);
+
+        if (mNfcOemExtensionCallback != null && launchOemAppChooser) {
             try {
                 mNfcOemExtensionCallback.onLaunchHceAppChooserActivity(
                     selectedAid, services, failedComponent, category);
