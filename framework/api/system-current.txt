@@ -62,7 +62,7 @@ package android.nfc {
     method @FlaggedApi("android.nfc.nfc_oem_extension") @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) public int forceRoutingTableCommit();
     method @FlaggedApi("android.nfc.nfc_oem_extension") @NonNull public java.util.Map<java.lang.String,java.lang.Integer> getActiveNfceeList();
     method @FlaggedApi("android.nfc.nfc_oem_extension") @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) public long getMaxPausePollingTimeoutMills();
-    method @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") @NonNull public java.util.List<android.nfc.RfDiscoverConfig> getRfDiscoverConfigurations();
+    method @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") @NonNull @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) public java.util.List<android.nfc.RfDiscoverConfig> getRfDiscoverConfigurations();
     method @FlaggedApi("android.nfc.nfc_oem_extension") @NonNull @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) public android.nfc.RoutingStatus getRoutingStatus();
     method @FlaggedApi("android.nfc.nfc_oem_extension") @NonNull @RequiresPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) public java.util.List<android.nfc.NfcRoutingTableEntry> getRoutingTable();
     method @FlaggedApi("android.nfc.nfc_oem_extension") @NonNull public android.nfc.T4tNdefNfcee getT4tNdefNfcee();
@@ -97,16 +97,6 @@ package android.nfc {
     field @FlaggedApi("android.nfc.nfc_oem_extension") public static final int NFCEE_TECH_B = 2; // 0x2
     field @FlaggedApi("android.nfc.nfc_oem_extension") public static final int NFCEE_TECH_F = 4; // 0x4
     field @FlaggedApi("android.nfc.nfc_oem_extension") public static final int NFCEE_TECH_NONE = 0; // 0x0
-    field @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public static final int NFC_ACTIVE_LISTEN_MODE = 131; // 0x83
-    field @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public static final int NFC_ACTIVE_POLL_MODE = 3; // 0x3
-    field @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public static final int NFC_A_KOVIO_POLL_MODE = 119; // 0x77
-    field @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public static final int NFC_A_PASSIVE_LISTEN_MODE = 128; // 0x80
-    field @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public static final int NFC_A_PASSIVE_POLL_MODE = 0; // 0x0
-    field @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public static final int NFC_B_PASSIVE_LISTEN_MODE = 129; // 0x81
-    field @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public static final int NFC_B_PASSIVE_POLL_MODE = 1; // 0x1
-    field @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public static final int NFC_F_PASSIVE_LISTEN_MODE = 130; // 0x82
-    field @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public static final int NFC_F_PASSIVE_POLL_MODE = 2; // 0x2
-    field @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public static final int NFC_V_PASSIVE_POLL_MODE = 6; // 0x6
     field public static final int POLLING_STATE_CHANGE_ALREADY_IN_REQUESTED_STATE = 2; // 0x2
     field public static final int POLLING_STATE_CHANGE_SUCCEEDED = 1; // 0x1
     field public static final int STATUS_OK = 0; // 0x0
@@ -177,12 +167,22 @@ package android.nfc {
   }
 
   @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public final class RfDiscoverConfig implements android.os.Parcelable {
-    ctor public RfDiscoverConfig(int, int);
+    ctor public RfDiscoverConfig(int, @IntRange(from=1, to=10) int);
     method public int describeContents();
-    method public int getFrequency();
+    method @IntRange(from=1, to=10) public int getFrequency();
     method public int getTechnologyMode();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field @NonNull public static final android.os.Parcelable.Creator<android.nfc.RfDiscoverConfig> CREATOR;
+    field @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public static final int NFC_ACTIVE_LISTEN_MODE = 131; // 0x83
+    field @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public static final int NFC_ACTIVE_POLL_MODE = 3; // 0x3
+    field @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public static final int NFC_A_KOVIO_POLL_MODE = 119; // 0x77
+    field @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public static final int NFC_A_PASSIVE_LISTEN_MODE = 128; // 0x80
+    field @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public static final int NFC_A_PASSIVE_POLL_MODE = 0; // 0x0
+    field @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public static final int NFC_B_PASSIVE_LISTEN_MODE = 129; // 0x81
+    field @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public static final int NFC_B_PASSIVE_POLL_MODE = 1; // 0x1
+    field @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public static final int NFC_F_PASSIVE_LISTEN_MODE = 130; // 0x82
+    field @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public static final int NFC_F_PASSIVE_POLL_MODE = 2; // 0x2
+    field @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public static final int NFC_V_PASSIVE_POLL_MODE = 6; // 0x6
   }
 
   @FlaggedApi("android.nfc.nfc_oem_extension") public class RoutingStatus {

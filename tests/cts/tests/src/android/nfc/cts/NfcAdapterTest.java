@@ -1161,7 +1161,7 @@ public class NfcAdapterTest {
 
         for (RfDiscoverConfig c: config2) {
             // There should be no Tech-A Poll configuration
-            if (c.getTechnologyMode() == NfcOemExtension.NFC_A_PASSIVE_POLL_MODE) {
+            if (c.getTechnologyMode() == RfDiscoverConfig.NFC_A_PASSIVE_POLL_MODE) {
                 assertTrue("Incorrect Rf Discover configuration", false);
             }
         }
