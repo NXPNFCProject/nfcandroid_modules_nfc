@@ -63,7 +63,7 @@
     <string name="nfc_logging_alert_title" msgid="7355334076019926549">"NFC ဒေတာကို မှတ်တမ်းတင်နေသည်"</string>
     <string name="nfc_logging_alert_message" msgid="3833608086332697579">"မှတ်တမ်းတင်ခြင်းရပ်ရန် တို့ပါ။"</string>
     <string name="title_package_enabling_nfc" msgid="7797373366778008307">"NFC ဖွင့်ရန် <xliff:g id="PKG">%1$s</xliff:g> ကို ခွင့်ပြုမလား။"</string>
-    <string name="enable_nfc_yes" msgid="3514504441883079276">"ဖွင့်မည်"</string>
+    <string name="enable_nfc_yes" msgid="3514504441883079276">"Yes"</string>
     <string name="enable_nfc_no" msgid="4272144216339787073">"မဖွင့်ပါ"</string>
     <string name="device_ndef_nfcee_service_name" msgid="1035872251333915624">"မြှုပ်သွင်းထားသည့်တဂ်"</string>
 </resources>
