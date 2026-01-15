@@ -198,6 +198,7 @@ public final class NfcServiceTest {
     @Mock AppOpsManager mAppOpsManager;
     @Captor ArgumentCaptor<DeviceHost.DeviceHostListener> mDeviceHostListener;
     @Captor ArgumentCaptor<BroadcastReceiver> mGlobalReceiver;
+    @Captor ArgumentCaptor<BroadcastReceiver> mManagedProfileReceiver;
     @Captor ArgumentCaptor<IBinder> mIBinderArgumentCaptor;
     @Captor ArgumentCaptor<Integer> mSoundCaptor;
     @Captor ArgumentCaptor<Intent> mIntentArgumentCaptor;
@@ -310,6 +311,11 @@ public final class NfcServiceTest {
         verify(mApplication).registerReceiverForAllUsers(
                 mGlobalReceiver.capture(),
                 argThat(intent -> intent.hasAction(Intent.ACTION_SCREEN_ON)), any(), any());
+        verify(mApplication).registerReceiverForAllUsers(
+                mManagedProfileReceiver.capture(),
+                argThat(intent -> intent.hasAction(Intent.ACTION_MANAGED_PROFILE_ADDED)),
+                isNull(),
+                isNull());
         verify(mApplication).registerReceiver(mBroadcastReceiverArgumentCaptor.capture(),
                 argThat(intent -> intent.hasAction(UserManager.ACTION_USER_RESTRICTIONS_CHANGED)));
         clearInvocations(mDeviceHost, mNfcInjector, mApplication);
@@ -1323,6 +1329,43 @@ public final class NfcServiceTest {
         mLooper.dispatchAll();
         verify(mUserManager, atLeastOnce()).getEnabledProfiles();
         verify(mApplication, atLeastOnce()).createContextAsUser(any(), anyInt());
+    }
+
+    @Test
+    public void testIsPackageInstalled_createContextFails_returnsFalse() throws Exception {
+        // This test verifies that if creating a user context fails with an IllegalStateException,
+        // isPackageInstalled correctly handles it and returns false.
+
+        // Arrange
+        UserHandle userHandle = UserHandle.of(10);
+        // Mock getEnabledProfiles to return our test user, so initTagAppPrefList processes it.
+        when(mUserManager.getEnabledProfiles()).thenReturn(Collections.singletonList(userHandle));
+
+        // Mock createContextAsUser to throw IllegalStateException for our test user.
+        // This simulates a failure to create the user's context (e.g., user is stopping).
+        when(mApplication.createContextAsUser(eq(userHandle), anyInt()))
+                .thenThrow(new IllegalStateException("Test Exception: User context not available"));
+
+        // Get the receiver that handles profile changes.
+        BroadcastReceiver receiver = mManagedProfileReceiver.getValue();
+        Intent intent = new Intent(Intent.ACTION_MANAGED_PROFILE_ADDED);
+        intent.putExtra(Intent.EXTRA_USER, userHandle);
+
+        // Act
+        // Trigger the receiver to call initTagAppPrefList, which in turn calls isPackageInstalled.
+        receiver.onReceive(mApplication, intent);
+        mLooper.dispatchAll();
+
+        // Assert
+        // The call to isPackageInstalled should have failed and returned false due to the
+        // exception.
+        // As a result, no packages from the blocklist should be added to the preferences for this
+        // user.
+        Map<String, Boolean> prefList = mNfcService.mTagAppPrefList.get(10);
+
+        // The preference map for the user should exist but be empty.
+        assertThat(prefList).isNotNull();
+        assertThat(prefList).isEmpty();
     }
 
     @Test
