@@ -1053,7 +1053,7 @@ static jbyteArray nativeNfcTag_doTransceive(JNIEnv* e, jobject o,
     LOG(DEBUG) << StringPrintf("%s: response %zu bytes", __func__,
                                sRxDataBuffer.size());
 
-    if ((natTag.getProtocol() == NFA_PROTOCOL_T2T) &&
+    if ((sCurrentActivatedProtocl == NFA_PROTOCOL_T2T) &&
         natTag.isT2tNackResponse(sRxDataBuffer.data(), sRxDataBuffer.size())) {
       isNack = true;
     }
@@ -1299,7 +1299,7 @@ static jint nativeNfcTag_doCheckNdef(JNIEnv* e, jobject o, jintArray ndefInfo) {
   if (sCheckNdefStatus == NFA_STATUS_OK) {
     // stack found a NDEF message on the tag
     ndef = e->GetIntArrayElements(ndefInfo, 0);
-    if (NfcTag::getInstance().getProtocol() == NFA_PROTOCOL_T1T)
+    if (sCurrentActivatedProtocl == NFA_PROTOCOL_T1T)
       ndef[0] = NfcTag::getInstance().getT1tMaxMessageSize();
     else
       ndef[0] = sCheckNdefMaxSize;
@@ -1312,7 +1312,7 @@ static jint nativeNfcTag_doCheckNdef(JNIEnv* e, jobject o, jintArray ndefInfo) {
   } else if (sCheckNdefStatus == NFA_STATUS_FAILED) {
     // stack did not find a NDEF message on the tag;
     ndef = e->GetIntArrayElements(ndefInfo, 0);
-    if (NfcTag::getInstance().getProtocol() == NFA_PROTOCOL_T1T)
+    if (sCurrentActivatedProtocl == NFA_PROTOCOL_T1T)
       ndef[0] = NfcTag::getInstance().getT1tMaxMessageSize();
     else
       ndef[0] = sCheckNdefMaxSize;
@@ -1323,7 +1323,7 @@ static jint nativeNfcTag_doCheckNdef(JNIEnv* e, jobject o, jintArray ndefInfo) {
     e->ReleaseIntArrayElements(ndefInfo, ndef, 0);
     status = NFA_STATUS_FAILED;
   } else if ((sCheckNdefStatus == NFA_STATUS_TIMEOUT) &&
-             (NfcTag::getInstance().getProtocol() == NFA_PROTOCOL_T2T)) {
+             (sCurrentActivatedProtocl == NFA_PROTOCOL_T2T)) {
     /* this is to avoid numerous retries in case NDEF detection of T2T failed */
     status = STATUS_CODE_TARGET_LOST;
   } else {
@@ -1551,7 +1551,7 @@ static jboolean nativeNfcTag_doIsNdefFormatable(JNIEnv* e, jobject o,
                                                 jint /*libNfcType*/, jbyteArray,
                                                 jbyteArray, jbyteArray) {
   jboolean isFormattable = JNI_FALSE;
-  tNFC_PROTOCOL protocol = NfcTag::getInstance().getProtocol();
+  tNFC_PROTOCOL protocol = sCurrentActivatedProtocl;
   if (NFA_PROTOCOL_T1T == protocol || NFA_PROTOCOL_T5T == protocol ||
       NFC_PROTOCOL_MIFARE == protocol) {
     isFormattable = JNI_TRUE;

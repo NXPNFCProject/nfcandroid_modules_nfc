@@ -193,17 +193,6 @@ bool NfcTag::isActivated() { return mIsActivated; }
 
 /*******************************************************************************
 **
-** Function:        getProtocol
-**
-** Description:     Get the protocol of the current tag.
-**
-** Returns:         Protocol number.
-**
-*******************************************************************************/
-tNFC_PROTOCOL NfcTag::getProtocol() { return mProtocol; }
-
-/*******************************************************************************
-**
 ** Function         TimeDiff
 **
 ** Description      Computes time difference in milliseconds.

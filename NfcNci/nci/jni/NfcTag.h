@@ -166,17 +166,6 @@ class NfcTag {
 
   /*******************************************************************************
   **
-  ** Function:        getProtocol
-  **
-  ** Description:     Get the protocol of the current tag.
-  **
-  ** Returns:         Protocol number.
-  **
-  *******************************************************************************/
-  tNFC_PROTOCOL getProtocol();
-
-  /*******************************************************************************
-  **
   ** Function:        selectFirstTag
   **
   ** Description:     When multiple tags are discovered, just select the first
