@@ -90,8 +90,8 @@ package android.nfc {
     method @FlaggedApi("android.nfc.nfc_check_tag_intent_preference") public boolean isTagIntentAllowed();
     method @FlaggedApi("android.nfc.nfc_check_tag_intent_preference") public boolean isTagIntentAppPreferenceSupported();
     method @FlaggedApi("android.nfc.enable_nfc_charging") public boolean isWlcEnabled();
-    method @FlaggedApi("android.nfc.enable_nfc_set_discovery_tech") public void resetDiscoveryTechnology(@NonNull android.app.Activity);
-    method @FlaggedApi("android.nfc.enable_nfc_set_discovery_tech") public void setDiscoveryTechnology(@NonNull android.app.Activity, int, int);
+    method @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public void resetDiscoveryTechnology(@Nullable android.app.Activity);
+    method @FlaggedApi("com.android.nfc.module.flags.nfcstack_26q2_updates") public void setDiscoveryTechnology(@Nullable android.app.Activity, int, int);
     method public boolean setObserveModeEnabled(boolean);
     method @FlaggedApi("com.android.nfc.module.flags.nfc_power_saving_mode") @RequiresPermission(android.Manifest.permission.NFC_SET_CONTROLLER_ALWAYS_ON) public void setPowerSavingMode(boolean);
     field public static final String ACTION_ADAPTER_STATE_CHANGED = "android.nfc.action.ADAPTER_STATE_CHANGED";
