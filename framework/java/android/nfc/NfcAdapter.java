@@ -290,7 +290,10 @@ public final class NfcAdapter {
      * calling {@link #enableReaderMode(Activity, ReaderCallback, int, Bundle)}.
      *
      * This polling loop annotation will be included as a non-standard polling frame which will be
-     * reported to via {@link android.nfc.cardemulation.HostApduService#processPollingFrames(List)}
+     * reported to via {@link android.nfc.cardemulation.HostApduService#processPollingFrames(List)}.
+     * If there is no explicit value set by the app, the device will emit the default annotation.
+     * Use {@code new byte[0]} as annotation in the extra to override the default and don't emit
+     * any annotation.
      */
     @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_READER_MODE_ANNOTATIONS_API)
     public static final String EXTRA_READER_TECH_A_POLLING_LOOP_ANNOTATION =

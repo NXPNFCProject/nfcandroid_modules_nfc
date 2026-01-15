@@ -18,16 +18,6 @@ flag {
 }
 
 flag {
-    name: "reader_mode_ignore_frame"
-    namespace: "wallet_integration"
-    description: "Enable ignore frames in the default reader mode polling loop."
-    bug: "383047950"
-    metadata {
-        purpose: PURPOSE_BUGFIX
-    }
-}
-
-flag {
     name: "oem_extension_25q4"
     is_exported: true
     namespace: "nfc"

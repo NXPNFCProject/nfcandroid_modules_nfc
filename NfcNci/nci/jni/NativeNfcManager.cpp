@@ -51,8 +51,6 @@
 
 using android::base::StringPrintf;
 
-using com::android::nfc::module::flags::reader_mode_ignore_frame;
-
 extern tNFA_DM_DISC_FREQ_CFG* p_nfa_dm_rf_disc_freq_cfg;  // defined in stack
 namespace android {
 extern bool gIsTagDeactivating;
@@ -1934,30 +1932,25 @@ static void nfcManager_enableDiscovery(JNIEnv* e, jobject o,
   if (tech_mask != 0) {
     stopPolling_rfDiscoveryDisabled();
     if (isReaderModeAnnotationSupported(e, o)) {
-      if (reader_mode) {
-        if (tech_a_polling_loop_annotation == NULL) {
-          setTechAPollingLoopAnnotation(e, o, NULL, 0, NULL, 0);
+      if (reader_mode && tech_a_polling_loop_annotation != NULL) {
+        ScopedByteArrayRO annotationBytes(e, tech_a_polling_loop_annotation);
+        if (extra_vendor_annotation == NULL) {
+          setTechAPollingLoopAnnotation(e, o,
+                                        (const uint8_t*)annotationBytes.get(),
+                                        annotationBytes.size(), NULL, 0);
         } else {
-          ScopedByteArrayRO annotationBytes(e, tech_a_polling_loop_annotation);
-          if (extra_vendor_annotation == NULL) {
-            setTechAPollingLoopAnnotation(e, o,
-                                          (const uint8_t*)annotationBytes.get(),
-                                          annotationBytes.size(), NULL, 0);
-          } else {
-            ScopedByteArrayRO extra_annotationBytes(e, extra_vendor_annotation);
-            setTechAPollingLoopAnnotation(
-                e, o, (const uint8_t*)annotationBytes.get(),
-                annotationBytes.size(),
-                (const uint8_t*)extra_annotationBytes.get(),
-                extra_annotationBytes.size());
-          }
+          ScopedByteArrayRO extra_annotationBytes(e, extra_vendor_annotation);
+          setTechAPollingLoopAnnotation(
+              e, o, (const uint8_t*)annotationBytes.get(),
+              annotationBytes.size(),
+              (const uint8_t*)extra_annotationBytes.get(),
+              extra_annotationBytes.size());
         }
-      } else if (reader_mode_ignore_frame()) {
+      } else {
         uint8_t ignoreFrame[] = {0x6a, 0x01, 0xcf, 0x00, 0x00};
         setTechAPollingLoopAnnotation(e, 0, ignoreFrame, 5, NULL, 0);
       }
     }
-
     startPolling_rfDiscoveryDisabled(tech_mask);
 
     if (sPollingEnabled) {
