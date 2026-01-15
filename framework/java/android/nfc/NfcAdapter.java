@@ -167,8 +167,11 @@ public final class NfcAdapter {
      * <p>This intent will not be started when a tag is discovered if any activities respond to
      * {@link #ACTION_NDEF_DISCOVERED} or {@link #ACTION_TECH_DISCOVERED} for the current tag.
      *
-     * @deprecated this intent action is deprecated, please use
+     * @deprecated This intent action is deprecated. Please use
      * {@link #ACTION_NDEF_DISCOVERED} or {@link #ACTION_TECH_DISCOVERED} instead.
+     * <p>To achieve the same behavior as {@link #ACTION_TAG_DISCOVERED} (listening for all
+     * types of tags), use {@link #ACTION_TECH_DISCOVERED} and include all available
+     * NFC technologies in the meta-data.
      */
     @FlaggedApi(com.android.nfc.module.flags.Flags.FLAG_NFCSTACK_26Q2_UPDATES)
     @Deprecated
