@@ -346,6 +346,14 @@ public class RegisteredServicesCache {
         sdFilter.addAction(Intent.ACTION_EXTERNAL_APPLICATIONS_UNAVAILABLE);
         mContext.registerReceiverForAllUsers(mReceiver.get(), sdFilter, null, null);
 
+        IntentFilter localeChangedFilter = new IntentFilter(Intent.ACTION_LOCALE_CHANGED);
+        mContext.registerReceiverForAllUsers(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                onLocaleChanged();
+            }
+        }, localeChangedFilter, null, null);
+
         mDynamicSettingsFile = dynamicSettings;
         mOthersFile = otherSettings;
     }
@@ -375,6 +383,12 @@ public class RegisteredServicesCache {
     }
 
     public void onManagedProfileChanged() {
+        synchronized (mLock) {
+            refreshUserProfilesLocked(true);
+        }
+    }
+
+    public void onLocaleChanged() {
         synchronized (mLock) {
             refreshUserProfilesLocked(true);
         }
