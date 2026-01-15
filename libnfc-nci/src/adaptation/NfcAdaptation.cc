@@ -725,7 +725,7 @@ void NfcAdaptation::Finalize() {
   const char* func = "NfcAdaptation::Finalize";
   AutoThreadMutex a(sLock);
 
-  LOG(VERBOSE) << StringPrintf("%s: enter", func);
+  LOG(DEBUG) << StringPrintf("%s: enter", func);
   GKI_shutdown();
 
   NfcConfig::clear();
@@ -743,7 +743,7 @@ void NfcAdaptation::Finalize() {
     }
     mNfcHalDeathRecipient->finalize();
   }
-  LOG(VERBOSE) << StringPrintf("%s: exit", func);
+  LOG(DEBUG) << StringPrintf("%s: exit", func);
   delete this;
 }
 
@@ -758,6 +758,10 @@ void NfcAdaptation::FactoryReset() {
 }
 
 void NfcAdaptation::DeviceShutdown() {
+  const char* func = "NfcAdaptation::DeviceShutdown";
+  AutoThreadMutex a(sLock);
+
+  LOG(DEBUG) << StringPrintf("%s: enter", func);
   if (sVndExtnsPresent) {
     sNfcVendorExtn->processEvent(HANDLE_NFC_DEVICE_SHUTDOWN, HAL_NFC_STATUS_OK);
   }
@@ -776,6 +780,7 @@ void NfcAdaptation::DeviceShutdown() {
       mHal->unlinkToDeath(mNfcHalDeathRecipient);
     }
   }
+  LOG(DEBUG) << StringPrintf("%s: exit", func);
 }
 
 /*******************************************************************************
@@ -997,7 +1002,9 @@ void NfcAdaptation::HalTerminate() {
 void NfcAdaptation::HalOpenInternal(tHAL_NFC_CBACK* p_hal_cback,
                                     tHAL_NFC_DATA_CBACK* p_data_cback) {
   const char* func = "NfcAdaptation::HalOpenInternal";
-  LOG(VERBOSE) << StringPrintf("%s", func);
+  AutoThreadMutex a(sLock);
+
+  LOG(DEBUG) << StringPrintf("%s: enter", func);
   if (sVndExtnsPresent) {
     sNfcVendorExtn->setNciCallback(p_hal_cback, p_data_cback);
   }
@@ -1025,6 +1032,7 @@ void NfcAdaptation::HalOpenInternal(tHAL_NFC_CBACK* p_hal_cback,
     mCallback = new NfcClientCallback(p_hal_cback, p_data_cback);
     mHal->open(mCallback);
   }
+  LOG(DEBUG) << StringPrintf("%s: exit", func);
 }
 
 /*******************************************************************************
