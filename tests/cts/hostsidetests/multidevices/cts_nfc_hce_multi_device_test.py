@@ -212,6 +212,9 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         product_name = ad.adb.getprop("ro.product.name")
         return "cf_x86" in product_name
 
+    def _is_user_build(self, ad: android_device.AndroidDevice) -> bool:
+        return ad.adb.getprop("ro.build.type") == "user"
+
     def _reboot(self, ad: android_device.AndroidDevice):
         ad.reboot()
         ad.nfc_emulator.turnScreenOn()
@@ -232,10 +235,11 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         """
         Enables NFC logs on the Android device.
         """
-        ad.adb.shell("setprop persist.nfc.vendor_debug_enabled true")
         ad.adb.shell("setprop log.tag.libnfc_nci VERBOSE")
         ad.adb.shell("setprop persist.log.tag.libnfc_nci VERBOSE")
-        ad.adb.shell("setprop persist.nfc.snoop_log_mode full")
+        if not self._is_user_build(self.emulator):
+            ad.adb.shell("setprop persist.nfc.vendor_debug_enabled true")
+            ad.adb.shell("setprop persist.nfc.snoop_log_mode full")
         ad.reboot()
 
     def setup_class(self):
