@@ -26,6 +26,7 @@ import android.content.pm.PackageManager;
 import android.nfc.AvailableNfcAntenna;
 import android.nfc.NfcAdapter;
 import android.nfc.NfcAntennaInfo;
+import android.os.SystemProperties;
 
 import androidx.test.InstrumentationRegistry;
 
@@ -50,6 +51,10 @@ public class NfcAntennaLocationApiTest {
     private boolean supportsHardware() {
         final PackageManager pm = InstrumentationRegistry.getContext().getPackageManager();
         return pm.hasSystemFeature(PackageManager.FEATURE_NFC);
+    }
+
+    private int getVendorApiLevel() {
+        return SystemProperties.getInt("ro.board.api_level", 0);
     }
 
     private NfcAdapter mAdapter;
@@ -88,6 +93,7 @@ public class NfcAntennaLocationApiTest {
     /** Tests getNfcAntennaInfo API */
     @Test
     public void testGetNfcAntennaInfo() {
+        assumeTrue(getVendorApiLevel() > 202404);
         NfcAntennaInfo nfcAntennaInfo = mAdapter.getNfcAntennaInfo();
 
         assertNotNull(nfcAntennaInfo);
