@@ -358,7 +358,7 @@ bool RoutingManager::addAidRouting(const uint8_t* aid, uint8_t aidLen,
   mAidRoutingConfigured = false;
   tNFA_STATUS nfaStat =
       NFA_EeAddAidRouting(route, aidLen, (uint8_t*)aid, powerState, aidInfo);
-  if (nfaStat == NFA_STATUS_OK) {
+  if (!sIsRecovering && nfaStat == NFA_STATUS_OK) {
     LOG(DEBUG) << StringPrintf("%s: wait for mAidAddRemoveEvent completion",
                                fn);
     mAidAddRemoveEvent.wait();
