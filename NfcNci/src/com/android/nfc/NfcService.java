@@ -598,6 +598,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     };
 
     private Object mDiscoveryLock = new Object();
+    private final Object mObjectMapLock = new Object();
 
     private boolean mCardEmulationActivated = false;
     private boolean mRfFieldActivated = false;
@@ -1984,9 +1985,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             synchronized (mPowerSavingModeLock) {
                 mPowerSavingState = NfcAdapter.STATE_OFF;
             }
-            synchronized (NfcService.this) {
+            synchronized (mObjectMapLock) {
                 mObjectMap.clear();
                 mTagObjectMap.clear();
+            }
+            synchronized (NfcService.this) {
                 updateState(NfcAdapter.STATE_ON);
 
                 onPreferredPaymentChanged(NfcAdapter.PREFERRED_PAYMENT_LOADED);
@@ -5046,7 +5049,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
     private boolean isPresenceCheckStopped() {
         boolean isStopped = false;
-        synchronized (this) {
+        synchronized (mObjectMapLock) {
             Object[] objectValues = mObjectMap.values().toArray();
             for (Object object : objectValues) {
                 if (object instanceof TagEndpoint) {
@@ -5064,7 +5067,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
      * Disconnect API and onTagDisconnect callback
      */
     private void prepareForRemovalDetectionMode() {
-        synchronized (this) {
+        synchronized (mObjectMapLock) {
             Object[] objectValues = mObjectMap.values().toArray();
             for (Object object : objectValues) {
                 if (object instanceof TagEndpoint) {
@@ -5099,7 +5102,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         }
         clearAppInactivityDetectionContext();
         Object[] objectsToDisconnect;
-        synchronized (this) {
+        synchronized (mObjectMapLock) {
             Object[] objectValues = mObjectMap.values().toArray();
             // Copy the array before we clear mObjectMap,
             // just in case the HashMap values are backed by the same array
@@ -5118,7 +5121,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     }
 
     Object findObject(int key) {
-        synchronized (this) {
+        synchronized (mObjectMapLock) {
             Object device = mObjectMap.get(key);
             if (device == null) {
                 Log.w(TAG, "maybeDisconnectTarget: Handle not found");
@@ -5128,7 +5131,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     }
 
     Object findAndRemoveObject(int handle) {
-        synchronized (this) {
+        synchronized (mObjectMapLock) {
             Object device = mObjectMap.get(handle);
             if (device == null) {
                 Log.w(TAG, "findAndRemoveObject: Handle not found");
@@ -5141,26 +5144,26 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     }
 
     void registerTagObject(TagEndpoint tag) {
-        synchronized (this) {
+        synchronized (mObjectMapLock) {
             mObjectMap.put(tag.getHandle(), tag);
 
         }
     }
 
     void unregisterObject(int handle) {
-        synchronized (this) {
+        synchronized (mObjectMapLock) {
             mObjectMap.remove(handle);
         }
     }
 
     void registerTag(Tag tag) {
-        synchronized (this) {
+        synchronized (mObjectMapLock) {
             mTagObjectMap.put(tag.getServiceHandle(), tag);
         }
     }
 
     void unregisterTag(int handle) {
-        synchronized (this) {
+        synchronized (mObjectMapLock) {
             mTagObjectMap.remove(handle);
         }
     }
@@ -6257,7 +6260,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         if (mReaderModeParams != null && mReaderModeParams.callback != null) {
             try {
                 Object[] objectValues;
-                synchronized (this) {
+                synchronized (mObjectMapLock) {
                     objectValues = mTagObjectMap.values().toArray();
                     mTagObjectMap.clear();
                 }
