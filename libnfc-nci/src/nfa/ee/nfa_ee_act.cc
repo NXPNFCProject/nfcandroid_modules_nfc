@@ -301,8 +301,15 @@ static uint16_t nfa_ee_total_lmrt_size(void) {
   lmrt_size += p_cb->size_mask_tech;
   lmrt_size += p_cb->size_aid;
   lmrt_size += p_cb->size_sys_code;
-  if (nfa_ee_cb.cur_ee > 0) p_cb = &nfa_ee_cb.ecb[nfa_ee_cb.cur_ee - 1];
-  for (xx = 0; xx < nfa_ee_cb.cur_ee; xx++, p_cb--) {
+  if (nfa_ee_cb.cur_ee > 0 && nfa_ee_cb.cur_ee <= NFA_EE_NUM_ECBS) {
+    p_cb = &nfa_ee_cb.ecb[nfa_ee_cb.cur_ee - 1];
+  }
+  if (p_cb == nullptr) {
+    LOG(ERROR) << StringPrintf("%s: p_cb is null lmrt_size=%d", __func__,
+                               lmrt_size);
+    return lmrt_size;
+  }
+  for (xx = 0; xx < nfa_ee_cb.cur_ee && xx < NFA_EE_NUM_ECBS; xx++, p_cb--) {
     if ((p_cb->ee_status & ~NFA_EE_STATUS_MEP_MASK) ==
         NFC_NFCEE_STATUS_ACTIVE) {
       lmrt_size += p_cb->size_mask_proto;
@@ -726,7 +733,7 @@ tNFA_EE_ECB* nfa_ee_find_aid_offset(uint8_t aid_len, uint8_t* p_aid,
 
   p_ecb = &nfa_ee_cb.ecb[NFA_EE_CB_4_DH];
   aid_len_offset = 1; /* skip the tag */
-  for (yy = 0; yy <= nfa_ee_cb.cur_ee; yy++) {
+  for (yy = 0; yy <= nfa_ee_cb.cur_ee && yy < NFA_EE_NUM_ECBS; yy++) {
     if (p_ecb->aid_entries) {
       offset = 0;
       for (xx = 0; xx < p_ecb->aid_entries; xx++) {
@@ -2822,7 +2829,7 @@ void nfa_ee_get_tech_route(uint8_t power_state, uint8_t* p_handles) {
       p_cb = &nfa_ee_cb.ecb[nfa_ee_cb.cur_ee - 1];
     }
     if (p_cb == nullptr) {
-      LOG(ERROR) << StringPrintf("%s:p_cb is null", __func__);
+      LOG(ERROR) << StringPrintf("%s: p_cb is null", __func__);
       return;
     }
     for (yy = 0; yy < nfa_ee_cb.cur_ee && yy < NFA_EE_NUM_ECBS; yy++, p_cb--) {
@@ -3013,7 +3020,7 @@ static bool nfa_ee_need_recfg(void) {
     } else {
       p_cb = &nfa_ee_cb.ecb[NFA_EE_CB_4_DH];
       mask = 1 << NFA_EE_CB_4_DH;
-      for (xx = 0; xx <= nfa_ee_cb.cur_ee; xx++) {
+      for (xx = 0; xx <= nfa_ee_cb.cur_ee && xx < NFA_EE_NUM_ECBS; xx++) {
         LOG(VERBOSE) << StringPrintf("%s: %d ecb_flags  =0x%02x, mask=0x%02x",
                                      __func__, xx, p_cb->ecb_flags, mask);
         if ((p_cb->ecb_flags) && (nfa_ee_cb.ee_cfged & mask)) {
@@ -3088,7 +3095,7 @@ void nfa_ee_discv_timeout(__attribute__((unused)) tNFA_EE_MSG* p_data) {
 *******************************************************************************/
 void nfa_ee_lmrt_to_nfcc(__attribute__((unused)) tNFA_EE_MSG* p_data) {
   int xx;
-  tNFA_EE_ECB* p_cb;
+  tNFA_EE_ECB* p_cb = nullptr;
   uint8_t* p = nullptr;
   bool more = true;
   bool check = true;
@@ -3110,9 +3117,14 @@ void nfa_ee_lmrt_to_nfcc(__attribute__((unused)) tNFA_EE_MSG* p_data) {
   }
 
   /* find the last active NFCEE. */
-  if (nfa_ee_cb.cur_ee > 0) p_cb = &nfa_ee_cb.ecb[nfa_ee_cb.cur_ee - 1];
-
-  for (xx = 0; xx < nfa_ee_cb.cur_ee; xx++, p_cb--) {
+  if (nfa_ee_cb.cur_ee > 0 && nfa_ee_cb.cur_ee <= NFA_EE_NUM_ECBS) {
+    p_cb = &nfa_ee_cb.ecb[nfa_ee_cb.cur_ee - 1];
+  }
+  if (p_cb == nullptr) {
+    LOG(ERROR) << StringPrintf("%s: p_cb is null", __func__);
+    return;
+  }
+  for (xx = 0; xx < nfa_ee_cb.cur_ee && xx <= NFA_EE_NUM_ECBS; xx++, p_cb--) {
     if ((p_cb->ee_status & ~NFA_EE_STATUS_MEP_MASK) ==
         NFC_NFCEE_STATUS_ACTIVE) {
       if (last_active == NFA_EE_INVALID) {
