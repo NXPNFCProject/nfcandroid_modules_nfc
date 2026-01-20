@@ -22,5 +22,5 @@ import android.nfc.Tag;
  */
 interface IReaderCallback {
    void onTagDiscovered(in Tag tag);
-   void onTagLost();
+   void onTagLost(in Tag tag);
 }

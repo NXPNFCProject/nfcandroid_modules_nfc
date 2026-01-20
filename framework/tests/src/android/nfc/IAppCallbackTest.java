@@ -54,9 +54,9 @@ public class IAppCallbackTest {
                 }
             }
             @Override
-            public void onTagLost() {
+            public void onTagLost(Tag tag) {
                 try {
-                    mCallback.onTagLost();
+                    mCallback.onTagLost(tag);
                 } catch (RemoteException e) {
                     e.printStackTrace();
                 }
@@ -72,8 +72,8 @@ public class IAppCallbackTest {
 
     @Test
     public void testOnTagLost() throws RemoteException {
-        mBinder.onTagLost();
-        verify(mCallback).onTagLost();
+        mBinder.onTagLost(mTag);
+        verify(mCallback).onTagLost(mTag);
     }
 
 
@@ -87,7 +87,7 @@ public class IAppCallbackTest {
                 // override
             }
             @Override
-            public void onTagLost() throws RemoteException {
+            public void onTagLost(Tag tag) throws RemoteException {
                 // override
             }
         };

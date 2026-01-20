@@ -152,7 +152,7 @@ package android.nfc {
 
   public static interface NfcAdapter.ReaderCallback {
     method public void onTagDiscovered(android.nfc.Tag);
-    method @FlaggedApi("com.android.nfc.module.flags.tap_to_x") public default void onTagLost();
+    method @FlaggedApi("com.android.nfc.module.flags.tap_to_x") public default void onTagLost(@NonNull android.nfc.Tag);
   }
 
   public final class NfcAntennaInfo implements android.os.Parcelable {
