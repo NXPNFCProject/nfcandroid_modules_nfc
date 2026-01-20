@@ -2685,4 +2685,62 @@ public final class NfcServiceTest {
         // Assert: deviceSupportsNfcSecure should be false
         assertFalse(mNfcService.mNfcAdapter.deviceSupportsNfcSecure());
     }
+
+    private DeviceHost.TagEndpoint setupMockTagEndpoint() {
+        DeviceHost.TagEndpoint mockTagEndpoint = mock(DeviceHost.TagEndpoint.class);
+        mNfcService.mObjectMap.put(1, mockTagEndpoint);
+        return mockTagEndpoint;
+    }
+
+    @Test
+    public void onRfDiscoveryEvent_discoveryStopped_stopsPresenceChecking() {
+        // Arrange
+        DeviceHost.TagEndpoint mockTagEndpoint = setupMockTagEndpoint();
+        DeviceHost.DeviceHostListener listener = mDeviceHostListener.getValue();
+
+        // Act
+        listener.onRfDiscoveryEvent(false);
+
+        // Assert
+        verify(mockTagEndpoint).stopPresenceChecking(false);
+    }
+
+    @Test
+    public void onRfDiscoveryEvent_discoveryStarted_doesNotStopPresenceChecking() {
+        // Arrange
+        DeviceHost.TagEndpoint mockTagEndpoint = setupMockTagEndpoint();
+        DeviceHost.DeviceHostListener listener = mDeviceHostListener.getValue();
+
+        // Act
+        listener.onRfDiscoveryEvent(true);
+
+        // Assert
+        verify(mockTagEndpoint, never()).stopPresenceChecking(anyBoolean());
+    }
+
+    @Test
+    public void onTagRfDiscovered_tagNotDiscovered_stopsPresenceChecking() {
+        // Arrange
+        DeviceHost.TagEndpoint mockTagEndpoint = setupMockTagEndpoint();
+        DeviceHost.DeviceHostListener listener = mDeviceHostListener.getValue();
+
+        // Act
+        listener.onTagRfDiscovered(false);
+
+        // Assert
+        verify(mockTagEndpoint).stopPresenceChecking(false);
+    }
+
+    @Test
+    public void onTagRfDiscovered_tagDiscovered_doesNotStopPresenceChecking() {
+        // Arrange
+        DeviceHost.TagEndpoint mockTagEndpoint = setupMockTagEndpoint();
+        DeviceHost.DeviceHostListener listener = mDeviceHostListener.getValue();
+
+        // Act
+        listener.onTagRfDiscovered(true);
+
+        // Assert
+        verify(mockTagEndpoint, never()).stopPresenceChecking(anyBoolean());
+    }
 }
