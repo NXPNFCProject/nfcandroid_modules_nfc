@@ -16,6 +16,7 @@
 
 package com.android.nfc;
 
+import android.app.ActivityManager;
 import android.app.backup.BackupAgentHelper;
 import android.app.backup.BackupDataInput;
 import android.app.backup.BackupDataOutput;
@@ -168,7 +169,9 @@ public class NfcBackupAgent extends BackupAgentHelper {
                 nfcAdapter.enableReaderOption(false);
             }
 
-            if (prefs.getBoolean(NfcService.PREF_SECURE_NFC_ON, deviceConfigFacade.getDefaultSecureNfcState())
+            int userId = ActivityManager.getCurrentUser();
+            if (prefs.getBoolean(NfcService.PREF_SECURE_NFC_ON + "_" + userId,
+                    deviceConfigFacade.getDefaultSecureNfcState())
                     && nfcAdapter.isSecureNfcSupported()) {
                 nfcAdapter.enableSecureNfc(true);
             } else {
