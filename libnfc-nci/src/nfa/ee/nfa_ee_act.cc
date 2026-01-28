@@ -2276,10 +2276,17 @@ void nfa_ee_nci_nfcee_status_ntf(tNFA_EE_MSG* p_data) {
           NFC_NfceeDiscover(true);
         }
       } else {
-        LOG(VERBOSE) << StringPrintf("%s: rf is busy or NFC is not initialized",
-                                     __func__);
-        nfc_cb.is_nfcee_discovery_required = true;
-        nfc_cb.nfcee_data.nfcee_status = *p_ee_data;
+        if (nfa_hci_cb.hci_state != NFA_HCI_STATE_EE_RECOVERY) {
+          LOG(VERBOSE) << StringPrintf(
+              "%s: rf is busy or NFC is not initialized", __func__);
+          nfc_cb.is_nfcee_discovery_required = true;
+          nfc_cb.nfcee_data.nfcee_status = *p_ee_data;
+        } else {
+          LOG(DEBUG) << StringPrintf(
+              "%s: NFCEE Recovery already in progress, Ignoring unrecoverable "
+              "error",
+              __func__);
+        }
       }
     }
   }
