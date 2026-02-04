@@ -248,9 +248,6 @@ public class DeviceConfigFacade {
     public boolean getDefaultSecureNfcState() {
         return mSecureNfcDefault;
     }
-    public void setDefaultSecureNfcState(boolean SecureNfcDefault) {
-        mSecureNfcDefault = SecureNfcDefault;
-    }
     public boolean getEnableAutoPlay() { return mEnableAutoPlay; }
     public boolean getPollingDisableAllowed() { return mPollingDisableAllowed; }
     public boolean getNfccAlwaysOnAllowed() { return mNfccAlwaysOnAllowed; }
