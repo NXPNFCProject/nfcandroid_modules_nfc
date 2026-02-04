@@ -2021,6 +2021,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
             restoreSavedTech();
 
+            // to synchronized between service and mw
+            mDeviceHost.setNfcSecure(mIsSecureNfcEnabled);
+
             /* Skip applyRouting if always on state is switching */
             if (!mIsAlwaysOnSupported
                     || (mAlwaysOnState != NfcAdapter.STATE_TURNING_ON
