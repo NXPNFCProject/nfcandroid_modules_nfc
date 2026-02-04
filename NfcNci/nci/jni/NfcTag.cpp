@@ -580,9 +580,11 @@ static void deleteglobaldata(JNIEnv* e) {
   LOG(DEBUG) << StringPrintf("%s: enter", fn);
   if (sTechPollBytes != NULL) {
     e->DeleteGlobalRef(sTechPollBytes);
+    sTechPollBytes = NULL;
   }
   if (gtechActBytes != NULL) {
     e->DeleteGlobalRef(gtechActBytes);
+    gtechActBytes = NULL;
   }
   LOG(DEBUG) << StringPrintf("%s: exit", fn);
 }
@@ -684,6 +686,9 @@ void NfcTag::fillNativeNfcTagMembers3(JNIEnv* e, jclass tag_cls, jobject tag,
       e, e->NewObjectArray(mNumTechList, byteArrayClass.get(), 0));
   int len = 0;
   if (mTechListTail == 0) {
+    if (sTechPollBytes != NULL) {
+      e->DeleteGlobalRef(sTechPollBytes);
+    }
     sTechPollBytes =
         reinterpret_cast<jobjectArray>(e->NewGlobalRef(techPollBytes.get()));
   } else {
@@ -853,6 +858,9 @@ void NfcTag::fillNativeNfcTagMembers4(JNIEnv* e, jclass tag_cls, jobject tag,
   }
 
   if (mTechListTail == 0) {
+    if (gtechActBytes != NULL) {
+      e->DeleteGlobalRef(gtechActBytes);
+    }
     // Keep the backup of the selected tag information to restore back with
     // multi selection.
     gtechActBytes =
