@@ -2110,7 +2110,7 @@ void nfa_ee_nci_disc_ntf(tNFA_EE_MSG* p_data) {
         /* the NFCEE ID is not in the last NFCEE discovery
          * maybe it's a new one */
         p_cb = nfa_ee_find_ecb(NFA_EE_INVALID);
-        if (p_cb) {
+        if (p_cb && nfa_ee_cb.cur_ee < NFA_EE_MAX_EE_SUPPORTED) {
           nfa_ee_cb.cur_ee++;
           notify_new_ee = true;
         }
@@ -2130,7 +2130,7 @@ void nfa_ee_nci_disc_ntf(tNFA_EE_MSG* p_data) {
         /* the NFCEE ID is not in the last NFCEE discovery
          * maybe it's a new one */
         p_cb = nfa_ee_find_ecb(NFA_EE_INVALID);
-        if (p_cb) {
+        if (p_cb && nfa_ee_cb.cur_ee < NFA_EE_MAX_EE_SUPPORTED) {
           nfa_ee_cb.cur_ee++;
           notify_new_ee = true;
         }
