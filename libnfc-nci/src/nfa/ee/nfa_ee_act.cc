@@ -1394,6 +1394,11 @@ void nfa_ee_api_remove_aid(tNFA_EE_MSG* p_data) {
     int max_aid_cfg_length = nfa_ee_find_max_aid_cfg_len();
     int max_aid_entries = max_aid_cfg_length / NFA_MIN_AID_LEN + 1;
 
+    if (max_aid_entries <= 0) {
+      LOG(WARNING) << StringPrintf("%s: max_aid_entries <= 0", __func__);
+      // consider there is at least 1 entry
+      max_aid_entries = 1;
+    }
     /*Clear All AIDs*/
     uint32_t xx;
     tNFA_EE_ECB* p_cb = nfa_ee_cb.ecb;

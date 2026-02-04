@@ -144,6 +144,13 @@ void nfa_ee_sys_enable(void) {
       "%s:  max_aid_cfg_length=%d and max_aid_entries=%d", __func__,
       max_aid_cfg_length, max_aid_entries);
 
+  if (max_aid_entries <= 0) {
+    LOG(WARNING) << StringPrintf("%s: max_aid_entries <= 0",
+                                __func__);
+    // consider there is at least 1 entry
+    max_aid_entries = 1;
+    max_aid_cfg_length = 5;
+  }
   for (xx = 0; xx < NFA_EE_NUM_ECBS; xx++) {
     nfa_ee_cb.ecb[xx].aid_len = (uint8_t*)GKI_getbuf(max_aid_entries);
     nfa_ee_cb.ecb[xx].aid_pwr_cfg = (uint8_t*)GKI_getbuf(max_aid_entries);
