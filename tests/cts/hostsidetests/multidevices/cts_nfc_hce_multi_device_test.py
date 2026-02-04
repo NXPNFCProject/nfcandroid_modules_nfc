@@ -262,52 +262,81 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         # and the test does not need to be run.
         self._setup_failure_should_block_tests = True
 
-        try:
-            self.emulator = self.register_controller(android_device)[0]
-            self._enable_nfc_logs(self.emulator)
-            self.record_mainline_version(self.emulator)
+        # Get the device count
+        device_count = len(android_device.list_adb_devices())
+        _LOG.DEBUG('device_count %d', device_count)
 
-            self._setup_failure_reason = (
-                'Cannot load emulator snippet. Is NfcEmulatorTestApp.apk '
-                'installed on the emulator?'
-            )
-            self.emulator.load_snippet(
-                'nfc_emulator', 'com.android.nfc.emulator'
-            )
-            self.emulator.debug_tag = 'emulator'
+        self.ads = self.register_controller(android_device, min_number=device_count)
+
+        for i in range(device_count):
             try:
-                self.emulator.adb.shell(['svc', 'nfc', 'enable'])
-            except adb.AdbError:
-                _LOG.info("Could not enable nfc through adb.")
-                self.emulator.nfc_emulator.setNfcState(True)
-            # Ensure any wallet role holder is reset before tests.
-            self.emulator.nfc_emulator.resetWalletRoleHolder()
-            if (
-                hasattr(self.emulator, 'dimensions')
-                and 'pn532_serial_path' in self.emulator.dimensions
-            ):
-                pn532_serial_path = self.emulator.dimensions["pn532_serial_path"]
-            else:
-                pn532_serial_path = self.user_params.get("pn532_serial_path", "")
+                self.emulator = self.ads[i]
+                self._enable_nfc_logs(self.emulator)
+                self.record_mainline_version(self.emulator)
 
-            casimir_id = None
-            if self._is_cuttlefish_device(self.emulator):
-                self._setup_failure_reason = ('Failed to set up casimir connection for Cuttlefish '
-                                              'device')
-                casimir_id = self._get_casimir_id_for_device()
+                self._setup_failure_reason = (
+                    'Cannot load emulator snippet. Is NfcEmulatorTestApp.apk '
+                    'installed on the emulator?'
+                )
+                self.emulator.load_snippet(
+                    'nfc_emulator', 'com.android.nfc.emulator'
+                )
+                self.emulator.debug_tag = 'emulator'
+                try:
+                    self.emulator.adb.shell(['svc', 'nfc', 'enable'])
+                except adb.AdbError:
+                    _LOG.info("Could not enable nfc through adb.")
+                    self.emulator.nfc_emulator.setNfcState(True)
+                # Ensure any wallet role holder is reset before tests.
+                self.emulator.nfc_emulator.resetWalletRoleHolder()
+                if (
+                    hasattr(self.emulator, 'dimensions')
+                    and 'pn532_serial_path' in self.emulator.dimensions
+                ):
+                    pn532_serial_path = self.emulator.dimensions["pn532_serial_path"]
+                else:
+                    pn532_serial_path = self.user_params.get("pn532_serial_path", "")
 
-            if casimir_id is not None and len(casimir_id) > 0:
-                self._setup_failure_reason = 'Failed to connect to casimir'
-                _LOG.info("casimir_id = " + casimir_id)
-                self.pn532 = pn532.Casimir(casimir_id)
-            else:
-                self._setup_failure_reason = 'Failed to connect to PN532 board.'
-                self.pn532 = pn532.PN532(pn532_serial_path)
-                self.pn532.mute()
+                casimir_id = None
+                if self._is_cuttlefish_device(self.emulator):
+                    self._setup_failure_reason = ('Failed to set up casimir connection for Cuttlefish '
+                                                'device')
+                    casimir_id = self._get_casimir_id_for_device()
 
-        except Exception as e:
-            _LOG.warning('setup_class failed with error %s', e)
-            return
+                if casimir_id is not None and len(casimir_id) > 0:
+                    self._setup_failure_reason = 'Failed to connect to casimir'
+                    _LOG.info("casimir_id = " + casimir_id)
+                    self.pn532 = pn532.Casimir(casimir_id)
+                else:
+                    self._setup_failure_reason = 'Failed to connect to PN532 board.'
+                    self.pn532 = pn532.PN532(pn532_serial_path)
+                    self.pn532.mute()
+
+                # Find the corresponding device for the PN532
+                if device_count <= 1:
+                  break
+                self.emulator.nfc_emulator.turnScreenOn()
+                self.emulator.nfc_emulator.pressMenu()
+                self._set_up_emulator(
+                    service_list=[_TRANSPORT_SERVICE_1],
+                    expected_service=_TRANSPORT_SERVICE_1
+                )
+                command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator, _TRANSPORT_SERVICE_1)
+                tag_detected, transacted = poll_and_transact(self.pn532, command_apdus, response_apdus)
+                if hasattr(self, 'emulator') and hasattr(self.emulator, 'nfc_emulator'):
+                    self.emulator.nfc_emulator.closeActivity()
+                    self.emulator.nfc_emulator.resetWalletRoleHolder()
+                if hasattr(self, 'pn532'):
+                    self.pn532.reset_buffers()
+                    self.pn532.mute()
+                if tag_detected is not None and transacted:
+                    break
+
+            except Exception as e:
+                _LOG.warning('setup_class failed with error %s', e)
+                if i == device_count - 1:
+                    return
+                continue
         self._setup_failure_reason = None
 
     def setup_test(self):
