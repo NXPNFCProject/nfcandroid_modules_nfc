@@ -2608,6 +2608,24 @@ public class CardEmulationTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_NFC_OVERRIDE_RECOVER_ROUTING_TABLE)
     @Test
+    public void testOverrideRoutingTable_bothUnsetThrowsException() {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        assertTrue(NfcUtils.enableNfc(adapter, mContext));
+        final Activity activity = createAndResumeActivity();
+        CardEmulation instance = CardEmulation.getInstance(adapter);
+        instance.setPreferredService(activity,
+                new ComponentName(mContext, CtsMyHostApduService.class));
+
+        // Verify that calling overrideRoutingTable with both parameters as UNSET
+        // throws an IllegalArgumentException.
+        assertThrows(IllegalArgumentException.class,
+                () -> instance.overrideRoutingTable(activity,
+                        CardEmulation.PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET,
+                        CardEmulation.PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_OVERRIDE_RECOVER_ROUTING_TABLE)
+    @Test
     public void testRecoverRoutingTable() {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         assertTrue(NfcUtils.enableNfc(adapter, mContext));
