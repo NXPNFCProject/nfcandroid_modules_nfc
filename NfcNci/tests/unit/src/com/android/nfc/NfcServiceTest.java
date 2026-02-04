@@ -360,6 +360,68 @@ public final class NfcServiceTest {
     }
 
     @Test
+    public void testEnable_clearsObjectMaps() throws Exception {
+        // Add mock objects to object maps
+        Object mockObject = new Object();
+        mNfcService.mObjectMap.put(1, mockObject);
+        mNfcService.mTagObjectMap.put(1, mockObject);
+
+        // Enable NFC
+        enableAndVerify();
+
+        // Verify that object maps are cleared
+        assertTrue(
+          "mObjectMap should be cleared on enable", mNfcService.mObjectMap.isEmpty());
+        assertTrue(
+          "mTagObjectMap should be cleared on enable", mNfcService.mTagObjectMap.isEmpty());
+    }
+
+    @Test
+    public void testDisable_disconnectsTagsAndClearsMaps() throws Exception {
+        // Enable NFC first
+        enableAndVerify();
+
+        // Add a mock TagEndpoint to the object map
+        DeviceHost.TagEndpoint mockTagEndpoint = mock(DeviceHost.TagEndpoint.class);
+        mNfcService.mObjectMap.put(1, mockTagEndpoint);
+        mNfcService.mTagObjectMap.put(1, new Object());
+
+        // Disable NFC
+        disableAndVerify();
+
+        // Verify that disconnect was called on the tag endpoint
+        verify(mockTagEndpoint).disconnect();
+
+        // Verify that object maps are cleared
+        assertTrue(
+          "mObjectMap should be cleared on disable", mNfcService.mObjectMap.isEmpty());
+        assertTrue(
+          "mTagObjectMap should be cleared on disable", mNfcService.mTagObjectMap.isEmpty());
+    }
+
+    @Test
+    public void testStopPresenceChecking_withReaderMode_callsOnTagLost() throws Exception {
+        // Set up reader mode with a callback
+        NfcService.ReaderModeParams readerParams = mNfcService.new ReaderModeParams();
+        readerParams.callback = mock(android.nfc.IAppCallback.class);
+        mNfcService.mReaderModeParams = readerParams;
+
+        // Add a mock tag to the tag object map and a mock endpoint to object map
+        Tag mockTag = mock(Tag.class);
+        DeviceHost.TagEndpoint mockTagEndpoint = mock(DeviceHost.TagEndpoint.class);
+        mNfcService.mTagObjectMap.put(1, mockTag);
+        mNfcService.mObjectMap.put(1, mockTagEndpoint);
+
+        // onRfDiscoveryEvent(false) calls StopPresenceChecking
+        mDeviceHostListener.getValue().onRfDiscoveryEvent(false);
+
+        // Verify that onTagLost was called on the reader mode callback
+        verify(readerParams.callback).onTagLost(mockTag);
+        // Verify that the tag object map is cleared
+        assertTrue(mNfcService.mTagObjectMap.isEmpty());
+    }
+
+    @Test
     public void testEnable_noHceCapability_doesNotCrash() throws Exception {
         // Set up mocks to simulate a device without HCE capability.
         when(mPackageManager.hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION))
@@ -2238,7 +2300,8 @@ public final class NfcServiceTest {
         verify(tagEndpoint).disconnect();
         mLooper.dispatchAll();
         assertThat(result).isTrue();
-
+        // Verify that the tag object is removed from the map
+        Assert.assertNull(mNfcService.mObjectMap.get(1));
     }
 
     @Test
