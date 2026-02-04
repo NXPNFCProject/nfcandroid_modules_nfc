@@ -264,7 +264,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
 
         # Get the device count
         device_count = len(android_device.list_adb_devices())
-        _LOG.DEBUG('device_count %d', device_count)
+        _LOG.debug('device_count %d', device_count)
 
         self.ads = self.register_controller(android_device, min_number=device_count)
 
