@@ -134,6 +134,7 @@ public class NfcProprietaryCapsTest {
                 "isPollingFrameNotificationSupported=true, " +
                 "isPowerSavingModeSupported=false, " +
                 "isAutotransactPollingLoopFilterSupported=true, " +
+                "numberOfExitFramesSupported=5, " +
                 "mIsReaderModeAnnotationSupported=false}";
 
         assertEquals(expected, caps.toString());
