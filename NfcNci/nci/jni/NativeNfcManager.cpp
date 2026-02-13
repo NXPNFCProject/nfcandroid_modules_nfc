@@ -152,7 +152,6 @@ SyncEvent gSendRawVsCmdEvent;  // event for NFA_SendRawVsCommand()
 SyncEvent gNfaRemoveEpEvent;   // event for StartRemoval....
 static bool sIsEpDetectStarted = false;
 static bool sIsNfaEnabled = false;
-static bool sDiscoveryEnabled = false;  // is polling or listening
 static bool sPollingEnabled = false;    // is polling for tag?
 bool sIsDisabling = false;
 static bool sRfEnabled = false;   // whether RF discovery is enabled
@@ -1064,7 +1063,6 @@ void nfaDeviceManagementCallback(uint8_t dmEvent,
           SyncEventGuard guard(gSendRawVsCmdEvent);
           gSendRawVsCmdEvent.notifyOne();
         }
-        sDiscoveryEnabled = false;
         sPollingEnabled = false;
 
         if (!sIsDisabling && sIsNfaEnabled) {
@@ -1927,10 +1925,6 @@ static void nfcManager_enableDiscovery(JNIEnv* e, jobject o,
   LOG(DEBUG) << StringPrintf("%s: enter; tech_mask = %02x", __func__,
                              tech_mask);
 
-  if (sDiscoveryEnabled && !restart) {
-    LOG(ERROR) << StringPrintf("%s: already discovering", __func__);
-    return;
-  }
 
   if (sRfEnabled) {
     // Stop RF discovery to reconfigure
@@ -2025,7 +2019,6 @@ static void nfcManager_enableDiscovery(JNIEnv* e, jobject o,
 
   // Actually start discovery.
   startRfDiscovery(true);
-  sDiscoveryEnabled = true;
 
   LOG(DEBUG) << StringPrintf("%s: exit", __func__);
 }
@@ -2047,17 +2040,12 @@ void nfcManager_disableDiscovery(JNIEnv* e, jobject o) {
   tNFA_STATUS status = NFA_STATUS_OK;
   LOG(DEBUG) << StringPrintf("%s: enter;", __func__);
 
-  if (sDiscoveryEnabled == false) {
-    LOG(DEBUG) << StringPrintf("%s: already disabled", __func__);
-    goto TheEnd;
+  if (sRfEnabled) {
+    // Stop RF Discovery.
+    startRfDiscovery(false);
   }
-
-  // Stop RF Discovery.
-  startRfDiscovery(false);
-  sDiscoveryEnabled = false;
   if (sPollingEnabled) status = stopPolling_rfDiscoveryDisabled();
 
-TheEnd:
   LOG(DEBUG) << StringPrintf("%s: exit: Status = 0x%X", __func__, status);
 }
 
@@ -2151,7 +2139,6 @@ static jboolean nfcManager_doDeinitialize(JNIEnv*, jobject) {
   sAbortConnlessWait = true;
   sIsNfaEnabled = false;
   sRoutingInitialized = false;
-  sDiscoveryEnabled = false;
   sPollingEnabled = false;
   sIsDisabling = false;
   sReaderModeEnabled = false;
