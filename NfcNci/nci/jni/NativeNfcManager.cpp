@@ -455,6 +455,7 @@ static void nfaConnectionCallback(uint8_t connEvent,
       LOG(DEBUG) << StringPrintf("%s: NFA_DEACTIVATE_FAIL_EVT: status = %d",
                                  __func__, eventData->status);
       {
+        nativeNfcTag_doDeactivateStatus(eventData->status);
         SyncEventGuard g(gDeactivatedEvent);
         gDeactivatedEvent.notifyOne();
       }
