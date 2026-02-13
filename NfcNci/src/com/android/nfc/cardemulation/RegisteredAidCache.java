@@ -1564,9 +1564,12 @@ public class RegisteredAidCache {
     public ApduServiceInfo getPreferredServiceInfo() {
         ComponentNameAndUser service = getPreferredService();
         if (service.getComponentName() == null) return null;
-        for (ApduServiceInfo serviceInfo : mUserApduServiceInfo.get(service.getUserId())) {
-            if (serviceInfo.getComponent().equals(service.getComponentName())) {
-                return serviceInfo;
+        List<ApduServiceInfo> apduServices = mUserApduServiceInfo.get(service.getUserId());
+        if (apduServices != null) {
+            for (ApduServiceInfo serviceInfo : apduServices) {
+                if (serviceInfo.getComponent().equals(service.getComponentName())) {
+                    return serviceInfo;
+                }
             }
         }
         return null;
