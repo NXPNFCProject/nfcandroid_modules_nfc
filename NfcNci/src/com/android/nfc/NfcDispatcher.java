@@ -369,6 +369,10 @@ class NfcDispatcher {
                         activityInfo.applicationInfo).toString();
                 Map<String, Boolean> preflist =
                         mNfcAdapter.getTagIntentAppPreferenceForUser(userId);
+                if (DBG) {
+                    Log.i(TAG, "checkPrefList: Intent: " + intent.toString()
+                            + ", activityInfo: " + activityInfo);
+                }
                 if (preflist.containsKey(pkgName)) {
                     if (!preflist.get(pkgName)) {
                         if (DBG) Log.d(TAG, "checkPrefList: mute:" + pkgName);
@@ -380,7 +384,8 @@ class NfcDispatcher {
                     }
                 } else {
                     if (nfcstack26q2Updates()
-                            && intent.getAction() != NfcAdapter.ACTION_NDEF_DISCOVERED) {
+                            && (intent.getAction() != NfcAdapter.ACTION_NDEF_DISCOVERED
+                            && intent.getAction() != Intent.ACTION_VIEW)) {
                         if (DBG) Log.d(TAG, "checkPrefList: mute:" + pkgName);
                         muteAppCount++;
                         filtered.remove(resolveInfo);
@@ -408,7 +413,8 @@ class NfcDispatcher {
             }
             if (notifyAppNames.size() > 0) {
                 boolean allowed = true;
-                if (intent.getAction() != NfcAdapter.ACTION_NDEF_DISCOVERED) {
+                if (intent.getAction() != NfcAdapter.ACTION_NDEF_DISCOVERED
+                        && intent.getAction() != Intent.ACTION_VIEW) {
                     allowed = !nfcstack26q2Updates();
                 }
                 mInjector.createNfcTagAllowNotification(context, notifyAppNames, allowed)
@@ -1336,6 +1342,7 @@ class NfcDispatcher {
             pw.println("mOverrideIntent=" + mOverrideIntent);
             pw.println("mOverrideFilters=" + Arrays.toString(mOverrideFilters));
             pw.println("mOverrideTechLists=" + Arrays.deepToString(mOverrideTechLists));
+            mTechListFilters.dump(fd, pw, args);
         }
     }
 
