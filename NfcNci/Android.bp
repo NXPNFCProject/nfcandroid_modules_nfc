@@ -132,6 +132,7 @@ android_app {
     lint: {
         baseline_filename: "lint-baseline.xml",
     },
+    preinstall_allowlist: ":preinstalled-packages-com.android.nfc.xml",
 }
 
 filegroup {
@@ -151,4 +152,11 @@ filegroup {
 filegroup {
     name: "privapp_allowlist_com.android.nfc.xml",
     srcs: ["com.android.nfc.xml"],
+}
+
+filegroup {
+    name: "preinstalled-packages-com.android.nfc.xml",
+    srcs: [
+        "preinstalled-packages-com.android.nfc.xml",
+    ],
 }
