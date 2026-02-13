@@ -93,7 +93,7 @@ public class NfcAntennaLocationApiTest {
     /** Tests getNfcAntennaInfo API */
     @Test
     public void testGetNfcAntennaInfo() {
-        assumeTrue(getVendorApiLevel() > 202404);
+        assumeTrue(getVendorApiLevel() > 202504);
         NfcAntennaInfo nfcAntennaInfo = mAdapter.getNfcAntennaInfo();
 
         assertNotNull(nfcAntennaInfo);
