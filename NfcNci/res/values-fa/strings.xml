@@ -17,7 +17,7 @@
     <string name="beam_busy" msgid="8179024484757185047">"«پرتو» در حال حاضر مشغول است. هنگامی که انتقال قبلی کامل شد دوباره امتحان کنید."</string>
     <string name="device" msgid="6859793408635712424">"دستگاه"</string>
     <string name="connecting_peripheral" msgid="5023158537894294802">"در حال اتصال <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
-    <string name="connected_peripheral" msgid="2496731052957541047">"‫<xliff:g id="DEVICE_NAME">%1$s</xliff:g> وصل شد"</string>
+    <string name="connected_peripheral" msgid="2496731052957541047">"‫‫<xliff:g id="DEVICE_NAME">%1$s</xliff:g> متصل شد"</string>
     <string name="connect_peripheral_failed" msgid="368937385551413385">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> متصل نشد"</string>
     <string name="disconnecting_peripheral" msgid="1121670272906082527">"در حال قطع ارتباط <xliff:g id="DEVICE_NAME">%1$s</xliff:g>"</string>
     <string name="disconnected_peripheral" msgid="9009042963082667744">"ارتباط <xliff:g id="DEVICE_NAME">%1$s</xliff:g> قطع شد"</string>
