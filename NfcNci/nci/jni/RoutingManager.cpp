@@ -243,6 +243,7 @@ bool RoutingManager::initialize(nfc_jni_native_data* native) {
     LOG(ERROR) << fn << ": Failed to register wildcard AID for DH";
 
   // Trigger RT update
+  gFirstRun = true;
   mNfceeListenConfig.nb_config = 0;
   setEeInfoChangedFlag();
   mDefaultAidRouteAdded = false;
