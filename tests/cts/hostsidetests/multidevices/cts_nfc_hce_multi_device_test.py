@@ -34,6 +34,7 @@ acts as an NFC reader. The devices should be placed back to back.
 from http.client import HTTPSConnection
 import json
 import logging
+import pn532_utils
 import re
 import ssl
 import sys
@@ -250,7 +251,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         second phone as a reader device.
         """
         self.pn532 = None
-
+        self.pn532_lock = None
         # This tracks the error message for a setup failure.
         # It is set to None only if the entire setup_class runs successfully.
         self._setup_failure_reason = 'Failed to find Android device(s).'
@@ -263,7 +264,30 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         self._setup_failure_should_block_tests = True
 
         try:
-            self.emulator = self.register_controller(android_device)[0]
+            all_devices = self.register_controller(android_device)
+
+            try:
+                self.pn532_lock, pn532_serial_path, android_serial = pn532_utils.discover_active_pair(all_devices)
+
+                self.emulator = next(
+                    (ad for ad in all_devices if ad.serial == android_serial), all_devices[0]
+                )
+                self.emulator.log.info('Auto-discovery result: %s paired with %s',
+                                       pn532_serial_path, android_serial)
+            except Exception as e:
+                self.emulator.log.warning(
+                    "Falling back to testbed parameter 'pn532_serial_path': %s", pn532_serial_path
+                )
+                self.emulator = all_devices[0]
+                self.emulator.log.error('Auto-discovery failed: %s', e)
+                if (
+                    hasattr(self.emulator, 'dimensions')
+                    and 'pn532_serial_path' in self.emulator.dimensions
+                ):
+                    pn532_serial_path = self.emulator.dimensions["pn532_serial_path"]
+                else:
+                    pn532_serial_path = self.user_params.get("pn532_serial_path", "")
+
             self._enable_nfc_logs(self.emulator)
             self.record_mainline_version(self.emulator)
 
@@ -282,13 +306,6 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
                 self.emulator.nfc_emulator.setNfcState(True)
             # Ensure any wallet role holder is reset before tests.
             self.emulator.nfc_emulator.resetWalletRoleHolder()
-            if (
-                hasattr(self.emulator, 'dimensions')
-                and 'pn532_serial_path' in self.emulator.dimensions
-            ):
-                pn532_serial_path = self.emulator.dimensions["pn532_serial_path"]
-            else:
-                pn532_serial_path = self.user_params.get("pn532_serial_path", "")
 
             casimir_id = None
             if self._is_cuttlefish_device(self.emulator):
@@ -298,12 +315,20 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
 
             if casimir_id is not None and len(casimir_id) > 0:
                 self._setup_failure_reason = 'Failed to connect to casimir'
-                _LOG.info("casimir_id = " + casimir_id)
+                _LOG.info("casimir_id = %s", casimir_id)
                 self.pn532 = pn532.Casimir(casimir_id)
             else:
                 self._setup_failure_reason = 'Failed to connect to PN532 board.'
-                self.pn532 = pn532.PN532(pn532_serial_path)
-                self.pn532.mute()
+                _LOG.info(
+                    '[PN532_DEBUG] Attempting to initialize PN532 at: %s', pn532_serial_path
+                )
+                try:
+                    self.pn532 = pn532.PN532(pn532_serial_path)
+                    self.pn532.mute()
+                    _LOG.info('[PN532_DEBUG] PN532 initialization SUCCESS!')
+                except Exception:
+                    _LOG.exception('[PN532_DEBUG] FAILED to init PN532')
+                    raise
 
         except Exception as e:
             _LOG.warning('setup_class failed with error %s', e)
