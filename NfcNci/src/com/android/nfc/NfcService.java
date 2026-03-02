@@ -3149,8 +3149,15 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             String annotationStr = "null";
             if (extras != null
                     && extras.containsKey(NfcAdapter.EXTRA_READER_TECH_A_POLLING_LOOP_ANNOTATION)) {
-                annotationStr = HexFormat.of().formatHex(extras.getByteArray(
-                        NfcAdapter.EXTRA_READER_TECH_A_POLLING_LOOP_ANNOTATION));
+
+                byte[] annotationBytes = extras.getByteArray(
+                        NfcAdapter.EXTRA_READER_TECH_A_POLLING_LOOP_ANNOTATION);
+
+                if (annotationBytes != null) {
+                    annotationStr = HexFormat.of().formatHex(annotationBytes);
+                } else {
+                    Log.i(TAG, "Annotation bytes are null");
+                }
             }
             Log.d(TAG, "setReaderMode: uid=" + callingUid + ", packageName: "
                     + packageName + ", flags: " + flags + ", annotation: " + annotationStr);
