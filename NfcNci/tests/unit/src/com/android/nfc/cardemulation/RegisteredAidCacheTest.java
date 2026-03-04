@@ -1668,4 +1668,94 @@ public class RegisteredAidCacheTest {
         assertNotNull(resolvedService);
         assertEquals(WALLET_PAYMENT_SERVICE, resolvedService.getComponent());
     }
+
+    @Test
+    public void testGetPreferredServiceInfo_noPreferredService() {
+        // Setup: No preferred service is set.
+        mRegisteredAidCache =
+                new RegisteredAidCache(mContext, mWalletRoleObserver, mAidRoutingManager);
+
+        // Action: Get preferred service info.
+        ApduServiceInfo result = mRegisteredAidCache.getPreferredServiceInfo();
+
+        // Assert: The result should be null as no preferred service is set.
+        assertNull(result);
+    }
+
+    @Test
+    public void testGetPreferredServiceInfo_serviceFound() {
+        // Setup: A preferred foreground service is set and its info is available.
+        mRegisteredAidCache =
+                new RegisteredAidCache(mContext, mWalletRoleObserver, mAidRoutingManager);
+        mRegisteredAidCache.onPreferredForegroundServiceChanged(
+                new ComponentNameAndUser(USER_ID, FOREGROUND_SERVICE));
+
+        ApduServiceInfo expectedServiceInfo = createServiceInfoForAidRouting(
+                FOREGROUND_SERVICE,
+                true,
+                List.of(PAYMENT_AID_1),
+                List.of(CardEmulation.CATEGORY_PAYMENT),
+                false, false, USER_ID, true);
+        List<ApduServiceInfo> userServices = new ArrayList<>();
+        userServices.add(expectedServiceInfo);
+        userServices.add(createServiceInfoForAidRouting(
+                WALLET_PAYMENT_SERVICE, // Another service for the same user
+                true,
+                List.of(PAYMENT_AID_2),
+                List.of(CardEmulation.CATEGORY_PAYMENT),
+                false, false, USER_ID, true));
+
+        mRegisteredAidCache.generateUserApduServiceInfoLocked(USER_ID, userServices);
+
+        // Action: Get preferred service info.
+        ApduServiceInfo result = mRegisteredAidCache.getPreferredServiceInfo();
+
+        // Assert: The correct service info is returned.
+        assertNotNull(result);
+        assertEquals(expectedServiceInfo, result);
+    }
+
+    @Test
+    public void testGetPreferredServiceInfo_serviceNotFoundInList() {
+        // Setup: A preferred foreground service is set, but its info is not in the user's list.
+        mRegisteredAidCache =
+                new RegisteredAidCache(mContext, mWalletRoleObserver, mAidRoutingManager);
+        mRegisteredAidCache.onPreferredForegroundServiceChanged(
+                new ComponentNameAndUser(USER_ID, FOREGROUND_SERVICE));
+
+        // Create a list of services for the user that does NOT contain the preferred service.
+        List<ApduServiceInfo> userServices = new ArrayList<>();
+        userServices.add(createServiceInfoForAidRouting(
+                WALLET_PAYMENT_SERVICE, // A different service
+                true,
+                List.of(PAYMENT_AID_2),
+                List.of(CardEmulation.CATEGORY_PAYMENT),
+                false, false, USER_ID, true));
+
+        mRegisteredAidCache.generateUserApduServiceInfoLocked(USER_ID, userServices);
+
+        // Action: Get preferred service info.
+        ApduServiceInfo result = mRegisteredAidCache.getPreferredServiceInfo();
+
+        // Assert: The result is null because the specific service info was not found.
+        assertNull(result);
+    }
+
+    @Test
+    public void testGetPreferredServiceInfo_userNotFound() {
+        // Setup: A preferred foreground service is set, but there's no service list for that user.
+        // This tests the fix for the NullPointerException.
+        mRegisteredAidCache =
+                new RegisteredAidCache(mContext, mWalletRoleObserver, mAidRoutingManager);
+        mRegisteredAidCache.onPreferredForegroundServiceChanged(
+                new ComponentNameAndUser(USER_ID, FOREGROUND_SERVICE));
+
+        // mUserApduServiceInfo is empty, so get(USER_ID) will return null.
+
+        // Action: Get preferred service info.
+        ApduServiceInfo result = mRegisteredAidCache.getPreferredServiceInfo();
+
+        // Assert: The result is null and no NullPointerException was thrown.
+        assertNull(result);
+    }
 }
