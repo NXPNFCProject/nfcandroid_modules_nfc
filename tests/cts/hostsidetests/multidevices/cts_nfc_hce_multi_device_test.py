@@ -34,21 +34,20 @@ acts as an NFC reader. The devices should be placed back to back.
 from http.client import HTTPSConnection
 import json
 import logging
-import pn532_utils
 import re
 import ssl
 import sys
 import time
 
-from android.platform.test.annotations import CddTest
 from android.platform.test.annotations import ApiTest
+from android.platform.test.annotations import CddTest
 from mobly import asserts
 from mobly import base_test
 from mobly import test_runner
-from mobly import utils
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import adb
 
+import pn532_utils
 
 _LOG = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -252,9 +251,15 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         """
         self.pn532 = None
         self.pn532_lock = None
+
+        self.emulator = self.register_controller(android_device)[0]
+
         # This tracks the error message for a setup failure.
         # It is set to None only if the entire setup_class runs successfully.
-        self._setup_failure_reason = 'Failed to find Android device(s).'
+        self._setup_failure_reason = (
+            f"Could not locate a corresponding PN532 device attached to"
+            f" {self.emulator.serial}."
+        )
 
         # Indicates if the setup failure should block (FAIL) or not block (SKIP) test cases.
         # Blocking failures indicate that something unexpectedly went wrong during test setup,
@@ -264,29 +269,26 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         self._setup_failure_should_block_tests = True
 
         try:
-            all_devices = self.register_controller(android_device)
-
             try:
-                self.pn532_lock, pn532_serial_path, android_serial = pn532_utils.discover_active_pair(all_devices)
-
-                self.emulator = next(
-                    (ad for ad in all_devices if ad.serial == android_serial), all_devices[0]
-                )
-                self.emulator.log.info('Auto-discovery result: %s paired with %s',
+                self.pn532_lock, pn532_serial_path, android_serial = pn532_utils.discover_active_pair([self.emulator])
+                self.emulator.log.info("Auto-discovery result: %s paired with %s",
                                        pn532_serial_path, android_serial)
-            except Exception as e:
-                self.emulator.log.warning(
-                    "Falling back to testbed parameter 'pn532_serial_path': %s", pn532_serial_path
+            except Exception:
+                self.emulator.log.exception("Auto-discovery failed")
+                self.emulator.take_bug_report(
+                    test_name="auto_discovery_failure",
+                    destination=self.emulator.log_path,
                 )
-                self.emulator = all_devices[0]
-                self.emulator.log.error('Auto-discovery failed: %s', e)
                 if (
-                    hasattr(self.emulator, 'dimensions')
-                    and 'pn532_serial_path' in self.emulator.dimensions
+                    hasattr(self.emulator, "dimensions")
+                    and "pn532_serial_path" in self.emulator.dimensions
                 ):
                     pn532_serial_path = self.emulator.dimensions["pn532_serial_path"]
                 else:
                     pn532_serial_path = self.user_params.get("pn532_serial_path", "")
+                self.emulator.log.warning(
+                    "Falling back to testbed parameter 'pn532_serial_path': %s", pn532_serial_path
+                )
 
             self._enable_nfc_logs(self.emulator)
             self.record_mainline_version(self.emulator)
