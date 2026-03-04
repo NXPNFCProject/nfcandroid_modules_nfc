@@ -1539,6 +1539,11 @@ void NfcTag::connectionEventHandler(uint8_t event, tNFA_CONN_EVT_DATA* data) {
         notifyTagDiscovered(true);
         discoverTechnologies(disc_result);
       }
+      if (disc_result.status == NFA_STATUS_OK) {
+        // Tag/tags not really active but not idle either,
+        // This enables deactivating the tag properly if needed
+        setActivationState();
+      }
     } break;
 
     case NFA_ACTIVATED_EVT:
