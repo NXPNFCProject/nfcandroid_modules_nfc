@@ -2027,7 +2027,6 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             }
             if (mScreenState == ScreenStateHelper.SCREEN_STATE_ON_UNLOCKED) {
                 if (android.app.Flags.deviceUnlockListener()
-                        && Flags.useDeviceLockListener()
                         && mIsKeyguardLocked) {
                     Log.d(TAG, "Don't start polling when KeyguardLocked");
                 } else {
@@ -4893,8 +4892,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                         return;
                     }
 
-                    if (android.app.Flags.deviceUnlockListener()
-                            && Flags.useDeviceLockListener()) {
+                    if (android.app.Flags.deviceUnlockListener()) {
                         int screenState = mScreenStateHelper.checkScreenState(
                                 mCheckDisplayStateForScreenState);
                         // Update screen state when keyguard unlocked/locked
@@ -5790,7 +5788,6 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                         if (mScreenState == ScreenStateHelper.SCREEN_STATE_ON_UNLOCKED) {
                             mIsRequestUnlockShowed = false;
                             if (android.app.Flags.deviceUnlockListener()
-                                    && Flags.useDeviceLockListener()
                                     && mIsKeyguardLocked) {
                                 Log.d(TAG, "Don't start polling when KeyguardLocked");
                             } else {
