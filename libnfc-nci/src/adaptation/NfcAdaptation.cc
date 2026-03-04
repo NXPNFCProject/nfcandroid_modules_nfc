@@ -149,6 +149,16 @@ static std::vector<uint8_t> host_allowlist;
   return vendor_api_level;
 }
 
+[[maybe_unused]] static int get_system_api_level() {
+  int system_api_level =
+      ::android::base::GetIntProperty("ro.llndk.api_level", -1);
+  if (system_api_level == -1) {
+    system_api_level =
+        ::android::base::GetIntProperty("ro.system.build.version.sdk", -1);
+  }
+  return system_api_level;
+}
+
 static void notifyHalBinderDied() {
   if (sVndExtnsPresent) {
     uint8_t event = -1, status = -1;
@@ -942,7 +952,7 @@ void NfcAdaptation::InitializeHalDeviceContext() {
                                 func, mAidlHalVer);
       // TODO: Enforce VSR API level check later
       // if (get_vsr_api_level() <= __ANDROID_API_V__) {
-      if (mAidlHalVer <= 1) {
+      if (mAidlHalVer <= 1 || (get_vsr_api_level() < get_system_api_level())) {
         sVndExtnsPresent = sNfcVendorExtn->Initialize(nullptr, mAidlHal);
       }
     } else {
