@@ -2174,6 +2174,8 @@ void nfa_ee_nci_disc_ntf(tNFA_EE_MSG* p_data) {
       memcpy(p_cb->ee_tlv, p_ee->ee_tlv, p_ee->num_tlvs * sizeof(tNFA_EE_TLV));
       if (NFA_GetNCIVersion() >= NCI_VERSION_2_0)
         p_cb->ee_power_supply_status = p_ee->nfcee_power_ctrl;
+    } else {
+      nfa_ee_cb.cur_ee--;
     }
     if (nfa_ee_cb.em_state == NFA_EE_EM_STATE_RESTORING) {
       /* NCI spec says: An NFCEE_DISCOVER_NTF that contains a Protocol type of
