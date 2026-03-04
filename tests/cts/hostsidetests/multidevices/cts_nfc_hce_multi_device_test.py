@@ -443,6 +443,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         self._reboot(self.emulator)
         # Setup the payment service activity to handle the transaction after
         # reboot.
+        time.sleep(30)
         self._set_up_emulator(
             service_list=[_PAYMENT_SERVICE_1],
             expected_service=_PAYMENT_SERVICE_1,

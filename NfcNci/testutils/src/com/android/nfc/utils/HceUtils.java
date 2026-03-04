@@ -321,7 +321,7 @@ public final class HceUtils {
         pm.setComponentEnabledSetting(
                 component,
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                PackageManager.DONT_KILL_APP);
+                PackageManager.DONT_KILL_APP | PackageManager.SYNCHRONOUS);
     }
 
     /** Disables specified component */
@@ -329,7 +329,7 @@ public final class HceUtils {
         pm.setComponentEnabledSetting(
                 component,
                 PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-                PackageManager.DONT_KILL_APP);
+                PackageManager.DONT_KILL_APP | PackageManager.SYNCHRONOUS);
     }
 
     /** Converts a byte array to hex string */
