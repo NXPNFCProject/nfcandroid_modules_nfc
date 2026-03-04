@@ -802,15 +802,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     @Override
     public void onPollingLoopDetected(List<PollingFrame> frames) {
         if (mCardEmulationManager != null) {
-            if (Flags.postCallbacks()) {
-                synchronized (mPollingLoopsDetectedRunnable) {
-                    mPollingFramesToBeSent.addAll(frames);
-                    if (!mHandler.hasCallbacks(mPollingLoopsDetectedRunnable)) {
-                        mHandler.post(mPollingLoopsDetectedRunnable);
-                    }
+            synchronized (mPollingLoopsDetectedRunnable) {
+                mPollingFramesToBeSent.addAll(frames);
+                if (!mHandler.hasCallbacks(mPollingLoopsDetectedRunnable)) {
+                    mHandler.post(mPollingLoopsDetectedRunnable);
                 }
-            } else {
-                mCardEmulationManager.onPollingLoopDetected((frames));
             }
         }
     }
@@ -896,17 +892,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
     @Override
     public void onObserveModeStateChanged(boolean enable) {
-        if (Flags.postCallbacks()) {
-            mHandler.post(() -> {
-                if (mCardEmulationManager != null) {
-                    mCardEmulationManager.onObserveModeStateChange(enable);
-                }
-            });
-        } else {
+        mHandler.post(() -> {
             if (mCardEmulationManager != null) {
                 mCardEmulationManager.onObserveModeStateChange(enable);
             }
-        }
+        });
     }
 
     @Override

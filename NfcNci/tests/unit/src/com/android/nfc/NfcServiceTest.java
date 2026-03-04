@@ -1454,12 +1454,11 @@ public final class NfcServiceTest {
 
     @Test
     public void testOnObserveModeStateChanged() {
-        when(Flags.postCallbacks()).thenReturn(true);
         mNfcService.onObserveModeStateChanged(true);
         mLooper.dispatchAll();
         verify(mCardEmulationManager, atLeastOnce()).onObserveModeStateChange(anyBoolean());
-        when(Flags.postCallbacks()).thenReturn(false);
         mNfcService.onObserveModeStateChanged(false);
+        mLooper.dispatchAll();
         verify(mCardEmulationManager, atLeastOnce()).onObserveModeStateChange(anyBoolean());
     }
 
@@ -1468,14 +1467,13 @@ public final class NfcServiceTest {
         PollingFrame pollingFrame = mock(PollingFrame.class);
         List<PollingFrame> frames = new ArrayList<>();
         frames.add(pollingFrame);
-        when(Flags.postCallbacks()).thenReturn(true);
         mNfcService.onPollingLoopDetected(frames);
         mLooper.dispatchAll();
         ArgumentCaptor<List<PollingFrame>> listArgumentCaptor = ArgumentCaptor.forClass(List.class);
         verify(mCardEmulationManager).onPollingLoopDetected(listArgumentCaptor.capture());
         assertThat(frames).isEqualTo(listArgumentCaptor.getValue());
-        when(Flags.postCallbacks()).thenReturn(false);
         mNfcService.onPollingLoopDetected(frames);
+        mLooper.dispatchAll();
         verify(mCardEmulationManager, atLeastOnce()).onPollingLoopDetected(listArgumentCaptor.capture());
         assertThat(frames).isEqualTo(listArgumentCaptor.getValue());
     }

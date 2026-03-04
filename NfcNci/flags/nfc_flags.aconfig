@@ -33,12 +33,5 @@ flag {
     bug: "368655283"
 }
 
-flag {
-    name: "post_callbacks"
-    namespace: "nfc"
-    description: "Post callbacks to CardEmulationManager to handler to get off of NFC callback thread."
-    bug: "370015438"
-}
-
 # Don't add any new flags for Android 16+ targeting features. Use the flags
 # in com.android.nfc.module.flags (packages/modules/Nfc/flags) instead.
