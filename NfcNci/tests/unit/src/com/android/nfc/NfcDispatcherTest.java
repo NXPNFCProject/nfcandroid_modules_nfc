@@ -1134,4 +1134,90 @@ public final class NfcDispatcherTest {
         // Verify that the send method was called, which then threw the mocked exception.
         verify(pendingIntent).send(any(Context.class), eq(Activity.RESULT_OK), any(Intent.class));
     }
+
+    @Test
+    public void testCheckPrefList_withActionView_doesNotMuteNewApp() {
+        // This test verifies that when nfcstack26q2Updates is enabled,
+        // an app that handles an ACTION_VIEW intent is not muted by default.
+        when(com.android.nfc.module.flags.Flags.nfcstack26q2Updates()).thenReturn(true);
+        when(mNfcInjector.createNfcTagAllowNotification(any(), any(), eq(false)))
+                .thenReturn(mNfcTagAllowNotification);
+
+        // Setup DispatchInfo with an ACTION_VIEW intent
+        Tag tag = mock(Tag.class);
+        NdefRecord record = NdefRecord.createUri("https://example.com");
+        NdefMessage message = new NdefMessage(record);
+        NfcDispatcher.DispatchInfo dispatchInfo = new NfcDispatcher.DispatchInfo(
+                mockContext, mNfcInjector, tag, message);
+        dispatchInfo.setViewIntent(); // This sets ACTION_VIEW
+
+        // Setup a single activity to handle the intent
+        ResolveInfo resolveInfo = createResolveInfo("com.example.app", "TestActivity", 0);
+        List<ResolveInfo> activities = new ArrayList<>();
+        activities.add(resolveInfo);
+
+        // Mock that the app preference does not exist yet
+        when(mNfcAdapter.getTagIntentAppPreferenceForUser(anyInt())).thenReturn(new HashMap<>());
+
+        // Call checkPrefList
+        List<ResolveInfo> filteredActivities = dispatchInfo.checkPrefList(activities, 0);
+
+        // Verify the app is not filtered out
+        assertThat(filteredActivities).hasSize(1);
+        assertThat(filteredActivities.get(0)).isEqualTo(resolveInfo);
+
+        // Verify the app preference is set to 'allowed' (true)
+        verify(mNfcAdapter).setTagIntentAppPreferenceForUser(0, "com.example.app", true);
+
+        // Verify the notification indicates the app is allowed
+        verify(mNfcInjector).createNfcTagAllowNotification(any(), any(), eq(true));
+        verify(mNfcTagAllowNotification).startNotification();
+    }
+
+    @Test
+    public void testCheckPrefList_withTechDiscovered_mutesNewApp() {
+        // This test verifies that when nfcstack26q2Updates is enabled,
+        // an app that handles an ACTION_TECH_DISCOVERED intent is muted by default.
+        when(com.android.nfc.module.flags.Flags.nfcstack26q2Updates()).thenReturn(true);
+        when(mNfcInjector.createNfcTagAllowNotification(any(), any(), eq(false)))
+                .thenReturn(mNfcTagAllowNotification);
+
+        // Setup DispatchInfo with an ACTION_TECH_DISCOVERED intent
+        Tag tag = mock(Tag.class);
+        NfcDispatcher.DispatchInfo dispatchInfo = new NfcDispatcher.DispatchInfo(
+                mockContext, mNfcInjector, tag, null);
+        dispatchInfo.setTechIntent(); // This sets ACTION_TECH_DISCOVERED
+
+        // Setup a single activity to handle the intent
+        ResolveInfo resolveInfo = createResolveInfo("com.example.app", "TestActivity", 0);
+        List<ResolveInfo> activities = new ArrayList<>();
+        activities.add(resolveInfo);
+
+        // Mock that the app preference does not exist yet
+        when(mNfcAdapter.getTagIntentAppPreferenceForUser(anyInt())).thenReturn(new HashMap<>());
+
+        // Call checkPrefList
+        List<ResolveInfo> filteredActivities = dispatchInfo.checkPrefList(activities, 0);
+
+        // Verify the app is filtered out (muted)
+        assertThat(filteredActivities).isEmpty();
+
+        // Verify the app preference is set to 'muted' (false)
+        verify(mNfcAdapter).setTagIntentAppPreferenceForUser(0, "com.example.app", false);
+
+        // Verify the notification indicates the app is not allowed
+        verify(mNfcInjector).createNfcTagAllowNotification(any(), any(), eq(false));
+        verify(mNfcTagAllowNotification).startNotification();
+    }
+
+    private ResolveInfo createResolveInfo(String packageName, String name, int uid) {
+        ResolveInfo resolveInfo = new ResolveInfo();
+        resolveInfo.activityInfo = new ActivityInfo();
+        resolveInfo.activityInfo.packageName = packageName;
+        resolveInfo.activityInfo.name = name;
+        resolveInfo.activityInfo.applicationInfo = new ApplicationInfo();
+        resolveInfo.activityInfo.applicationInfo.uid = uid;
+        resolveInfo.activityInfo.exported = true;
+        return resolveInfo;
+    }
 }
