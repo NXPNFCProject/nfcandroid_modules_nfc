@@ -27,13 +27,3 @@ flag {
         purpose: PURPOSE_BUGFIX
     }
 }
-
-flag {
-    name: "observe_mode_always_on"
-    namespace: "nfc"
-    description: "Enable extra control flow in NFC stack to keep observe mode state on when device is in idle state"
-    bug: "478103693"
-    metadata {
-        purpose: PURPOSE_BUGFIX
-    }
-}

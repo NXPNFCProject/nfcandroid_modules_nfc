@@ -27,8 +27,8 @@ import static android.nfc.OemLogItems.EVENT_ENABLE;
 import static com.android.nfc.ScreenStateHelper.SCREEN_STATE_ON_LOCKED;
 import static com.android.nfc.ScreenStateHelper.SCREEN_STATE_ON_UNLOCKED;
 import static com.android.nfc.module.flags.Flags.nfcstack26q2Updates;
+import static com.android.nfc.module.flags.Flags.tapToX;
 import static com.android.nfc.module.nonexported.flags.Flags.coalesceRfFieldOnOffBroadcasts;
-import static com.android.nfc.module.nonexported.flags.Flags.observeModeAlwaysOn;
 
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
@@ -133,6 +133,7 @@ import com.android.internal.annotations.GuardedBy;
 import com.android.nfc.DeviceHost.DeviceHostListener;
 import com.android.nfc.DeviceHost.TagEndpoint;
 import com.android.nfc.cardemulation.CardEmulationManager;
+import com.android.nfc.cardemulation.HostEmulationManager;
 import com.android.nfc.cardemulation.RoutingOptionManager;
 import com.android.nfc.cardemulation.util.StatsdUtils;
 import com.android.nfc.dhimpl.NativeNfcManager;
@@ -3831,7 +3832,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 if (DBG) Log.i(TAG, "registerGestureExchangeCallback");
                 NfcPermissions.enforceGestureExchangePermissions(mContext);
                 mNfcGestureExchangeCallback = callback;
-                if (observeModeAlwaysOn() && isObserveModeSupported()) {
+
+                String gesturePollFrameString =
+                        Settings.Secure.getString(mContext.getContentResolver(),
+                                HostEmulationManager.GESTURE_POLL_FRAME_SETTINGS_KEY);
+                if (tapToX() && isObserveModeSupported() && gesturePollFrameString != null) {
                     setObserveModeAlwaysOn(true);
                 }
             }
@@ -3844,7 +3849,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 if (DBG) Log.i(TAG, "unregisterGestureExchangeCallback");
                 NfcPermissions.enforceGestureExchangePermissions(mContext);
                 mNfcGestureExchangeCallback = null;
-                if (observeModeAlwaysOn() && isObserveModeSupported()) {
+                if (tapToX() && isObserveModeSupported()) {
                     setObserveModeAlwaysOn(false);
                 }
             }
