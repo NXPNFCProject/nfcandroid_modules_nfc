@@ -670,12 +670,6 @@ static int reSelect(tNFA_INTF_TYPE rfInterface, bool fSwitchIfNeeded) {
   int rVal = 1;
 
   do {
-    // if tag has shutdown, abort this method
-    if (NfcTag::getInstance().isNdefDetectionTimedOut()) {
-      LOG(DEBUG) << StringPrintf("%s: ndef detection timeout; break", __func__);
-      rVal = STATUS_CODE_TARGET_LOST;
-      break;
-    }
     if ((sCurrentRfInterface == NFA_INTERFACE_FRAME) &&
         (NFC_GetNCIVersion() >= NCI_VERSION_2_0)) {
       {

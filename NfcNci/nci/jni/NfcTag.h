@@ -308,17 +308,6 @@ class NfcTag {
 
   /*******************************************************************************
   **
-  ** Function:        isNdefDetectionTimedOut
-  **
-  ** Description:     Whether NDEF-detection algorithm has timed out.
-  **
-  ** Returns:         True if NDEF-detection algorithm timed out.
-  **
-  *******************************************************************************/
-  bool isNdefDetectionTimedOut();
-
-  /*******************************************************************************
-  **
   ** Function         setActive
   **
   ** Description      Sets the active state for the object

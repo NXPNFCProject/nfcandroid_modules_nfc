@@ -1493,17 +1493,6 @@ bool NfcTag::isT2tNackResponse(const uint8_t* response, uint32_t responseLen) {
 
 /*******************************************************************************
 **
-** Function:        isNdefDetectionTimedOut
-**
-** Description:     Whether NDEF-detection algorithm timed out.
-**
-** Returns:         True if NDEF-detection algorithm timed out.
-**
-*******************************************************************************/
-bool NfcTag::isNdefDetectionTimedOut() { return mNdefDetectionTimedOut; }
-
-/*******************************************************************************
-**
 ** Function:        notifyTagDiscovered
 **
 ** Description:     Notify NFC service about tag discovery.
