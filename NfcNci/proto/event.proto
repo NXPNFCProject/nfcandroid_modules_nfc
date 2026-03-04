@@ -54,6 +54,7 @@ message EventType {
     NfcDataMigrationInProgress data_migration_in_progress = 18;
     NfcPaymentServiceBindState payment_service_bind_state = 19;
     NfcServiceOtherStateChange service_other_state_change = 20;
+    NfcObserveModeAlwaysOnChange observe_mode_always_on_change = 21;
   }
 }
 
@@ -172,4 +173,8 @@ message NfcServiceOtherStateChange {
   required NfcAppInfo app_info = 1;
   required NfcComponentInfo component_info = 2;
   required bool enabled = 3;
+}
+
+message NfcObserveModeAlwaysOnChange {
+  required bool enable = 1;
 }

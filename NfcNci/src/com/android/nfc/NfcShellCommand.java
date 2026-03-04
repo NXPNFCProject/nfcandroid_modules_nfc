@@ -23,11 +23,13 @@ import android.nfc.cardemulation.AidGroup;
 import android.os.Binder;
 import android.os.Process;
 import android.os.RemoteException;
+import android.provider.Settings;
 import android.text.TextUtils;
 
 import androidx.annotation.VisibleForTesting;
 
 import com.android.modules.utils.BasicShellCommandHandler;
+import com.android.nfc.cardemulation.HostEmulationManager;
 
 import java.io.PrintWriter;
 import java.util.Arrays;
@@ -130,6 +132,18 @@ public class NfcShellCommand extends BasicShellCommandHandler {
                     boolean enable = getNextArgRequiredTrueOrFalse("enable", "disable");
                     mNfcService.mNfcAdapter.setObserveMode(enable, SHELL_PACKAGE_NAME);
                     return 0;
+                case "set-always-on-observe-mode": {
+                    boolean enableAlwaysOnObserveMode =
+                            getNextArgRequiredTrueOrFalse("enable", "disable");
+                    String gestureFrame = getNextArg();
+                    if (!TextUtils.isEmpty(gestureFrame)) {
+                        Settings.Secure.putString(mContext.getContentResolver(),
+                                HostEmulationManager.GESTURE_POLL_FRAME_SETTINGS_KEY,
+                                gestureFrame);
+                    }
+                    mNfcService.setObserveModeAlwaysOn(enableAlwaysOnObserveMode);
+                    return 0;
+                }
                 case "set-controller-always-on":
                     int mode = Integer.parseInt(getNextArgRequired());
                     mNfcService.mNfcAdapter.setControllerAlwaysOn(mode);
@@ -270,6 +284,8 @@ public class NfcShellCommand extends BasicShellCommandHandler {
     private void onHelpPrivileged(PrintWriter pw) {
         pw.println("  set-observe-mode enable|disable");
         pw.println("    Enable or disable observe mode.");
+        pw.println("  set-always-on-observe-mode enable|disable <gesture_frame>");
+        pw.println("    Enable or disable always on observe mode.");
         pw.println("  set-reader-mode enable-polling|disable-polling");
         pw.println("    Enable or reader mode polling");
         pw.println("  set-controller-always-on <mode>");

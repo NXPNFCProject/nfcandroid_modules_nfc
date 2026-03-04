@@ -149,6 +149,18 @@ public class CardEmulationTest {
         ShellUtils.runShellCommand("setprop log.tag.libnfc_nci INFO");
     }
 
+    private void waitForObserveModeState(NfcAdapter adapter, boolean expectedState) {
+        try {
+            com.android.compatibility.common.util.PollingCheck.check(
+                    "Timed out waiting for Observe Mode to be "
+                            + (expectedState ? "ENABLED" : "DISABLED"),
+                    5000, /* timeout in ms */
+                    () -> adapter.isObserveModeEnabled() == expectedState);
+        } catch (Exception e) {
+            throw new RuntimeException("Exception while waiting for Observe Mode state", e);
+        }
+    }
+
     @Test
     public void getNonNullInstance() {
         CardEmulation instance = CardEmulation.getInstance(mAdapter);
@@ -1095,8 +1107,7 @@ public class CardEmulationTest {
                             backgroundService, true));
             assertTrue(cardEmulation.setPreferredService(activity, backgroundService));
             ensurePreferredService(BackgroundHostApduService.class);
-
-            assertTrue(adapter.isObserveModeEnabled());
+            waitForObserveModeState(adapter, true);
         } finally {
             assertTrue(cardEmulation.unsetPreferredService(activity));
             activity.finish();
@@ -1141,7 +1152,7 @@ public class CardEmulationTest {
             assertTrue(cardEmulation.setPreferredService(activity, offhostService));
             ensurePreferredService(CtsMyOffHostDefaultToObserveApduService.class);
 
-            assertTrue(adapter.isObserveModeEnabled());
+            waitForObserveModeState(adapter, true);
         } finally {
             assertTrue(cardEmulation.unsetPreferredService(activity));
             activity.finish();
@@ -2705,7 +2716,7 @@ public class CardEmulationTest {
                 assertTrue(cardEmulation.setPreferredService(activity, backgroundService));
                 ensurePreferredService(CustomHostApduService.class);
 
-                assertTrue(adapter.isObserveModeEnabled());
+                waitForObserveModeState(adapter, true);
                 ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(1);
                 frames.add(createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
                         HexFormat.of().parseHex("7f71156b")));
@@ -2729,10 +2740,7 @@ public class CardEmulationTest {
                 assertFalse(adapter.isObserveModeEnabled());
                 adapter.notifyHceDeactivated();
                 activity.finish();
-                Thread.sleep(200);
-                assertFalse(adapter.isObserveModeEnabled());
-                Thread.sleep(2000);
-                assertTrue(adapter.isObserveModeEnabled());
+                waitForObserveModeState(adapter, true);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             } finally {
@@ -2776,7 +2784,7 @@ public class CardEmulationTest {
                 assertTrue(cardEmulation.setPreferredService(activity, backgroundService));
                 ensurePreferredService(CustomHostApduService.class);
 
-                assertTrue(adapter.isObserveModeEnabled());
+                waitForObserveModeState(adapter, true);
                 ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(1);
                 frames.add(createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
                         HexFormat.of().parseHex("7f71156b")));

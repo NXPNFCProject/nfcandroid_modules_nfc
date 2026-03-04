@@ -28,6 +28,7 @@ import static com.android.nfc.ScreenStateHelper.SCREEN_STATE_ON_LOCKED;
 import static com.android.nfc.ScreenStateHelper.SCREEN_STATE_ON_UNLOCKED;
 import static com.android.nfc.module.flags.Flags.nfcstack26q2Updates;
 import static com.android.nfc.module.nonexported.flags.Flags.coalesceRfFieldOnOffBroadcasts;
+import static com.android.nfc.module.nonexported.flags.Flags.observeModeAlwaysOn;
 
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
@@ -181,6 +182,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -581,6 +583,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     private INfcVendorNciCallback mNfcVendorNciCallBack = null;
     private INfcOemExtensionCallback mNfcOemExtensionCallback = null;
     private IReaderCallback mNfcGestureExchangeCallback = null;
+    private final AtomicBoolean mIsObserveModeAlwaysOnEnabled = new AtomicBoolean(false);
 
     private final DisplayListener mDisplayListener = new DisplayListener() {
         @Override
@@ -2429,6 +2432,90 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 || mNfcPermissions.isProfileOwner(uid, packageName);
     }
 
+    /** Helper method to check the observe mode always on mode state */
+    public boolean isObserveModeAlwaysOnEnabled() {
+        return mIsObserveModeAlwaysOnEnabled.get();
+    }
+
+    /**
+     * Exposed publicly to allow shell command to override this setting for local testing.
+     * Note: This does not check for the {@link #observeModeAlwaysOn()} trunk stable flag to allow
+     * for shell command testing.
+     */
+    public void setObserveModeAlwaysOn(boolean enable) {
+        mIsObserveModeAlwaysOnEnabled.set(enable);
+        if (mCardEmulationManager != null) {
+            mCardEmulationManager.setObserveModeAlwaysOn(enable);
+        }
+        mNfcEventLog.logEvent(
+                NfcEventProto.EventType.newBuilder()
+                        .setObserveModeAlwaysOnChange(
+                                NfcEventProto.NfcObserveModeAlwaysOnChange.newBuilder()
+                                        .setEnable(enable)
+                                        .build())
+                        .build());
+    }
+
+    /**
+     * Method to check observe mode for any internal observe mode checks.
+     */
+    public boolean isObserveModeEnabled() {
+        return mDeviceHost.isObserveModeEnabled();
+    }
+
+    /**
+     * Method to toggle observe mode for any internal observe mode transitions, don't use this
+     * for calls done on behalf of apps state toggle request.
+     */
+    public boolean setObserveMode(boolean enable) {
+        return setObserveModeInternal(
+                enable, Binder.getCallingUid(), mContext.getPackageName(),
+                StatsdUtils.TRIGGER_SOURCE_UNKNOWN);
+    }
+
+    /**
+     * Helper method to toggle observe mode and log the event.
+     */
+    private boolean setObserveModeInternal(boolean enable, int callingUid, String packageName,
+            int triggerSource) {
+        Log.d(TAG, "setObserveModeInternal: " + enable + ", uid: " + callingUid + ", pkg: "
+                + packageName + ", triggerSrc: " + triggerSource);
+        synchronized (NfcService.this) {
+            if (mCardEmulationManager.isHostCardEmulationActivated()) {
+                Log.w(TAG, "setObserveModeInternal: Cannot set observe mode during a transaction.");
+                return false;
+            }
+            if (mTagConnected) {
+                Log.w(TAG, "setObserveModeInternal: Cannot set observe mode "
+                        + "during tag operations.");
+                return false;
+            }
+            long start = SystemClock.elapsedRealtime();
+            Trace.beginSection("setObserveModeInternal: " + enable);
+            boolean result = mDeviceHost.setObserveMode(enable);
+            Trace.endSection();
+            int latency = Math.toIntExact(SystemClock.elapsedRealtime() - start);
+            if (mStatsdUtils != null) {
+                mStatsdUtils.logObserveModeStateChanged(enable, triggerSource, latency);
+            }
+            mNfcEventLog.logEvent(
+                    NfcEventProto.EventType.newBuilder()
+                            .setObserveModeChange(
+                                    NfcEventProto.NfcObserveModeChange.newBuilder()
+                                            .setAppInfo(
+                                                    NfcEventProto.NfcAppInfo.newBuilder()
+                                                            .setPackageName(packageName)
+                                                            .setUid(callingUid)
+                                                            .build())
+                                            .setEnable(enable)
+                                            .setLatencyMs(latency)
+                                            .setResult(result)
+                                            .build())
+                            .build());
+            return result;
+        }
+    }
+
     final class NfcAdapterService extends INfcAdapter.Stub {
         @Override
         public boolean enable(String pkg) throws RemoteException {
@@ -2545,7 +2632,12 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             }
             synchronized (NfcService.this) {
                 NfcPermissions.enforceUserPermissions(mContext);
-                return mDeviceHost.isObserveModeEnabled();
+                // Only return app set observe mode status (not the real observe mode state).
+                if (isObserveModeAlwaysOnEnabled()
+                        && !mCardEmulationManager.isAppRequestedObserveModeEnabled()) {
+                    return false;
+                }
+                return NfcService.this.isObserveModeEnabled();
             }
         }
 
@@ -2586,49 +2678,13 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                         return false;
                     }
                 }
-
-                if (mCardEmulationManager.isHostCardEmulationActivated()) {
-                    Log.w(TAG, "setObserveMode: Cannot set observe mode during a transaction.");
-                    return false;
+                Log.d(TAG, "setObserveMode: " + enable + ", uid: " + callingUid + ", pkg: "
+                        + packageName + ", triggerSrc: " + triggerSource);
+                if (isObserveModeAlwaysOnEnabled()) {
+                    return mCardEmulationManager.setAppRequestedObserveMode(enable);
                 }
-
-                if(mTagConnected) {
-                    Log.w(TAG, "setObserveMode: Cannot set observe mode during tag operations.");
-                    return false;
-                }
-
-                Log.d(
-                        TAG,
-                        "setObserveMode: package "
-                                + packageName
-                                + " with UID ("
-                                + callingUid
-                                + ") setting observe mode to "
-                                + enable);
-
-                long start = SystemClock.elapsedRealtime();
-                Trace.beginSection("setObserveMode: " + enable);
-                boolean result = mDeviceHost.setObserveMode(enable);
-                Trace.endSection();
-                int latency = Math.toIntExact(SystemClock.elapsedRealtime() - start);
-                if (mStatsdUtils != null) {
-                    mStatsdUtils.logObserveModeStateChanged(enable, triggerSource, latency);
-                }
-                mNfcEventLog.logEvent(
-                        NfcEventProto.EventType.newBuilder()
-                                .setObserveModeChange(
-                                        NfcEventProto.NfcObserveModeChange.newBuilder()
-                                                .setAppInfo(
-                                                        NfcEventProto.NfcAppInfo.newBuilder()
-                                                                .setPackageName(packageName)
-                                                                .setUid(callingUid)
-                                                                .build())
-                                                .setEnable(enable)
-                                                .setLatencyMs(latency)
-                                                .setResult(result)
-                                                .build())
-                                .build());
-                return result;
+                return NfcService.this.setObserveModeInternal(
+                        enable, callingUid, packageName, triggerSource);
             }
         }
 
@@ -3775,6 +3831,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 if (DBG) Log.i(TAG, "registerGestureExchangeCallback");
                 NfcPermissions.enforceGestureExchangePermissions(mContext);
                 mNfcGestureExchangeCallback = callback;
+                if (observeModeAlwaysOn() && isObserveModeSupported()) {
+                    setObserveModeAlwaysOn(true);
+                }
             }
         }
 
@@ -3785,6 +3844,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 if (DBG) Log.i(TAG, "unregisterGestureExchangeCallback");
                 NfcPermissions.enforceGestureExchangePermissions(mContext);
                 mNfcGestureExchangeCallback = null;
+                if (observeModeAlwaysOn() && isObserveModeSupported()) {
+                    setObserveModeAlwaysOn(false);
+                }
             }
         }
 
@@ -6805,6 +6867,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         pw.println("mIsSecureNfcEnabled=" + mIsSecureNfcEnabled);
         pw.println("mIsReaderOptionEnabled=" + mIsReaderOptionEnabled);
         pw.println("mIsAlwaysOnSupported=" + mIsAlwaysOnSupported);
+        pw.println("mIsObserveModeAlwaysOnEnabled=" + mIsObserveModeAlwaysOnEnabled.get());
         if (mIsWlcCapable) {
             pw.println("WlcEnabled=" + mIsWlcEnabled);
         }

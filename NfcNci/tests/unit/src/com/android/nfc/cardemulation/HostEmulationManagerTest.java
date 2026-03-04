@@ -35,6 +35,7 @@ import static org.mockito.Mockito.when;
 import android.app.ActivityManager;
 import android.app.KeyguardManager;
 import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
@@ -339,7 +340,7 @@ public class HostEmulationManagerTest {
                 .resolvePollingLoopFilterConflict(mServiceListArgumentCaptor.capture());
         assertTrue(mServiceListArgumentCaptor.getValue().contains(serviceWithFilter));
         assertTrue(mServiceListArgumentCaptor.getValue().contains(overlappingServiceWithFilter));
-        verify(mNfcAdapter).setObserveModeEnabled(eq(false));
+        verify(mNfcService).setObserveMode(eq(false));
         assertTrue(mHostEmulationManager.mEnableObserveModeAfterTransaction);
         assertTrue(frame1.getTriggeredAutoTransact());
         assertEquals(HostEmulationManager.STATE_POLLING_LOOP, mHostEmulationManager.mState.get());
@@ -378,6 +379,9 @@ public class HostEmulationManagerTest {
                 new PollingFrame(PollingFrame.POLLING_LOOP_TYPE_OFF, null, 0, 0, false);
         mHostEmulationManager.mPaymentService = mMessenger;
         mHostEmulationManager.mPaymentServiceName = WALLET_PAYMENT_SERVICE;
+
+        ContentResolver contentResolver = mock(ContentResolver.class);
+        when(mContext.getContentResolver()).thenReturn(contentResolver);
 
         mHostEmulationManager.onPollingLoopDetected(List.of(frame1, frame2, frame3, frame4));
 
@@ -1044,7 +1048,7 @@ public class HostEmulationManagerTest {
 
         mTestableLooper.moveTimeForward(5000);
         mTestableLooper.processAllMessages();
-        verify(mNfcAdapter).setObserveModeEnabled(eq(true));
+        verify(mNfcService).setObserveMode(eq(true));
         assertFalse(mHostEmulationManager.mEnableObserveModeAfterTransaction);
         verifyNoMoreInteractions(mMessenger);
         verifyNoMoreInteractions(mContext);
