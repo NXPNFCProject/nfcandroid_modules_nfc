@@ -5672,6 +5672,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                             if (respData[respData.length - 2] == (byte) 0x90
                                     && respData[respData.length - 1] == 0x00) {
                                 Log.d(TAG, "Gesture Exchange AID exists, skipping ndef read");
+                                if (mCookieUpToDate == -1) {
+                                    mCookieUpToDate = mCookieGenerator.nextLong() >>> 1;
+                                }
                                 Tag tagGestureExchange = new Tag(tag.getUid(), tag.getTechList(),
                                                         tag.getTechExtras(), tag.getHandle(),
                                                         mCookieUpToDate, mNfcTagService);
