@@ -2038,7 +2038,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
             sToast_debounce = false;
 
-            restoreSavedTech();
+            synchronized (NfcService.this) {
+                restoreSavedTech();
+            }
 
             // to synchronized between service and mw
             mDeviceHost.setNfcSecure(mIsSecureNfcEnabled);
