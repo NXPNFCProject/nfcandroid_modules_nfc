@@ -38,6 +38,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.PackageManager.ResolveInfoFlags;
@@ -52,6 +53,7 @@ import android.nfc.Tag;
 import android.nfc.tech.Ndef;
 import android.nfc.tech.NfcBarcode;
 import android.os.Binder;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -243,6 +245,23 @@ class NfcDispatcher {
                 uh);
     }
 
+    private static boolean isMatchAdditionalActivityFilters(ResolveInfo info) {
+        // check sdk version and contains permission
+        if (info.activityInfo.applicationInfo.targetSdkVersion <= Build.VERSION_CODES.BAKLAVA) {
+            return true;
+        } else {
+            // Additional check:
+            // 1. The application is not stopped
+            // 2. The activity must be protected by permission DISPATCH_NFC_MESSAGE
+            if ((info.activityInfo.applicationInfo.flags & ApplicationInfo.FLAG_STOPPED) != 0) {
+                return false;
+            }
+            return TextUtils.equals(info.activityInfo.permission,
+                    "android.permission.DISPATCH_NFC_MESSAGE");
+        }
+    }
+
+
     /**
      * Helper for re-used objects and methods during a single tag dispatch.
      */
@@ -431,6 +450,17 @@ class NfcDispatcher {
          * start activity on the intent it is passed.
          */
         boolean tryStartActivity() {
+            return tryStartActivityInternal(false);
+        }
+
+        /**
+         * Same as tryStartActivity(), but do more check before start
+         */
+        boolean tryStartActivitySafer() {
+            return tryStartActivityInternal(true);
+        }
+
+        boolean tryStartActivityInternal(boolean checkEligible) {
             // Ideally we'd have used startActivityForResult() to determine whether the
             // NfcRootActivity was able to launch the intent, but startActivityForResult()
             // is not available on Context. Instead, we query the PackageManager beforehand
@@ -439,8 +469,14 @@ class NfcDispatcher {
             // try current user if there is an Activity to handle this intent
             List<ResolveInfo> activities = queryNfcIntentActivitiesAsUser(
                     packageManager, intent, UserHandle.of(ActivityManager.getCurrentUser()));
-            activities = activities.stream().filter(activity -> activity.activityInfo.exported)
-                    .collect(Collectors.toList());
+            activities = activities.stream().filter(activity -> {
+                if (checkEligible) {
+                    return activity.activityInfo.exported
+                            && isMatchAdditionalActivityFilters(activity);
+                } else {
+                    return activity.activityInfo.exported;
+                }
+            }).collect(Collectors.toList());
             if (mIsTagAppPrefSupported) {
                 activities = checkPrefList(activities, ActivityManager.getCurrentUser());
             }
@@ -711,7 +747,7 @@ class NfcDispatcher {
         }
 
         dispatch.setTagIntent();
-        if (dispatch.tryStartActivity()) {
+        if (dispatch.tryStartActivitySafer()) {
             if (DBG) Log.i(TAG, "dispatchTag: matched TAG");
             return DISPATCH_SUCCESS;
         }
@@ -883,7 +919,7 @@ class NfcDispatcher {
         boolean isAar) {
         for (String pkg : packages) {
             dispatch.intent.setPackage(pkg);
-            if (dispatch.tryStartActivity()) {
+            if (dispatch.tryStartActivitySafer()) {
                 if (DBG)  {
                     if (isAar) {
                         Log.i(TAG, "tryActivityOrLaunchAppStore: matched AAR to NDEF");
@@ -1004,7 +1040,7 @@ class NfcDispatcher {
                 ResolveInfo ri = pm.resolveActivity(intent, 0);
 
                 if (ri != null && ri.activityInfo != null && ri.activityInfo.exported
-                        && dispatch.tryStartActivity()) {
+                        && dispatch.tryStartActivitySafer()) {
                     if (DBG) Log.i(TAG, "tryNdef: matched NDEF");
                     return true;
                 }
@@ -1086,7 +1122,8 @@ class NfcDispatcher {
                     // Check if exported flag is not explicitly set to false to prevent
                     // SecurityExceptions.
                     if (!matches.contains(info.resolveInfo)
-                            && info.resolveInfo.activityInfo.exported) {
+                            && info.resolveInfo.activityInfo.exported
+                            && isMatchAdditionalActivityFilters(info.resolveInfo)) {
                         if (!mIsTagAppPrefSupported) {
                             matches.add(info.resolveInfo);
                         } else {
