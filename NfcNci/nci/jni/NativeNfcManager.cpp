@@ -174,7 +174,6 @@ static bool sIsShuttingDown = false;
 #define DEFAULT_DISCOVERY_DURATION 500
 #define READER_MODE_DISCOVERY_DURATION 200
 #define FLAG_SET_DEFAULT_TECH 0x40000000
-#define NFC_INTERFACE_SE_READER 0x83
 
 static void nfaConnectionCallback(uint8_t event, tNFA_CONN_EVT_DATA* eventData);
 static void nfaDeviceManagementCallback(uint8_t event,
@@ -462,12 +461,21 @@ static void nfaConnectionCallback(uint8_t connEvent,
 
     case NFA_ACTIVATED_EVT:  // NFC link/protocol activated
     {
-      if (eventData->activated.activate_ntf.intf_param.type ==
-          NFC_INTERFACE_SE_READER) {
-        LOG(INFO) << StringPrintf(
-            "%s: NFA_ACTIVATED_EVT: RF_Interface is %02X, ignoring", __func__,
-            eventData->activated.activate_ntf.intf_param.type);
-        break;
+      // Check whether this is a proprietary rf interface to be ignored.
+      // If so shouldn't be processed by libnfc as prop module handles
+      // the processing. Otherwise continue normal processing.
+      if (NfcConfig::hasKey(NAME_PROP_RF_IFACE_LIST)) {
+        std::vector<uint8_t> ignorePropIntfs =
+            NfcConfig::getBytes(NAME_PROP_RF_IFACE_LIST);
+        if (std::find(ignorePropIntfs.begin(), ignorePropIntfs.end(),
+                      eventData->activated.activate_ntf.intf_param.type) !=
+            ignorePropIntfs.end()) {
+          LOG(INFO) << StringPrintf(
+              "%s: NFA_ACTIVATED_EVT: Prop Rf iface %02X found in ignore list, "
+              "returning",
+              __func__, eventData->activated.activate_ntf.intf_param.type);
+          break;
+        }
       }
       bool notListen = !isListenMode(eventData->activated);
       LOG(DEBUG) << StringPrintf(
