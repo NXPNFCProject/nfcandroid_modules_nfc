@@ -328,9 +328,18 @@ bool RoutingManager::addAidRouting(const uint8_t* aid, uint8_t aidLen,
                                    int route, int aidInfo, int power) {
   static const char fn[] = "RoutingManager::addAidRouting";
   uint8_t powerState = 0x01;
+  int defaultAidRoute = mDefaultEe;
 
   if (route != NFC_DH_ID &&
       !isTypeATypeBTechSupportedInEe(route | NFA_HANDLE_GROUP_EE)) {
+    // If default AID route is DH no need to add aid explicitly
+    // as all AIDs will be routed to DH
+    if (defaultAidRoute == NFC_DH_ID) {
+      LOG(DEBUG) << StringPrintf(
+          "%s:  defaultAidRoute=%02x, Skip fallback to DH", fn,
+          defaultAidRoute);
+      return true;
+    }
     route = NFC_DH_ID;
     power = 0x11;
   }
