@@ -2854,7 +2854,7 @@ static jobject nfcManager_nativeSendRawVendorCmd(JNIEnv* env, jobject o,
 
   resGid = gid;
   resOid = oid;
-  if (payloaBytes.size() > 252) {
+  if (payloaBytes.size() > 255) {
     LOG(ERROR) << StringPrintf("%s: payload size too large: %zu", __func__,
                                payloaBytes.size());
     return env->NewObject(cls.get(), responseConstructor, mStatus, resGid,

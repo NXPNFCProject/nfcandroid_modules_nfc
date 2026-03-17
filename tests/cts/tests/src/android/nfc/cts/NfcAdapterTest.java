@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.anyString;
@@ -76,6 +77,7 @@ import androidx.test.core.app.ApplicationProvider;
 import androidx.test.filters.RequiresDevice;
 
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.compatibility.common.util.PropertyUtil;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -88,6 +90,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -113,6 +116,10 @@ public class NfcAdapterTest {
 
     private int getVendorApiLevel() {
         return SystemProperties.getInt("ro.board.api_level", 0);
+    }
+
+    private static boolean isEmulator() {
+        return PropertyUtil.propertyEquals("ro.hardware", "cutf_cvm");
     }
 
     @Before
@@ -684,6 +691,67 @@ public class NfcAdapterTest {
             assertThat(rspCountDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
             assertThat(cb.gid).isEqualTo(gid);
             assertThat(cb.oid).isEqualTo(oid);
+            assertThat(cb.payload).isNotEmpty();
+        } finally {
+            nfcAdapter.unregisterNfcVendorNciCallback(cb);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_VENDOR_CMD)
+    public void testSendVendorCmd_payloadSize256_shouldNoResponse() throws InterruptedException {
+        assumeVsrApiGreaterThanUdc();
+        CountDownLatch rspCountDownLatch = new CountDownLatch(1);
+        CountDownLatch ntfCountDownLatch = new CountDownLatch(1);
+        NfcAdapter nfcAdapter = getDefaultAdapter();
+        assertNotNull(nfcAdapter);
+        NfcVendorNciCallback cb =
+                new NfcVendorNciCallback(rspCountDownLatch, ntfCountDownLatch);
+        try {
+            nfcAdapter.registerNfcVendorNciCallback(
+                    Executors.newSingleThreadExecutor(), cb);
+
+            // Android GET_CAPS command
+            int gid = 0x2F;
+            int oid = 0x0C;
+            byte[] payload = new byte[256];
+            Arrays.fill(payload, (byte) 0x00);
+            nfcAdapter.sendVendorNciMessage(NfcAdapter.MESSAGE_TYPE_COMMAND, gid, oid, payload);
+
+            // Verify no response.
+            assertThat(rspCountDownLatch.await(1, TimeUnit.SECONDS)).isFalse();
+        } finally {
+            nfcAdapter.unregisterNfcVendorNciCallback(cb);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_VENDOR_CMD)
+    public void testSendVendorCmd_payloadSize255() throws InterruptedException {
+        // Skip test since is unable to send more than 1 payload on Cuttlefish Nfc.
+        // If test on Cuttlefish, write payload to /dev/hvc12 will no response and
+        // NFC never to start again.
+        assumeFalse("Test is skipped on virtual device ", isEmulator());
+        assumeVsrApiGreaterThanUdc();
+        CountDownLatch rspCountDownLatch = new CountDownLatch(1);
+        CountDownLatch ntfCountDownLatch = new CountDownLatch(1);
+        NfcAdapter nfcAdapter = getDefaultAdapter();
+        assertNotNull(nfcAdapter);
+        NfcVendorNciCallback cb =
+                new NfcVendorNciCallback(rspCountDownLatch, ntfCountDownLatch);
+        try {
+            nfcAdapter.registerNfcVendorNciCallback(
+                    Executors.newSingleThreadExecutor(), cb);
+
+            // Android GET_CAPS command
+            int gid = 0x2F;
+            int oid = 0x0C;
+            byte[] payload = new byte[255];
+            Arrays.fill(payload, (byte) 0);
+            nfcAdapter.sendVendorNciMessage(NfcAdapter.MESSAGE_TYPE_COMMAND, gid, oid, payload);
+
+            // Wait for response.
+            assertThat(rspCountDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
             assertThat(cb.payload).isNotEmpty();
         } finally {
             nfcAdapter.unregisterNfcVendorNciCallback(cb);

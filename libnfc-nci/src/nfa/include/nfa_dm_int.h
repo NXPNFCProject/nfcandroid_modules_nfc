@@ -187,7 +187,7 @@ typedef struct {
   NFC_HDR hdr;
   tNFA_VSC_CBACK* p_cback;
   uint8_t oid;
-  uint8_t cmd_params_len;
+  uint16_t cmd_params_len;
   uint16_t pad; /* add padding to ensure the size is big enough for
                    offset=NCI_VSC_MSG_HDR_SIZE */
   uint8_t* p_cmd_params;
