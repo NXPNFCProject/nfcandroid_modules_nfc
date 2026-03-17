@@ -48,3 +48,22 @@ python_test_host {
     },
     defaults: ["CtsNfcMultiDevicePythonDefaults"],
 }
+
+python_test_host {
+    name: "CtsNfcHceMultiDevicePhone2PhoneTestCases",
+    main: "cts_nfc_hce_multi_device_phone_to_phone_test.py",
+    srcs: [
+        "cts_nfc_hce_multi_device_phone_to_phone_test.py",
+    ],
+    test_config: "AndroidTestPhone2Phone.xml",
+    device_common_data: [
+        ":NfcEmulatorTestApp",
+        ":EmulatorApduApp",
+        ":NfcReaderTestApp",
+    ],
+    test_options: {
+        unit_test: false,
+        runner: "mobly",
+    },
+    defaults: ["CtsNfcMultiDevicePythonDefaults"],
+}

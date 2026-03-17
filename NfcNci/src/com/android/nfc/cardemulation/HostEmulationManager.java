@@ -654,14 +654,12 @@ public class HostEmulationManager {
         if (frames == null) return false;
         byte[] prefix = getGesturePollFrameBytes();
         if (prefix == null) return false;
-        int expectedLength = 14;
 
         return frames.stream().anyMatch(frame -> {
             byte[] data = frame.getData();
-            if (data == null || data.length != expectedLength) {
+            if (data == null || data.length == 0) {
                 return false;
             }
-
             for (int i = 0; i < prefix.length; i++) {
                 if (data[i] != prefix[i]) {
                     return false;
