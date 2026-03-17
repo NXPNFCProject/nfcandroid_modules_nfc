@@ -576,6 +576,82 @@ class PN532(Reader):
         rsp = self.get_firmware_version()
         return rsp[0] == 0x32
 
+    def listen_and_serve_ndef(self, tag_emulator, timeout=2.0, max_apdu_exchanges=25):
+        """Acts as a NFC Type 4 Tag and services NDEF requests from a peer.
+
+        This high-level method handles the Target initialization and the subsequent
+        APDU exchange loop. It uses the provided tag_emulator to process incoming
+        commands and generate responses.
+
+        Args:
+            tag_emulator: An instance of a tag emulator (e.g., Type4Tag) that
+                implements process_apdu(data).
+            timeout: Maximum time (in seconds) to wait for an initial RF field
+                from a reader.
+            max_apdu_exchanges: Security limit for the number of APDU exchanges
+                to prevent infinite loops in case of protocol errors.
+
+        Returns:
+            bool: True if at least one NDEF payload read operation was successfully
+                completed by the peer; False otherwise.
+        """
+        # SAK 0x20 indicates ISO/IEC 14443-4 compliance (Type 4 Tag).
+        # These parameters define the tag's appearance during anti-collision.
+        tg_init_params = [
+            0x05, 0x04, 0x00, 0x12, 0x34, 0x56, 0x20,
+            0x01, 0xFE, 0x05, 0x01, 0x86, 0x04, 0x02, 0x02, 0x03, 0x00, 0x4B, 0x02, 0x4F, 0x49,
+            0x8A, 0x00, 0xFF, 0xFF, 0x01, 0x01, 0x66, 0x6D, 0x01, 0x01, 0x10, 0x02
+        ] + [0x00] * 5
+
+        ndef_read_completed = False
+
+        try:
+            # Step 1: Initialize PN532 as a Target.
+            # This blocks until a reader (phone) provides an RF field.
+            rsp = self._execute_command(
+                Command.TG_INIT_AS_TARGET, tg_init_params, timeout=timeout
+            )
+        except Exception as e:
+            self.log.debug("TgInitAsTarget failed or timed out: %s", e)
+            return False
+
+        if not rsp or len(rsp) < 2:
+            return False
+
+        # The first data packet from the reader is included in the TgInitAsTarget response.
+        data = bytearray(rsp[2:])
+
+        # Step 2: APDU Exchange Loop.
+        for _ in range(max_apdu_exchanges):
+            if not data:
+                break
+            try:
+                # Use the emulator 'brain' to decide the response.
+                response = tag_emulator.process_apdu(data)
+                self.tg_set_data(response)
+
+                # Heuristic to detect successful NDEF read:
+                # Peer sends READ_BINARY (0xB0) on the NDEF file at a non-zero offset.
+                if (tag_emulator.selected_file == tag_emulator.FID_NDEF and
+                    len(data) >= 4 and data[1] == 0xB0):
+                    offset = (data[2] << 8) | data[3]
+                    if offset > 0:
+                        ndef_read_completed = True
+
+                # Wait for the next APDU from the peer.
+                # A 0.5s timeout is sufficient for standard Android presence checks.
+                data = self.tg_get_data(timeout=0.5)
+
+            except RuntimeError:
+                # Expected: Peer stopped sending APDUs (Normal end of transaction).
+                self.log.debug("Transaction finished or peer disconnected.")
+                break
+            except Exception as e:
+                self.log.error("Unexpected error during NDEF emulation: %s", e)
+                break
+
+        return ndef_read_completed
+
     # PN532 defined commands
 
     def initialize_target_mode(self):
