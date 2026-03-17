@@ -429,6 +429,7 @@ typedef struct {
 
   TIMER_LIST_ENT tle; /* timer for waiting deactivation NTF               */
   TIMER_LIST_ENT kovio_tle; /* timer for Kovio bar code tag presence check */
+  TIMER_LIST_ENT mifare_pc_tle; /* timer for MIFARE IDLE mode presence check*/
 
   bool deact_pending; /* TRUE if deactivate while checking presence       */
   bool deact_notify_pending; /* TRUE if notify DEACTIVATED EVT while Stop rf

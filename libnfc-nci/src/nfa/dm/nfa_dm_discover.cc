@@ -64,6 +64,7 @@ static void nfa_dm_disc_data_cback(uint8_t conn_id, tNFC_CONN_EVT event,
 static void nfa_dm_disc_kovio_timeout_cback(TIMER_LIST_ENT* p_tle);
 static void nfa_dm_disc_report_kovio_presence_check(tNFC_STATUS status);
 
+void nfa_dm_disc_mifare_idle_timeout_cback(TIMER_LIST_ENT* p_tle);
 static std::string nfa_dm_disc_state_2_str(uint8_t state);
 static std::string nfa_dm_disc_event_2_str(uint8_t event);
 
@@ -646,6 +647,9 @@ static tNFA_DM_DISC_TECH_PROTO_MASK nfa_dm_disc_get_disc_mask(
       case NFC_PROTOCOL_NFC_DEP:
         disc_mask = NFA_DM_DISC_MASK_PA_NFC_DEP;
         break;
+      default:
+        if (protocol == NFC_PROTOCOL_MIFARE)
+          disc_mask = NFA_DM_DISC_MASK_PA_MIFARE;
     }
   } else if (NFC_DISCOVERY_TYPE_POLL_B == tech_n_mode) {
     if (protocol == NFC_PROTOCOL_ISO_DEP)
@@ -1403,6 +1407,11 @@ static tNFA_STATUS nfa_dm_disc_notify_activation(tNFC_DISCOVER* p_data) {
       }
     }
 
+    if ((nfa_rw_cb.mifare_pres_check_status == NFA_RW_MIFARE_PRES_CHECK_IDLE) ||
+        (nfa_dm_cb.disc_cb.disc_flags & NFA_DM_DISC_FLAGS_STOPPING)) {
+      // Do not report activation if discovery is stopping
+      return (NFA_STATUS_OK);
+    }
     if (nfa_dm_cb.disc_cb.entry[xx].p_disc_cback)
       (*(nfa_dm_cb.disc_cb.entry[xx].p_disc_cback))(
           NFA_DM_RF_DISC_ACTIVATED_EVT, p_data);
@@ -1589,6 +1598,7 @@ bool nfa_dm_is_raw_frame_session(void) {
 **
 *******************************************************************************/
 static void nfa_dm_disc_end_sleep_wakeup(tNFC_STATUS status) {
+  bool isMifarePresCheckIdleStart = false;
   LOG(DEBUG) << __func__;
   if ((nfa_dm_cb.disc_cb.activated_protocol == NFC_PROTOCOL_KOVIO) &&
       (nfa_dm_cb.disc_cb.kovio_tle.in_use)) {
@@ -1599,8 +1609,36 @@ static void nfa_dm_disc_end_sleep_wakeup(tNFC_STATUS status) {
   if (nfa_dm_cb.disc_cb.disc_flags & NFA_DM_DISC_FLAGS_CHECKING) {
     nfa_dm_cb.disc_cb.disc_flags &= ~NFA_DM_DISC_FLAGS_CHECKING;
 
-    /* notify RW module that sleep wakeup is finished */
-    nfa_rw_handle_sleep_wakeup_rsp(status);
+    if (nfa_dm_cb.disc_cb.activated_protocol == NFC_PROTOCOL_MIFARE) {
+      if (nfa_rw_cb.mifare_pres_check_status ==
+          NFA_RW_MIFARE_PRES_CHECK_START) {
+        if (status == NFA_STATUS_FAILED) {
+          LOG(DEBUG) << StringPrintf(
+              "%s; Mifare 1rst presence check failed, try Idle method",
+              __func__);
+          nfa_rw_cb.mifare_pres_check_status = NFA_RW_MIFARE_PRES_CHECK_IDLE;
+          isMifarePresCheckIdleStart = true;
+        } else {
+          nfa_rw_cb.mifare_pres_check_status = NFA_RW_MIFARE_PRES_CHECK_NORMAL;
+        }
+      } else if (nfa_rw_cb.mifare_pres_check_status ==
+                 NFA_RW_MIFARE_PRES_CHECK_IDLE) {
+        // Deactivate does not need to be sent from here
+        nfa_dm_cb.disc_cb.deact_pending = false;
+      }
+    }
+
+    if (!isMifarePresCheckIdleStart) {
+      /* notify RW module that sleep wakeup is finished */
+      nfa_rw_handle_sleep_wakeup_rsp(status);
+    } else {
+      nfa_dm_cb.disc_cb.deact_pending = true;
+      nfa_dm_cb.disc_cb.pending_deact_type = NFA_DEACTIVATE_TYPE_IDLE;
+      nfa_dm_cb.disc_cb.mifare_pc_tle.p_cback =
+          (TIMER_CBACK*)nfa_dm_disc_mifare_idle_timeout_cback;
+      nfa_sys_start_timer(&nfa_dm_cb.disc_cb.mifare_pc_tle, 0,
+                          NFA_DM_DISC_TIMEOUT_MIFARE_IDLE_PRESENCE_CHECK);
+    }
 
     if (nfa_dm_cb.disc_cb.deact_pending) {
       nfa_dm_cb.disc_cb.deact_pending = false;
@@ -1647,6 +1685,29 @@ static void nfa_dm_disc_kovio_timeout_cback(__attribute__((unused))
     nfc_discover.deactivate = deact;
     nfa_dm_disc_notify_deactivation(NFA_DM_RF_DEACTIVATE_NTF, &nfc_discover);
   }
+}
+
+/*******************************************************************************
+**
+** Function         nfa_dm_disc_mifare_idle_timeout_cback
+**
+** Description      Timeout for MIFARE tag presence check
+**
+** Returns          void
+**
+*******************************************************************************/
+void nfa_dm_disc_mifare_idle_timeout_cback(__attribute__((unused))
+                                           TIMER_LIST_ENT* p_tle) {
+  tNFA_CONN_EVT_DATA evt_data;
+  LOG(DEBUG) << __func__;
+
+  nfa_rw_cb.mifare_pres_check_status = NFA_RW_MIFARE_PRES_CHECK_NONE;
+
+  evt_data.deactivated.type = NFA_DEACTIVATE_TYPE_DISCOVERY;
+  /* notify deactivation to upper layer */
+  nfa_dm_conn_cback_event_notify(NFA_DEACTIVATED_EVT, &evt_data);
+
+  nfa_dm_disc_end_sleep_wakeup(NFA_STATUS_FAILED);
 }
 
 /*******************************************************************************
@@ -1959,6 +2020,10 @@ static void nfa_dm_disc_sm_discovery(tNFA_DM_RF_DISC_SM_EVENT event,
       /* if deactivate CMD was not sent to NFCC */
       if (!(nfa_dm_cb.disc_cb.disc_flags & NFA_DM_DISC_FLAGS_W4_RSP)) {
         nfa_dm_cb.disc_cb.disc_flags |= NFA_DM_DISC_FLAGS_W4_RSP;
+        if (nfa_rw_cb.mifare_pres_check_status ==
+            NFA_RW_MIFARE_PRES_CHECK_IDLE) {
+          nfa_dm_cb.disc_cb.disc_flags |= NFA_DM_DISC_FLAGS_CHECKING;
+        }
         NFC_Deactivate(p_data->deactivate_type);
       }
       break;
@@ -1977,6 +2042,13 @@ static void nfa_dm_disc_sm_discovery(tNFA_DM_RF_DISC_SM_EVENT event,
       }
       break;
     case NFA_DM_RF_DISCOVER_NTF:
+      if ((nfa_dm_cb.disc_cb.disc_flags & NFA_DM_DISC_FLAGS_CHECKING) &&
+          (nfa_rw_cb.mifare_pres_check_status !=
+           NFA_RW_MIFARE_PRES_CHECK_IDLE)) {
+        // If we currently were doing presence check for Kovio or MIFARE
+        // Clean the CHECKING flag, except if NFA_RW_MIFARE_PRES_CHECK_IDLE
+        nfa_dm_cb.disc_cb.disc_flags &= ~NFA_DM_DISC_FLAGS_CHECKING;
+      }
       nfa_dm_disc_new_state(NFA_DM_RFST_W4_ALL_DISCOVERIES);
       nfa_dm_notify_discovery(p_data);
       break;
@@ -1987,6 +2059,20 @@ static void nfa_dm_disc_sm_discovery(tNFA_DM_RF_DISC_SM_EVENT event,
         /* it's race condition. DH has to wait for deactivation NTF */
         nfa_dm_cb.disc_cb.disc_flags |= NFA_DM_DISC_FLAGS_W4_NTF;
       } else {
+        if (nfa_rw_cb.mifare_pres_check_status ==
+            NFA_RW_MIFARE_PRES_CHECK_IDLE) {
+          // Check if same protocol (Mifare) activated
+          if (p_data->nfc_discover.activate.protocol != NFC_PROTOCOL_MIFARE) {
+            nfa_rw_cb.mifare_pres_check_status = NFA_RW_MIFARE_PRES_CHECK_NONE;
+            nfa_dm_disc_end_sleep_wakeup(NFA_STATUS_FAILED);
+          } else {
+            nfa_dm_disc_end_sleep_wakeup(NFA_STATUS_OK);
+            nfa_dm_disc_notify_activation(&(p_data->nfc_discover));
+          }
+          nfa_sys_stop_timer(&nfa_dm_cb.disc_cb.mifare_pc_tle);
+          nfa_dm_disc_new_state(NFA_DM_RFST_POLL_ACTIVE);
+          break;
+        }
         if (p_data->nfc_discover.activate.intf_param.type ==
             NFC_INTERFACE_EE_DIRECT_RF) {
           nfa_dm_disc_new_state(NFA_DM_RFST_LISTEN_ACTIVE);
@@ -2161,6 +2247,18 @@ static void nfa_dm_disc_sm_w4_host_select(tNFA_DM_RF_DISC_SM_EVENT event,
             __func__);
         nfa_dm_cb.disc_cb.disc_flags |= NFA_DM_DISC_FLAGS_W4_NTF;
       }
+      if (nfa_rw_cb.mifare_pres_check_status == NFA_RW_MIFARE_PRES_CHECK_IDLE) {
+        // Check if same protocol (Mifare) activated
+        if (p_data->nfc_discover.activate.protocol != NFC_PROTOCOL_MIFARE) {
+          nfa_rw_cb.mifare_pres_check_status = NFA_RW_MIFARE_PRES_CHECK_NONE;
+          nfa_dm_disc_end_sleep_wakeup(NFA_STATUS_FAILED);
+        } else {
+          nfa_dm_disc_end_sleep_wakeup(NFA_STATUS_OK);
+          nfa_dm_disc_notify_activation(&(p_data->nfc_discover));
+        }
+        nfa_sys_stop_timer(&nfa_dm_cb.disc_cb.mifare_pc_tle);
+        break;
+      }
 
       /* always call nfa_dm_disc_notify_activation to update protocol/interface
        * information in NFA control blocks */
@@ -2179,6 +2277,21 @@ static void nfa_dm_disc_sm_w4_host_select(tNFA_DM_RF_DISC_SM_EVENT event,
       }
       break;
     case NFA_DM_RF_DEACTIVATE_CMD:
+      // WA for cases when INTF_ERROR_NTF is not received from FW if tag is
+      // currently under reslecting
+      if ((p_data->deactivate_type == NFA_DEACTIVATE_TYPE_IDLE) &&
+          (old_sleep_wakeup_flag) &&
+          (nfa_rw_cb.mifare_pres_check_status !=
+           NFA_RW_MIFARE_PRES_CHECK_IDLE)) {
+        nfa_dm_cb.disc_cb.disc_flags &= ~NFA_DM_DISC_FLAGS_CHECKING;
+        old_sleep_wakeup_flag = false;
+      }
+
+      if (nfa_rw_cb.mifare_pres_check_status == NFA_RW_MIFARE_PRES_CHECK_IDLE) {
+        sleep_wakeup_event = false;
+        nfa_dm_cb.disc_cb.disc_flags |= NFA_DM_DISC_FLAGS_CHECKING;
+        old_sleep_wakeup_flag = false;
+      }
       if (old_sleep_wakeup_flag) {
         nfa_dm_cb.disc_cb.deact_pending = true;
         nfa_dm_cb.disc_cb.pending_deact_type = p_data->deactivate_type;
@@ -2245,7 +2358,17 @@ static void nfa_dm_disc_sm_poll_active(tNFA_DM_RF_DISC_SM_EVENT event,
       if (nfa_dm_cb.disc_cb.activated_protocol == NCI_PROTOCOL_MIFARE) {
         nfa_dm_cb.disc_cb.deact_pending = true;
         nfa_dm_cb.disc_cb.pending_deact_type = p_data->deactivate_type;
-        nfa_dm_send_deactivate_cmd(p_data->deactivate_type);
+        if (nfa_rw_cb.mifare_pres_check_status ==
+            NFA_RW_MIFARE_PRES_CHECK_IDLE) {
+          sleep_wakeup_event = false;
+          nfa_dm_cb.disc_cb.deact_pending = false;
+          nfa_dm_cb.disc_cb.disc_flags |= NFA_DM_DISC_FLAGS_CHECKING;
+        }
+        status = nfa_dm_send_deactivate_cmd(p_data->deactivate_type);
+        if (status != NFA_STATUS_OK) {
+          LOG(ERROR) << StringPrintf(
+              "%s; Error calling nfa_dm_send_deactivate_cmd()", __func__);
+        }
         break;
       }
 
@@ -2364,6 +2487,10 @@ static void nfa_dm_disc_sm_poll_active(tNFA_DM_RF_DISC_SM_EVENT event,
                  NFC_DEACTIVATE_TYPE_IDLE) {
         nfa_dm_disc_new_state(NFA_DM_RFST_IDLE);
         nfa_dm_start_rf_discover();
+        if (nfa_rw_cb.mifare_pres_check_status ==
+            NFA_RW_MIFARE_PRES_CHECK_IDLE) {
+          old_sleep_wakeup_flag = false;
+        }
       } else if (p_data->nfc_discover.deactivate.type ==
                  NFC_DEACTIVATE_TYPE_DISCOVERY) {
         nfa_dm_disc_new_state(NFA_DM_RFST_DISCOVERY);
@@ -3221,6 +3348,13 @@ bool nfa_dm_rf_removal_detection(uint8_t waiting_time) {
 tNFA_STATUS nfa_dm_rf_deactivate(tNFA_DEACTIVATE_TYPE deactivate_type) {
   LOG(VERBOSE) << StringPrintf("%s: deactivate_type=0x%X", __func__,
                                deactivate_type);
+  // Presence check flag is set when NFA_RwPresenceCheck() is called
+  // If not set, this means we are not in presence check and
+  // var mifare_pres_check_status can be cleaned
+  if (!(nfa_dm_cb.disc_cb.disc_flags & NFA_DM_DISC_FLAGS_CHECKING) &&
+      (nfa_rw_cb.mifare_pres_check_status == NFA_RW_MIFARE_PRES_CHECK_IDLE)) {
+    nfa_rw_cb.mifare_pres_check_status = NFA_RW_MIFARE_PRES_CHECK_NONE;
+  }
 
   if (deactivate_type == NFA_DEACTIVATE_TYPE_SLEEP) {
     if (nfa_dm_cb.disc_cb.activated_protocol == NFA_PROTOCOL_NFC_DEP)
