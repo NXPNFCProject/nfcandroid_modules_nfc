@@ -541,6 +541,14 @@ public final class CardEmulation {
      * delivered to {@link HostApduService#processPollingFrames(List)}.  If auto-transact
      * is set to true and this service is currently preferred or there are no other services
      * registered for this filter then observe mode will also be disabled.
+     * <p>
+     * When auto-transact is set to true, if the filter matches the following requirements, it
+     * will be considered to be included in the firmware filtering list (if the device supports
+     * exit frames). Filters not matching these requirements will be handled via the NFC stack
+     * software auto-transact functionality.
+     * <ul>
+     *   <li>The filter must not exceed 16 bytes (32 hexadecimal characters).</li>
+     * </ul>
      * @param service The HostApduService to register the filter for
      * @param pollingLoopFilter The filter to register
      * @param autoTransact true to have the NFC stack automatically disable observe mode and allow
@@ -600,6 +608,19 @@ public final class CardEmulation {
      * {@link HostApduService#processPollingFrames(List)}. If auto-transact is set to true and this
      * service is currently preferred or there are no other services registered for this filter
      * then observe mode will also be disabled.
+     * <p>
+     * When auto-transact is set to true, if the pattern matches the following requirements, it
+     * will be considered to be included in the firmware filtering list (if the device supports
+     * exit frames). Patterns not matching these requirements will be handled via the NFC stack
+     * software auto-transact functionality.
+     * <ul>
+     *   <li>The pattern must not include the `?` operator.</li>
+     *   <li>The `*` operator is only supported if it is the only character or if it is preceded
+     *       by a `.` and is at the end of the pattern (e.g. `.*`).</li>
+     *   <li>The pattern must have an even number of characters unless it ends with the `.*`
+     *       suffix.</li>
+     *   <li>The pattern must not exceed 32 characters (excluding the `.*` suffix).</li>
+     * </ul>
      *
      * @param service The HostApduService to register the filter for
      * @param pollingLoopPatternFilter The pattern filter to register, must to be compatible with
