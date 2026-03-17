@@ -423,6 +423,33 @@ class CtsNfcHceMultiDevicePhone2PhoneTestCases(base_test.BaseTestClass):
 
         test_pass_handler.waitAndGet('TestPass', _NFC_TIMEOUT_SEC)
 
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
+    def test_gesture_exchange_and_ndef_read(self):
+        """Tests that registering gesture exchange callback does not block NDEF tag read.
+
+        Test Steps:
+        1. Register the gesture exchange callback on the reader device.
+        2. Start NDEF emulator activity on the emulator device.
+        3. The reader device should be able to detect the NDEF tag and receive the URL.
+
+        Verifies:
+        1. Verifies that the reader device correctly receives the URL from the emulated tag
+           even when the gesture exchange callback is registered.
+        """
+        self.reader.nfc_reader.startGestureExchangeReaderActivity()
+        time.sleep(2)  # Give it some time to register the callback
+
+        test_pass_handler = self.reader.nfc_reader.asyncWaitForTestPass('TestPass')
+        self.reader.nfc_reader.startNdefActionViewReaderActivity()
+        self._set_up_emulator(
+            start_emulator_fun=self.emulator.nfc_emulator.startNdefEmulatorActivity
+        )
+        test_pass_handler.waitAndGet('TestPass', _NFC_TIMEOUT_SEC)
+
+        received_url = self.reader.nfc_reader.getReceivedUrl()
+        asserts.assert_equal(received_url, "https://android.com",
+                               "Received URL does not match the expected URL.")
+
 
 
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
