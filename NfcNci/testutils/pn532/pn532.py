@@ -624,6 +624,35 @@ class PN532(Reader):
             ],
         )
 
+    def tg_get_data(self, timeout=1):
+        """(7.3.15) TgGetData"""
+        rsp = self._execute_command(
+            Command.TG_GET_DATA,
+            timeout=timeout,
+            min_response=1
+        )
+        if rsp is None:
+            return None
+        if rsp[0] != Status.OK:
+            self.log.warning(f"TgGetData failed: {rsp}")
+            return None
+        return rsp[1:]
+
+    def tg_set_data(self, data, timeout=1):
+        """(7.3.16) TgSetData"""
+        rsp = self._execute_command(
+            Command.TG_SET_DATA,
+            data,
+            timeout=timeout,
+            min_response=1
+        )
+        if rsp is None:
+            return False
+        if rsp[0] != Status.OK:
+            self.log.warning(f"TgSetData failed: {rsp}")
+            return False
+        return True
+
     def sam_configuration(self, mode=0x01, timeout_value=0x00):
         """(7.2.10) SAMConfiguration"""
         return self._execute_command(
