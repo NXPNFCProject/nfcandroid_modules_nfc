@@ -65,5 +65,13 @@ python_test_host {
         unit_test: false,
         runner: "mobly",
     },
-    defaults: ["CtsNfcMultiDevicePythonDefaults"],
+    // TODO: defaults: ["CtsNfcMultiDevicePythonDefaults"],
+    libs: [
+        "mobly",
+        "platform-test-py-annotations",
+    ],
+    test_suites: [
+    // TODO:    "cts-v-host",
+        "general-tests",
+    ],
 }
