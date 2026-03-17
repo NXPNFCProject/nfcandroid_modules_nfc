@@ -3266,4 +3266,43 @@ public class CardEmulationManagerTest {
         verify(mStatsdUtils).logAutoTransactReported(StatsdUtils.PROCESSOR_NFCC,
             exitFrame.getData());
     }
+
+    @Test
+    public void testRegisterPollingLoopFilter_ignoreFrameRejectedForNonWallet()
+            throws RemoteException {
+        String ignoreFrame = "6A01CF0000";
+        when(mRegisteredAidCache.isDefaultOrAssociatedWalletPackage(
+                eq(WALLET_HOLDER_PACKAGE_NAME), eq(USER_ID))).thenReturn(false);
+        when(mRegisteredServicesCache.hasService(eq(USER_ID), any())).thenReturn(true);
+
+        boolean result = mCardEmulationManager
+                .getNfcCardEmulationInterface()
+                .registerPollingLoopFilterForService(
+                        USER_ID, WALLET_PAYMENT_SERVICE, ignoreFrame, true);
+
+        assertFalse(result);
+        verify(mRegisteredServicesCache, never()).registerPollingLoopFilterForService(
+                anyInt(), anyInt(), any(), anyString(), anyBoolean());
+    }
+
+    @Test
+    public void testRegisterPollingLoopFilter_ignoreFrameAcceptedForWallet()
+            throws RemoteException {
+        String ignoreFrame = "6A01CF0000";
+        when(mRegisteredAidCache.isDefaultOrAssociatedWalletPackage(
+                eq(WALLET_HOLDER_PACKAGE_NAME), eq(USER_ID))).thenReturn(true);
+        when(mRegisteredServicesCache.hasService(eq(USER_ID), any())).thenReturn(true);
+        when(mRegisteredServicesCache.registerPollingLoopFilterForService(
+                eq(USER_ID), anyInt(), any(), eq(ignoreFrame), anyBoolean()))
+                .thenReturn(true);
+
+        boolean result = mCardEmulationManager
+                .getNfcCardEmulationInterface()
+                .registerPollingLoopFilterForService(
+                        USER_ID, WALLET_PAYMENT_SERVICE, ignoreFrame, true);
+
+        assertTrue(result);
+        verify(mRegisteredServicesCache).registerPollingLoopFilterForService(
+                eq(USER_ID), anyInt(), eq(WALLET_PAYMENT_SERVICE), eq(ignoreFrame), eq(true));
+    }
 }

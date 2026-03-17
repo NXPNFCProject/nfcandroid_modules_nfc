@@ -1027,6 +1027,13 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
                 String pollingLoopFilter, boolean autoTransact) throws RemoteException {
             NfcPermissions.validateUserId(userId);
             NfcPermissions.enforceUserPermissions(mContext);
+            if (pollingLoopFilter.equalsIgnoreCase("6A01CF0000")
+                    && !mAidCache.isDefaultOrAssociatedWalletPackage(service.getPackageName(),
+                    userId)) {
+                Log.e(TAG, "registerPollingLoopFilterForService: " + service.getPackageName()
+                        + " isn't default wallet, can't register ignore frame");
+                return false;
+            }
             if (!isServiceRegistered(userId, service)) {
                 Log.e(TAG, "registerPollingLoopFilterForService: service (" + service
                         + ") isn't registered for user " + userId);
@@ -1109,6 +1116,13 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
                 String pollingLoopPatternFilter, boolean autoTransact) throws RemoteException {
             NfcPermissions.validateUserId(userId);
             NfcPermissions.enforceUserPermissions(mContext);
+            if (pollingLoopPatternFilter.equalsIgnoreCase("6A01CF0000")
+                    && !mAidCache.isDefaultOrAssociatedWalletPackage(service.getPackageName(),
+                    userId)) {
+                Log.e(TAG, "registerPollingLoopPatternFilterForService: " + service.getPackageName()
+                        + " isn't default wallet, can't register ignore frame");
+                return false;
+            }
             if (!isServiceRegistered(userId, service)) {
                 Log.e(TAG, "registerPollingLoopPatternFilterForService: service (" + service
                         + ") isn't registed for user " + userId);
