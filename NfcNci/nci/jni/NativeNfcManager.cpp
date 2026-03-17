@@ -2440,7 +2440,11 @@ static void nfcManager_doSetScreenState(JNIEnv* e, jobject o,
     status = NFA_SetConfig(NCI_PARAM_ID_CON_DISCOVERY_PARAM,
                            NCI_PARAM_LEN_CON_DISCOVERY_PARAM, &discovry_param);
     if (status == NFA_STATUS_OK) {
-      gNfaSetConfigEvent.wait();
+      LOG(DEBUG) << StringPrintf("%s: wait for gNfaSetConfigEvent", __func__);
+      if (!gNfaSetConfigEvent.wait(5000)) {
+        LOG(ERROR) << StringPrintf("%s: wait for gNfaSetConfigEvent timeout",
+                                 __func__);
+      }
       gMutexConfig.unlock();
     } else {
       LOG(ERROR) << StringPrintf("%s: Failed to update CON_DISCOVER_PARAM",
