@@ -50,6 +50,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -128,6 +129,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.android.dx.mockito.inline.extended.ExtendedMockito;
 import com.android.nfc.cardemulation.CardEmulationManager;
 import com.android.nfc.cardemulation.util.StatsdUtils;
+import com.android.nfc.dhimpl.NativeNfcManager;
 import com.android.nfc.flags.Flags;
 import com.android.nfc.wlc.NfcCharging;
 
@@ -140,6 +142,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.MockitoSession;
@@ -196,6 +199,7 @@ public final class NfcServiceTest {
     @Mock VrManager mVrManager;
     @Mock RoleManager mRoleManager;
     @Mock AppOpsManager mAppOpsManager;
+    @Mock NativeNfcManager mNativeNfcManager;
     @Captor ArgumentCaptor<DeviceHost.DeviceHostListener> mDeviceHostListener;
     @Captor ArgumentCaptor<BroadcastReceiver> mGlobalReceiver;
     @Captor ArgumentCaptor<BroadcastReceiver> mManagedProfileReceiver;
@@ -233,6 +237,7 @@ public final class NfcServiceTest {
                 .mockStatic(NfcStatsLog.class)
                 .mockStatic(android.permission.flags.Flags.class)
                 .mockStatic(NfcInjector.class)
+                .mockStatic(NativeNfcManager.class)
                 .strictness(Strictness.LENIENT)
                 .startMocking();
         MockitoAnnotations.initMocks(this);
@@ -288,6 +293,7 @@ public final class NfcServiceTest {
         when(NfcProperties.info_antpos_Y()).thenReturn(List.of());
         when(NfcProperties.initialized()).thenReturn(Optional.of(Boolean.TRUE));
         when(NfcProperties.vendor_debug_enabled()).thenReturn(Optional.of(Boolean.TRUE));
+        when(NativeNfcManager.getInstance()).thenReturn(mNativeNfcManager);
         when(mPackageManager.getPackageUid(PKG_NAME, 0)).thenReturn(Binder.getCallingUid());
         createNfcService();
     }
@@ -1972,6 +1978,43 @@ public final class NfcServiceTest {
         when(android.nfc.Flags.nfcPersistLog()).thenReturn(true);
         mNfcService.mNfcAdapter.clearPreference();
         verify(mNfcEventLog, times(2)).logEvent(any());
+    }
+
+    @Test
+    public void clearT3tIdentifiersCache_whenIdentifierRegistered_restartsDiscovery() {
+        // Arrange
+        when(mNativeNfcManager.isT3TIdentifierRegistered()).thenReturn(true);
+        mNfcService.mState.set(NfcAdapter.STATE_ON);
+        mNfcService.mScreenState = ScreenStateHelper.SCREEN_STATE_ON_UNLOCKED;
+        // Set current discovery to be enabled to verify shouldRestart is true
+        mNfcService.mCurrentDiscoveryParameters = NfcDiscoveryParameters.newBuilder()
+                .setTechMask(NfcDiscoveryParameters.NFC_POLL_DEFAULT)
+                .setEnableReaderMode(true)
+                .build();
+
+        // Act
+        mNfcService.clearT3tIdentifiersCache();
+
+        // Assert
+        InOrder inOrder = inOrder(mDeviceHost);
+        inOrder.verify(mDeviceHost).disableDiscovery();
+        inOrder.verify(mDeviceHost).clearT3tIdentifiersCache();
+        inOrder.verify(mDeviceHost).enableDiscovery(any(NfcDiscoveryParameters.class), eq(true));
+    }
+
+    @Test
+    public void clearT3tIdentifiersCache_whenIdentifierNotRegistered_doesNothing() {
+        // Arrange
+        when(mNativeNfcManager.isT3TIdentifierRegistered()).thenReturn(false);
+
+        // Act
+        mNfcService.clearT3tIdentifiersCache();
+
+        // Assert
+        verify(mDeviceHost, never()).disableDiscovery();
+        verify(mDeviceHost, never()).clearT3tIdentifiersCache();
+        verify(mDeviceHost, never()).enableDiscovery(any(NfcDiscoveryParameters.class),
+                anyBoolean());
     }
 
     @Test
