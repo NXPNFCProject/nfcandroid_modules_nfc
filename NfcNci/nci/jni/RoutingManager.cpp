@@ -572,6 +572,16 @@ bool RoutingManager::getNameOfEe(tNFA_HANDLE ee_handle, std::string& eeName) {
       return true;
     }
   }
+  if (NfcConfig::hasKey(NAME_T4T_NFCEE_ENABLE)) {
+    if (NfcConfig::getUnsigned(NAME_T4T_NFCEE_ENABLE)) {
+      uint8_t defaultNdefNfceeRoute =
+          NfcConfig::getUnsigned(NAME_DEFAULT_NDEF_NFCEE_ROUTE, 0x10);
+      if (ee_handle == defaultNdefNfceeRoute) {
+        eeName = "NDEF-NFCEE";
+        return true;
+      }
+    }
+  }
 
   LOG(WARNING) << __func__ << ": Incorrect EE Id";
   return false;
