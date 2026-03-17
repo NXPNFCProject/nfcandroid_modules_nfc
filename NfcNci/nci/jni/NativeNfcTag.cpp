@@ -558,6 +558,10 @@ static jint nativeNfcTag_doConnect(JNIEnv*, jobject, jint targetIdx,
     LOG(ERROR) << StringPrintf("%s: NFC disabling in progress", __func__);
     return NFCSTATUS_FAILED;
   }
+  if (nfcManager_isNfcActive() == false) {
+    LOG(DEBUG) << StringPrintf("%s: NFC is no longer active", __func__);
+    return JNI_FALSE;
+  }
   sIsoDepPresCheckCnt = 0;
   sPresCheckErrCnt = 0;
   sIsoDepPresCheckAlternate = false;
