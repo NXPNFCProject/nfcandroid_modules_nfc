@@ -1913,14 +1913,11 @@ static tNFA_STATUS setTechAPollingLoopAnnotation(JNIEnv* env, jobject o,
 ** Returns:         None
 **
 *******************************************************************************/
-static void nfcManager_enableDiscovery(JNIEnv* e, jobject o,
-                                       jint technologies_mask,
-                                       jboolean enable_lptd,
-                                       jboolean reader_mode,
-                                       jboolean enable_host_routing,
-                                       jbyteArray tech_a_polling_loop_annotation,
-                                       jbyteArray extra_vendor_annotation,
-                                       jboolean restart) {
+static void nfcManager_enableDiscovery(
+    JNIEnv* e, jobject o, jint technologies_mask, jboolean enable_lptd,
+    jboolean is_reader_mode_request, jboolean enable_host_routing,
+    jbyteArray tech_a_polling_loop_annotation,
+    jbyteArray extra_vendor_annotation, jboolean restart) {
   if (sIsShuttingDown || sIsRecovering || sIsDisabling || !sIsNfaEnabled)
     return;
   tNFA_TECHNOLOGY_MASK tech_mask = DEFAULT_TECH_MASK;
@@ -1943,7 +1940,7 @@ static void nfcManager_enableDiscovery(JNIEnv* e, jobject o,
   if (tech_mask != 0) {
     stopPolling_rfDiscoveryDisabled();
     if (isReaderModeAnnotationSupported(e, o)) {
-      if (reader_mode && tech_a_polling_loop_annotation != NULL) {
+      if (is_reader_mode_request && tech_a_polling_loop_annotation != NULL) {
         ScopedByteArrayRO annotationBytes(e, tech_a_polling_loop_annotation);
         if (extra_vendor_annotation == NULL) {
           setTechAPollingLoopAnnotation(e, o,
@@ -1965,7 +1962,7 @@ static void nfcManager_enableDiscovery(JNIEnv* e, jobject o,
     startPolling_rfDiscoveryDisabled(tech_mask);
 
     if (sPollingEnabled) {
-      if (reader_mode && !sReaderModeEnabled) {
+      if (is_reader_mode_request && !sReaderModeEnabled) {
         sReaderModeEnabled = true;
         NFA_DisableListening();
 
@@ -1973,7 +1970,7 @@ static void nfcManager_enableDiscovery(JNIEnv* e, jobject o,
         nfcManager_configNfccConfigControl(false);
 
         NFA_SetRfDiscoveryDuration(READER_MODE_DISCOVERY_DURATION);
-      } else if (!reader_mode && sReaderModeEnabled) {
+      } else if (!is_reader_mode_request && sReaderModeEnabled) {
         struct nfc_jni_native_data* nat = getNative(e, o);
         sReaderModeEnabled = false;
         SyncEventGuard guard(sNfaEnableDisablePollingEvent);
@@ -1994,7 +1991,10 @@ static void nfcManager_enableDiscovery(JNIEnv* e, jobject o,
       }
     }
   } else {
-    if (!reader_mode && sReaderModeEnabled) {
+    if (is_reader_mode_request) {
+      setTechAPollingLoopAnnotation(e, o, NULL, 0, NULL, 0);
+    }
+    if (!is_reader_mode_request && sReaderModeEnabled) {
       LOG(DEBUG) << StringPrintf(
           "%s: if reader mode disable, enable listen again", __func__);
       struct nfc_jni_native_data* nat = getNative(e, o);
