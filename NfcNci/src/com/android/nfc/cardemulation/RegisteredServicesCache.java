@@ -624,7 +624,12 @@ public class RegisteredServicesCache {
             ndefNfceeAppInfo.serviceInfo.name = "com.android.nfc.ndef_nfcee.NdefNfceeService";
             ndefNfceeAppInfo.serviceInfo.applicationInfo = new ApplicationInfo();
             List<String> ndefNfceeAid = new ArrayList<String>();
-            ndefNfceeAid.add(DEFAULT_T4T_NFCEE_AID);
+            String t4tNfceeAid = NfcService.getInstance().getT4tNfceeAid();
+            if (t4tNfceeAid == null) {
+                t4tNfceeAid = DEFAULT_T4T_NFCEE_AID;
+            }
+            Log.d(TAG, "getNdefNfceeAid: " + t4tNfceeAid);
+            ndefNfceeAid.add(t4tNfceeAid);
             AidGroup ndefNfceeAidGroup = new AidGroup(ndefNfceeAid, CATEGORY_OTHER);
             ArrayList<AidGroup> ndefNfceeAidStaticGroups = new ArrayList<>();
             ndefNfceeAidStaticGroups.add(ndefNfceeAidGroup);

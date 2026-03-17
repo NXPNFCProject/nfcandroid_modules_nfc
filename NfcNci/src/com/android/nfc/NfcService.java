@@ -627,6 +627,10 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         return sService;
     }
 
+    public String getT4tNfceeAid() {
+        return new String(mDeviceHost.getT4tNfceeAid(), StandardCharsets.UTF_8);
+    }
+
     @Override
     public void onRemoteEndpointDiscovered(TagEndpoint tag) {
         Log.d(TAG, "onRemoteEndpointDiscovered");

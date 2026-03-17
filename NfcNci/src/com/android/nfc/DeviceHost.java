@@ -233,6 +233,12 @@ public interface DeviceHost {
      */
     boolean isNdefNfceefeatureEnabled();
 
+    /**
+     * Get the T4T NFCEE AID.
+     * @return T4T NFCEE AID
+     */
+    byte[] getT4tNfceeAid();
+
     public void registerT3tIdentifier(byte[] t3tIdentifier);
 
     public void deregisterT3tIdentifier(byte[] t3tIdentifier);

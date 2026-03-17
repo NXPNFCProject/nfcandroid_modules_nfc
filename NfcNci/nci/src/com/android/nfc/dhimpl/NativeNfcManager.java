@@ -288,6 +288,11 @@ public class NativeNfcManager implements DeviceHost {
     }
 
     @Override
+    public byte[] getT4tNfceeAid() {
+        return mT4tNfceeMgr.getT4tNfceeAid();
+    }
+
+    @Override
     public int doWriteData(byte[] fileId, byte[] data) {
         return mT4tNfceeMgr.doWriteData(fileId, data);
     }
