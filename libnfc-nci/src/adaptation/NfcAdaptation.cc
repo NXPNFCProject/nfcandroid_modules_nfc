@@ -32,6 +32,7 @@
 #include <hardware_legacy/power.h>
 #include <hwbinder/ProcessState.h>
 
+#include <future>
 #include <thread>
 
 #include "NfcVendorExtn.h"
@@ -119,9 +120,6 @@ extern bool nfa_poll_bail_out_mode;
 // See ADM_CREATE_PIPE command in the ETSI test specification
 // ETSI TS 102 622, section 6.1.3.1
 static std::vector<uint8_t> host_allowlist;
-
-constexpr int32_t GET_NFC_SERVICE_TIMEOUT_COUNT = 50;
-constexpr int32_t GET_NFC_SERVICE_SLEEP_INTERVAL_MS = 100;
 
 [[maybe_unused]] static int get_vsr_api_level() {
   int vendor_api_level =
@@ -883,55 +881,27 @@ tHAL_NFC_ENTRY* NfcAdaptation::GetHalEntryFuncs() { return &mHalEntryFuncs; }
 
 /*******************************************************************************
 **
-** Function:    NfcAdaptation::checkForNfcService()
+** Function:    NfcAdaptation::waitForNfcServiceAsync()
 **
 ** Description: Binder to NFC HAL Service.
 **
-** Returns:     Binder object if success or nullptr if timeout.
+** Returns:     Binder object if success or nullptr if timeout(5s).
 **
 *******************************************************************************/
-std::shared_ptr<INfcAidl> checkForNfcService() {
-  for (int32_t count = 0; count < GET_NFC_SERVICE_TIMEOUT_COUNT; count++) {
-    ::ndk::SpAIBinder binder(
-        AServiceManager_checkService(NFC_AIDL_HAL_SERVICE_NAME.c_str()));
-    if (INfcAidl::fromBinder(binder)) {
+std::shared_ptr<INfcAidl> waitForNfcServiceAsync() {
+  auto future = std::async(std::launch::async, []() -> std::shared_ptr<INfcAidl> {
+      ::ndk::SpAIBinder binder(
+          AServiceManager_waitForService(NFC_AIDL_HAL_SERVICE_NAME.c_str()));
       return INfcAidl::fromBinder(binder);
-    }
-    usleep(GET_NFC_SERVICE_SLEEP_INTERVAL_MS * 1000);
-  }
-  LOG(ERROR) << StringPrintf("Timeout waiting for NFC AIDL service.");
-  return nullptr;
-}
+  });
 
-/*******************************************************************************
-**
-** Function:    NfcAdaptation::GetAidlService
-**
-** Description: Get AIDL service.
-**
-** Returns:     None.
-**
-*******************************************************************************/
-void NfcAdaptation::GetAidlService() {
-  const char* func = "NfcAdaptation::GetAidlService";
-  LOG(VERBOSE) << StringPrintf("%s", func);
-
-  mAidlHal = checkForNfcService();
-  if (mAidlHal != nullptr && AIBinder_isAlive(mAidlHal->asBinder().get())) {
-    use_aidl = true;
-    AIBinder_linkToDeath(mAidlHal->asBinder().get(), mDeathRecipient.get(),
-                         nullptr /* cookie */);
-    mHal = mHal_1_1 = mHal_1_2 = nullptr;
-    mAidlHal->getInterfaceVersion(&mAidlHalVer);
-    LOG(INFO) << StringPrintf("%s: INfcAidl::fromBinder returned ver(%d)", func,
-                              mAidlHalVer);
-    // TODO: Enforce VSR API level check later
-    // if (get_vsr_api_level() <= __ANDROID_API_V__) {
-    if (mAidlHalVer <= 1 || (get_vsr_api_level() < get_system_api_level())) {
-      sVndExtnsPresent = sNfcVendorExtn->Initialize(nullptr, mAidlHal);
-    }
+  constexpr auto timeout = std::chrono::seconds(5);
+  if (future.wait_for(timeout) == std::future_status::ready) {
+    ALOGD("Ready for NFC AIDL service (future).");
+    return future.get();
   } else {
-    LOG(INFO) << StringPrintf("%s: Failed to retrieve the NFC AIDL!", func);
+    ALOGE("Timeout waiting for NFC AIDL service (future).");
+    return nullptr;
   }
 }
 
@@ -971,7 +941,25 @@ void NfcAdaptation::InitializeHalDeviceContext() {
   }
   if (mHal == nullptr) {
     // Try get AIDL
-    GetAidlService();
+    mAidlHal = waitForNfcServiceAsync();
+    if (mAidlHal != nullptr && AIBinder_isAlive(mAidlHal->asBinder().get())) {
+      use_aidl = true;
+      AIBinder_linkToDeath(mAidlHal->asBinder().get(), mDeathRecipient.get(),
+                           nullptr /* cookie */);
+      mHal = mHal_1_1 = mHal_1_2 = nullptr;
+      mAidlHal->getInterfaceVersion(&mAidlHalVer);
+      LOG(INFO) << StringPrintf("%s: INfcAidl::fromBinder returned ver(%d)",
+                                func, mAidlHalVer);
+      // TODO: Enforce VSR API level check later
+      // if (get_vsr_api_level() <= __ANDROID_API_V__) {
+      if (mAidlHalVer <= 1 || (get_vsr_api_level() < get_system_api_level())) {
+        sVndExtnsPresent = sNfcVendorExtn->Initialize(nullptr, mAidlHal);
+      }
+    } else {
+      LOG(INFO) << StringPrintf("%s: Failed to retrieve the NFC AIDL!", func);
+      ALOGE("Exit current process to recover.");
+      _exit(0);
+    }
   } else {
     LOG(INFO) << StringPrintf("%s: INfc::getService() returned %p (%s)", func,
                               mHal.get(),
@@ -1030,9 +1018,6 @@ void NfcAdaptation::HalOpenInternal(tHAL_NFC_CBACK* p_hal_cback,
   if (sVndExtnsPresent) {
     sNfcVendorExtn->setNciCallback(p_hal_cback, p_data_cback);
   }
-  if (mAidlHal == nullptr && mHal_1_1 == nullptr && mHal == nullptr) {
-    GetAidlService();
-  }
   if (mAidlHal != nullptr && AIBinder_isAlive(mAidlHal->asBinder().get())) {
     mAidlCallback = ::ndk::SharedRefBase::make<NfcAidlClientCallback>(
         p_hal_cback, p_data_cback);
@@ -1056,22 +1041,6 @@ void NfcAdaptation::HalOpenInternal(tHAL_NFC_CBACK* p_hal_cback,
   } else if (mHal != nullptr) {
     mCallback = new NfcClientCallback(p_hal_cback, p_data_cback);
     mHal->open(mCallback);
-  } else {
-    // Send failure status to stop HAL opening
-    tNFC_HAL_EVT_MSG* p_msg =
-        (tNFC_HAL_EVT_MSG*)GKI_getbuf(sizeof(tNFC_HAL_EVT_MSG));
-    if (p_msg != nullptr) {
-      /* Initialize NFC_HDR */
-      p_msg->hdr.len = 0;
-      p_msg->hdr.event = BT_EVT_TO_NFC_MSGS;
-      p_msg->hdr.offset = 0;
-      p_msg->hdr.layer_specific = 0;
-      p_msg->hal_evt = HAL_NFC_OPEN_CPLT_EVT;
-      p_msg->status = HAL_NFC_STATUS_FAILED;
-      GKI_send_msg(NFC_TASK, NFC_MBOX_ID, p_msg);
-    } else {
-      LOG(ERROR) << StringPrintf("No buffer");
-    }
   }
   LOG(DEBUG) << StringPrintf("%s: exit", func);
 }
