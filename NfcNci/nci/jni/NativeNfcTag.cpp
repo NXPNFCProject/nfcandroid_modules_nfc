@@ -335,10 +335,7 @@ static jbyteArray nativeNfcTag_doRead(JNIEnv* e, jobject) {
       SyncEventGuard g(sReadEvent);
       sIsReadingNdefMessage = true;
       status = NFA_RwReadNDef();
-      if (!sReadEvent.wait(10000)) {  // wait for NFA_READ_CPLT_EVT
-        LOG(ERROR) << StringPrintf("%s: Timeout reading tag NDEF content", __func__);
-        sReadDataLen = 0;
-      }
+      sReadEvent.wait();  // wait for NFA_READ_CPLT_EVT
     }
     sIsReadingNdefMessage = false;
 
