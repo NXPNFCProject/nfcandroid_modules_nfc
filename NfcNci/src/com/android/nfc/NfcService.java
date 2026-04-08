@@ -628,7 +628,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     }
 
     public String getT4tNfceeAid() {
-        return new String(mDeviceHost.getT4tNfceeAid(), StandardCharsets.UTF_8);
+        byte[] t4tNfceeAid = mDeviceHost.getT4tNfceeAid();
+        return t4tNfceeAid != null ? HexFormat.of().formatHex(t4tNfceeAid).toUpperCase() : null;
     }
 
     @Override
