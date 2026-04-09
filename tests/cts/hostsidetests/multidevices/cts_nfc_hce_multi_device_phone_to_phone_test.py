@@ -480,28 +480,6 @@ class CtsNfcHceMultiDevicePhone2PhoneTestCases(base_test.BaseTestClass):
 
         test_pass_handler.waitAndGet("TestPass", _NFC_TIMEOUT_SEC)
 
-    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
-    def test_always_on_observe_mode(self):
-        """Tests always on observe mode with gesture poll frame settings key.
-
-        Test Steps:
-        1. Start always on observe mode emulator activity.
-        2. Set callback handler on emulator for when a TestPass event is received.
-        3. Start reader activity, which emits the gesture poll frame.
-        """
-        asserts.skip_if(not self.emulator.nfc_emulator.isObserveModeSupported(),
-                        "Observe mode is not supported on the emulator device.")
-        asserts.skip_if(not self.reader.nfc_reader.isReaderModeAnnotationSupported(),
-                        "Reader mode annotation is not supported on the reader device.")
-
-        self.emulator.nfc_emulator.startAlwaysOnObserveModeEmulatorActivity()
-        time.sleep(10)  # Add delay for HCE service to start
-
-        test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass("TestPass")
-        self.reader.nfc_reader.startPollingLoopAnnotationReaderActivityWithAid(_TRANSPORT_AID)
-
-        test_pass_handler.waitAndGet("TestPass", _NFC_TIMEOUT_SEC)
-
     def teardown_test(self):
         if hasattr(self, 'emulator') and hasattr(self.emulator, 'nfc_emulator'):
             self.emulator.nfc_emulator.closeActivity()

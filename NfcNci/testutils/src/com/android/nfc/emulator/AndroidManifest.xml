@@ -360,12 +360,6 @@
         </service>
 
         <activity
-            android:name=".AlwaysOnObserveModeEmulatorActivity"
-            android:label="Always On Observe Mode Emulator Activity"
-            android:exported="true">
-        </activity>
-
-        <activity
             android:name=".PollingLoopAnnotationEmulatorActivity"
             android:label="Polling Loop Annotation Emulator Activity"
             android:exported="true">

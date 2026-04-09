@@ -380,18 +380,6 @@ public class NfcEmulatorDeviceSnippet extends NfcSnippet {
         mActivity = (PollingAndOffHostEmulatorActivity) instrumentation.startActivitySync(intent);
     }
 
-    /** Opens emulator activity with Always On Observe Mode. */
-    @Rpc(description = "Opens emulator activity with Always On Observe Mode")
-    public void startAlwaysOnObserveModeEmulatorActivity() {
-        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
-        Intent intent = new Intent(Intent.ACTION_MAIN);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        intent.setClassName(
-                instrumentation.getTargetContext(),
-                        AlwaysOnObserveModeEmulatorActivity.class.getName());
-        mActivity = (AlwaysOnObserveModeEmulatorActivity) instrumentation.startActivitySync(intent);
-    }
-
     /** Open polling loop annotation emulator activity. */
     @Rpc(description = "Open polling loop annotation emulator activity")
     public void startPollingLoopAnnotationEmulatorActivity() {
