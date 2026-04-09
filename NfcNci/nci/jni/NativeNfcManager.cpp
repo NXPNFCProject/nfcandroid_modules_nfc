@@ -1686,6 +1686,7 @@ static jboolean nfcManager_doInitialize(JNIEnv* e, jobject o) {
   initializeGlobalDebugEnabledFlag();
   tNFA_STATUS stat = NFA_STATUS_OK;
   sIsRecovering = false;
+  uint8_t mHostListenTechMask;
 
   struct nfc_jni_native_data* nat = getNative(e, o);
 
@@ -1753,6 +1754,9 @@ static jboolean nfcManager_doInitialize(JNIEnv* e, jobject o) {
         }
 
         // get LF_T3T_MAX
+        mHostListenTechMask = NfcConfig::getUnsigned(NAME_HOST_LISTEN_TECH_MASK,
+                              NFA_TECHNOLOGY_MASK_A | NFA_TECHNOLOGY_MASK_F);
+        if ((mHostListenTechMask & NFA_TECHNOLOGY_MASK_F) != 0)
         {
           SyncEventGuard guard(gNfaGetConfigEvent);
           tNFA_PMID configParam[1] = {NCI_PARAM_ID_LF_T3T_MAX};

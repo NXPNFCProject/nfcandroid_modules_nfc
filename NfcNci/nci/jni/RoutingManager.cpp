@@ -961,8 +961,12 @@ void RoutingManager::updateDefaultProtocolRoute() {
     SyncEventGuard guard(mRoutingEvent);
     tNFA_PROTOCOL_MASK protoMask = NFA_PROTOCOL_MASK_T3T;
     if (mDefaultEe == NFC_DH_ID) {
-      nfaStat =
+      if ((mHostListenTechMask & NFA_TECHNOLOGY_MASK_F) != 0) {
+        nfaStat =
           NFA_EeSetDefaultProtoRouting(NFC_DH_ID, protoMask, 0, 0, 0, 0, 0);
+      } else {
+        return;
+      }
     } else {
       nfaStat = NFA_EeSetDefaultProtoRouting(
           mDefaultEe, protoMask, 0, 0, mSecureNfcEnabled ? 0 : protoMask,
