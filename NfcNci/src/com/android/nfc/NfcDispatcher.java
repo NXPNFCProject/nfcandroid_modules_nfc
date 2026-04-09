@@ -254,10 +254,16 @@ class NfcDispatcher {
             // 1. The application is not stopped
             // 2. The activity must be protected by permission DISPATCH_NFC_MESSAGE
             if ((info.activityInfo.applicationInfo.flags & ApplicationInfo.FLAG_STOPPED) != 0) {
+                Log.w(TAG, "Activity " + info.activityInfo.name + " stopped");
                 return false;
             }
-            return TextUtils.equals(info.activityInfo.permission,
+            boolean hasPermission = TextUtils.equals(info.activityInfo.permission,
                     "android.permission.DISPATCH_NFC_MESSAGE");
+            if (!hasPermission) {
+                Log.w(TAG, "Activity " + info.activityInfo.name
+                        + " does not have DISPATCH_NFC_MESSAGE permission");
+            }
+            return hasPermission;
         }
     }
 
