@@ -546,6 +546,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     private KeyguardManager mKeyguard;
     private HandoverDataParser mHandoverDataParser;
     private ContentResolver mContentResolver;
+    private WatchDogThread mRoutingWatchDog;
 
     @VisibleForTesting
     CardEmulationManager mCardEmulationManager;
@@ -603,6 +604,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
     private Object mDiscoveryLock = new Object();
     private final Object mObjectMapLock = new Object();
+    private final Object mRoutingWatchDogLock = new Object();
 
     private boolean mCardEmulationActivated = false;
     private boolean mRfFieldActivated = false;
@@ -867,6 +869,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         if (DBG) {
             Log.d(TAG, "restartStack: Restarting NFC Service");
         }
+
+        cancelRoutingWatchDog();
+
         try {
             mContext.unregisterReceiver(mReceiver);
         } catch (IllegalArgumentException e) {
@@ -5067,9 +5072,12 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 return;
             }
 
-            WatchDogThread watchDog = new WatchDogThread("applyRouting", ROUTING_WATCHDOG_MS);
+            synchronized (mRoutingWatchDogLock) {
+                mRoutingWatchDog = new WatchDogThread("applyRouting", ROUTING_WATCHDOG_MS);
+                mRoutingWatchDog.start();
+            }
+
             try {
-                watchDog.start();
                 // Compute new polling parameters
                 NfcDiscoveryParameters newParams = computeDiscoveryParameters(mScreenState);
                 if (force || !newParams.equals(mCurrentDiscoveryParameters)) {
@@ -5084,7 +5092,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     Log.d(TAG, "applyRouting: Discovery configuration equal, not updating");
                 }
             } finally {
-                watchDog.cancel();
+                cancelRoutingWatchDog();
             }
         }
     }
@@ -6975,6 +6983,15 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         } catch (TimeoutException e) {
             executor.shutdownNow();
             throw e;
+        }
+    }
+
+    void cancelRoutingWatchDog() {
+        synchronized (mRoutingWatchDogLock) {
+            if (mRoutingWatchDog != null) {
+                mRoutingWatchDog.cancel();
+                mRoutingWatchDog = null;
+            }
         }
     }
 
