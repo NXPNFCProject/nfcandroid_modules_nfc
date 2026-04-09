@@ -3109,21 +3109,6 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                         mDiscoveryTechParams.uid = callingUid;
                         mDiscoveryTechParams.binder = binder;
                         binder.linkToDeath(mDiscoveryTechDeathRecipient, 0);
-                        if (android.nfc.Flags.nfcPersistLog()) {
-                            mNfcEventLog.logEvent(
-                                    NfcEventProto.EventType.newBuilder()
-                                            .setDiscoveryTechnologyUpdate(NfcEventProto
-                                                    .NfcDiscoveryTechnologyUpdate.newBuilder()
-                                                    .setAppInfo(NfcEventProto.NfcAppInfo
-                                                            .newBuilder()
-                                                            .setPackageName(packageName)
-                                                            .setUid(callingUid)
-                                                            .build())
-                                                    .setPollTech(pollTech)
-                                                    .setListenTech(listenTech)
-                                                    .build())
-                                            .build());
-                        }
                     } catch (RemoteException e) {
                         Log.e(TAG, "handleTemporaryTechnologyUpdate: "
                                 + "Remote binder has already died");
@@ -3132,6 +3117,19 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 } else {
                     return;
                 }
+                mNfcEventLog.logEvent(
+                        NfcEventProto.EventType.newBuilder()
+                                .setDiscoveryTechnologyUpdate(NfcEventProto
+                                        .NfcDiscoveryTechnologyUpdate.newBuilder()
+                                        .setAppInfo(NfcEventProto.NfcAppInfo
+                                                .newBuilder()
+                                                .setPackageName(packageName)
+                                                .setUid(callingUid)
+                                                .build())
+                                        .setPollTech(pollTech)
+                                        .setListenTech(listenTech)
+                                        .build())
+                                .build());
                 if (mCardEmulationManager != null) {
                     mCardEmulationManager.resetToIdleState();
                 }
