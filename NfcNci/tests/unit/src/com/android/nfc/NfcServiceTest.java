@@ -2353,6 +2353,30 @@ public final class NfcServiceTest {
     }
 
     @Test
+    public void testIsNfcSecureEnabled_UserChanged() throws RemoteException {
+        NfcService.NfcAdapterService adapterService = mNfcService.new NfcAdapterService();
+        int currentUser = ActivityManager.getCurrentUser();
+
+        // Simulate user switch to change mUserId to a different user
+        BroadcastReceiver receiver = mGlobalReceiver.getValue();
+        Intent intent = new Intent(Intent.ACTION_USER_SWITCHED);
+        intent.putExtra(Intent.EXTRA_USER_HANDLE, currentUser + 1);
+        receiver.onReceive(mApplication, intent);
+
+        mNfcService.mIsSecureNfcCapable = true;
+        when(mDeviceConfigFacade.getDefaultSecureNfcState()).thenReturn(false);
+        when(mPreferences.getBoolean(eq("secure_nfc_on_" + currentUser), anyBoolean()))
+                .thenReturn(true);
+        clearInvocations(mPreferences, mDeviceHost);
+
+        boolean result = adapterService.isNfcSecureEnabled();
+
+        assertThat(result).isTrue();
+        verify(mPreferences).getBoolean(eq("secure_nfc_on_" + currentUser), anyBoolean());
+        verify(mDeviceHost).setNfcSecure(true);
+    }
+
+    @Test
     public void testIsReaderOptionSupported() {
         NfcService.NfcAdapterService adapterService = mNfcService.new NfcAdapterService();
         mNfcService.mReaderOptionCapable = true;
