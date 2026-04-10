@@ -3736,36 +3736,40 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
             FutureTask<Integer> sendVendorCmdTask = new FutureTask<>(
                 () -> { synchronized (NfcService.this) {
-                        if (isPowerSavingModeCmd(gid, oid, payload)) {
-                            try {
-                                NfcService.this.setPowerSavingModeInternal(payload[1] == 0x01);
-                            } catch (Exception e) {
-                                Log.e(TAG, "Failed to set power saving mode " + e);
-                                return NCI_STATUS_FAILED;
-                            }
-                            return NCI_STATUS_OK;
-                        } else if (isQueryPowerSavingStatusCmd(gid, oid, payload)) {
-                            NfcVendorNciResponse response = new NfcVendorNciResponse(
-                                    (byte) NCI_STATUS_OK, NCI_GID_PROP, NCI_MSG_PROP_ANDROID,
-                                    new byte[] {
-                                            (byte) NCI_PROP_ANDROID_QUERY_POWER_SAVING_STATUS_CMD,
-                                            0x00,
-                                            isPowerSavingModeEnabled() ? (byte) 0x01 : (byte) 0x00
-                                    });
-                            if (response.status == NCI_STATUS_OK) {
-                                mHandler.post(() -> mNfcAdapter.sendVendorNciResponse(
-                                        response.gid, response.oid, response.payload));
-                            }
-                            return Integer.valueOf(response.status);
-                        } else {
-                            NfcVendorNciResponse response =
-                                    mDeviceHost.sendRawVendorCmd(mt, gid, oid, payload);
-                            if (response.status == NCI_STATUS_OK) {
-                                mHandler.post(() -> mNfcAdapter.sendVendorNciResponse(
-                                        response.gid, response.oid, response.payload));
-                            }
-                            return Integer.valueOf(response.status);
-                        }
+                            if (isPowerSavingModeCmd(gid, oid, payload)) {
+                                try {
+                                    NfcService.this.setPowerSavingModeInternal(payload[1] == 0x01);
+                                } catch (Exception e) {
+                                    Log.e(TAG,
+                                            "sendVendorNciMessage: "
+                                            + "Failed to set power saving mode "
+                                            + e);
+                                    return NCI_STATUS_FAILED;
+                                }
+                                return NCI_STATUS_OK;
+                            } else if (isQueryPowerSavingStatusCmd(gid, oid, payload)) {
+                                byte[] responsePayload = new byte[] {
+                                        (byte) NCI_PROP_ANDROID_QUERY_POWER_SAVING_STATUS_CMD,
+                                        0x00,
+                                        isPowerSavingModeEnabled() ? (byte) 0x01 : (byte) 0x00
+                                };
+                                NfcVendorNciResponse response = new NfcVendorNciResponse(
+                                        (byte) NCI_STATUS_OK, NCI_GID_PROP, NCI_MSG_PROP_ANDROID,
+                                        responsePayload);
+                                if (response.status == NCI_STATUS_OK) {
+                                    mHandler.post(() -> mNfcAdapter.sendVendorNciResponse(
+                                            response.gid, response.oid, response.payload));
+                                }
+                                return Integer.valueOf(response.status);
+                            } else {
+                                NfcVendorNciResponse response =
+                                        mDeviceHost.sendRawVendorCmd(mt, gid, oid, payload);
+                                if (response.status == NCI_STATUS_OK) {
+                                    mHandler.post(() -> mNfcAdapter.sendVendorNciResponse(
+                                            response.gid, response.oid, response.payload));
+                                }
+                                return Integer.valueOf(response.status);
+                             }
                 }});
             int status = NCI_STATUS_FAILED;
             try {
@@ -6801,22 +6805,22 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     }
 
     private void copyNativeCrashLogsIfAny(PrintWriter pw) {
-      try {
-          File file = new File(NATIVE_LOG_FILE_PATH, NATIVE_LOG_FILE_NAME);
-          if (!file.exists()) {
-            return;
-          }
-          pw.println("---BEGIN: NATIVE CRASH LOG----");
-          Scanner sc = new Scanner(file);
-          while(sc.hasNextLine()) {
-              String s = sc.nextLine();
-              pw.println(s);
-          }
-          pw.println("---END: NATIVE CRASH LOG----");
-          sc.close();
-      } catch (IOException e) {
-          Log.e(TAG, "Exception in copyNativeCrashLogsIfAny " + e);
-      }
+        try {
+            File file = new File(NATIVE_LOG_FILE_PATH, NATIVE_LOG_FILE_NAME);
+            if (!file.exists()) {
+                return;
+            }
+            pw.println("---BEGIN: NATIVE CRASH LOG----");
+            Scanner sc = new Scanner(file);
+            while(sc.hasNextLine()) {
+                String s = sc.nextLine();
+                pw.println(s);
+            }
+            pw.println("---END: NATIVE CRASH LOG----");
+            sc.close();
+        } catch (IOException e) {
+            Log.e(TAG, "Exception in copyNativeCrashLogsIfAny " + e);
+        }
     }
 
     public void storeNativeCrashLogs() {

@@ -706,9 +706,12 @@ public class HostEmulationManager {
                 } else if (pollingFrame.getType()
                         == PollingFrame.POLLING_LOOP_TYPE_UNKNOWN
                         && shouldSendPollingFramesToApp()) {
-                    if (DBG) Log.d(TAG, "onPollingLoopDetected: POLLING_LOOP_TYPE_UNKNOWN");
                     byte[] data = pollingFrame.getData();
                     String dataStr = HexFormat.of().formatHex(data).toUpperCase(Locale.ROOT);
+                    if (DBG) {
+                        Log.d(TAG, "onPollingLoopDetected: "
+                                + "POLLING_LOOP_TYPE_UNKNOWN(" + dataStr + ")");
+                    }
                     Map<String, List<ApduServiceInfo>> MappingForUser =
                             mPollingLoopFilters.get(ActivityManager.getCurrentUser());
                     List<ApduServiceInfo> serviceInfos;

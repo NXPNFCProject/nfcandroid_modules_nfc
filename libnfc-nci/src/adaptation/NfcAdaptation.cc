@@ -1475,7 +1475,7 @@ bool ThreadCondVar::wait(long millisec) {
   struct timespec absoluteTime;
 
   if (clock_gettime(CLOCK_MONOTONIC, &absoluteTime) == -1) {
-    LOG(ERROR) << StringPrintf("ThreadCondVar::wait: fail get time; errno=0x%X",
+    LOG(ERROR) << StringPrintf("%s: fail get time; errno=0x%X", __func__,
                                errno);
   } else {
     absoluteTime.tv_sec += millisec / 1000;
@@ -1489,7 +1489,7 @@ bool ThreadCondVar::wait(long millisec) {
 
   int waitResult = pthread_cond_timedwait(&mCondVar, *this, &absoluteTime);
   if ((waitResult != 0) && (waitResult != ETIMEDOUT))
-    LOG(ERROR) << StringPrintf("ThreadCondVar::wait: fail timed wait; error=0x%X",
+    LOG(ERROR) << StringPrintf("%s: fail timed wait; error=0x%X", __func__,
                                waitResult);
   retVal = (waitResult == 0);  // waited successfully
   if (retVal) pthread_mutex_unlock(*this);
