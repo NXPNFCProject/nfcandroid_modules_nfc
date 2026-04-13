@@ -53,6 +53,7 @@ _LOG = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 try:
     import pn532
+    from pn532 import tag_emulator
     from pn532.nfcutils import (
         parse_protocol_params,
         create_select_apdu,
@@ -1775,6 +1776,57 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         # Reset listen tech back.
         self.emulator.nfc_emulator.resetListenTech()
 
+    def test_ndef_read(self):
+        """Tests that the Android NDEF protocol stack can successfully read a Type 4 Tag.
+
+        Test Steps:
+        1. Enable reader mode on the emulator with NDEF checking enabled.
+        2. Set up a handler to catch the 'TagDiscovered' event.
+        3. Use PN532 to listen and serve NDEF requests using a Type 4 Tag emulator.
+        4. Verify that the NDEF exchange was completed and the tag was discovered.
+
+        Verifies:
+        1. The Android NCI stack completes the full NDEF read sequence.
+        2. The application layer receives the Tag object.
+        """
+
+        # Constants for polling limits
+        _MAX_INIT_RETRIES = 5
+
+        # Setup Reader Mode on the Android device.
+        # 0x1 (NFC-A) | 0x10 (Barcode/NDEF)
+        _NFC_TECH_A_POLLING_ON_WITH_NDEF = 0x1 | 0x10
+        self.emulator.nfc_emulator.startPN532Activity()
+        self.emulator.nfc_emulator.enableReaderMode(_NFC_TECH_A_POLLING_ON_WITH_NDEF)
+
+        # Register handler for the application-level callback.
+        tag_discovered_handler = self.emulator.nfc_emulator.asyncWaitsForTagDiscovered(
+            "TagDiscovered"
+        )
+
+        # Run the PN532 NDEF service logic.
+        tag = tag_emulator.Type4Tag()
+        _LOG.info("PN532 is listening for NDEF read requests...")
+
+        ndef_read_success = False
+        # We allow a few retries for the physical RF sync between phone and PN532.
+        for attempt in range(_MAX_INIT_RETRIES):
+            if self.pn532.listen_and_serve_ndef(tag, timeout=2.0):
+                ndef_read_success = True
+                break
+
+        # Asserts that the NDEF data exchange was fully completed without NCI/JNI stack interruption.
+        asserts.assert_true(
+            ndef_read_success,
+            "Android NFC stack interrupted or failed the NDEF reading process."
+        )
+
+        # Asserts that the system properly dispatched the parsed Tag object to the application.
+        tag_event = tag_discovered_handler.waitAndGet("TagDiscovered", _NFC_TIMEOUT_SEC)
+        asserts.assert_is_not_none(
+            tag_event,
+            "Emulator app did not receive the TagDiscovered event after NDEF exchange."
+        )
 
     #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
     def test_single_non_payment_service_with_listen_tech_poll_tech_mismatch(self):
