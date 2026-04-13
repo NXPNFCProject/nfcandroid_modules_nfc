@@ -1,6 +1,5 @@
 // Signature format: 6.0
 // - style=java
-// - overloaded-method-order=source
 package android.nfc {
 
   public final class AvailableNfcAntenna implements android.os.Parcelable {
@@ -19,9 +18,9 @@ package android.nfc {
   }
 
   public final class NdefMessage implements android.os.Parcelable {
-    ctor public NdefMessage(byte[]) throws android.nfc.FormatException;
     ctor public NdefMessage(android.nfc.NdefRecord, android.nfc.NdefRecord...);
     ctor public NdefMessage(android.nfc.NdefRecord[]);
+    ctor public NdefMessage(byte[]) throws android.nfc.FormatException;
     method public int describeContents();
     method public int getByteArrayLength();
     method public android.nfc.NdefRecord[] getRecords();
@@ -31,8 +30,8 @@ package android.nfc {
   }
 
   public final class NdefRecord implements android.os.Parcelable {
-    ctor public NdefRecord(short, byte[], byte[], byte[]);
     ctor @Deprecated public NdefRecord(byte[]) throws android.nfc.FormatException;
+    ctor public NdefRecord(short, byte[], byte[], byte[]);
     method public static android.nfc.NdefRecord createApplicationRecord(String);
     method public static android.nfc.NdefRecord createExternal(String, String, byte[]);
     method public static android.nfc.NdefRecord createMime(String, byte[]);
