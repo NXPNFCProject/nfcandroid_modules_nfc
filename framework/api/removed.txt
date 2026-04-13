@@ -1,7 +1,6 @@
 // Signature format: 6.0
 // - style=java
 // - overloaded-method-order=source
-// - strip-java-lang-prefix=legacy
 package android.nfc {
 
   public final class NfcAdapter {
