@@ -1790,6 +1790,10 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         2. The application layer receives the Tag object.
         """
 
+        # Skip the test if reader mode is not supported
+        asserts.skip_if(not self.emulator.nfc_emulator.isNfcSupported(),
+                        "Reader mode is not supportedd")
+
         # Constants for polling limits
         _MAX_INIT_RETRIES = 5
 
@@ -1841,6 +1845,10 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         Verifies:
         1. The Android application layers can catch TagLostException without system crash.
         """
+
+        # Skip the test if reader mode is not supported
+        asserts.skip_if(not self.emulator.nfc_emulator.isNfcSupported(),
+                        "Reader mode is not supportedd")
 
         # 1. Setup Activity with TagLoss Transceive Loop triggered
         self.emulator.nfc_emulator.startPN532ActivityForTagLoss()
