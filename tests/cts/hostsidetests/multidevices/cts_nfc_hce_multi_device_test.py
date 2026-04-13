@@ -1828,6 +1828,53 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             "Emulator app did not receive the TagDiscovered event after NDEF exchange."
         )
 
+    def test_pn532_tag_presence_check(self):
+        """Tests that the Android NFC stack correctly handles Tag detachment.
+
+        Test Steps:
+        1. Start PN532 activity with TagLoss stress loop flag enabled.
+        2. Enable reader mode on the emulator.
+        3. Establish emulation and serve exactly 10 APDUs sequentially.
+        4. Mute the PN532 RF field to simulate sudden tag removal.
+        5. Verify that the Android snippet caught the TagLostException.
+
+        Verifies:
+        1. The Android application layers can catch TagLostException without system crash.
+        """
+
+        # 1. Setup Activity with TagLoss Transceive Loop triggered
+        self.emulator.nfc_emulator.startPN532ActivityForTagLoss()
+
+        # 0x1 indicates NFC-A technology
+        self.emulator.nfc_emulator.enableReaderMode(0x1)
+
+        # Register handler for the loss event catch
+        tag_lost_handler = self.emulator.nfc_emulator.asyncWaitForTagLostException(
+            "TagLostException"
+        )
+
+        # 2. Establish initial emulation connection
+        tag = tag_emulator.Type4Tag()
+        _LOG.info("Establishing connection and starting reading loop...")
+
+        # 3. Serve 10 APDUs then return.
+        # Blocks sequential execution until 10 exchanges are served.
+        self.pn532.listen_and_serve_ndef(tag, max_apdu_exchanges=10)
+
+        # 4. Simulate sudden tag removal
+        _LOG.info("Muting PN532 RF modulation to simulate sudden removal...")
+        # Java-side is still waiting to transceive 11th package
+        self.pn532.mute()
+
+        # 5. Verify exception caught inside snippet
+        _LOG.info("Waiting for Android to trigger or handle TagLostException...")
+        lost_event = tag_lost_handler.waitAndGet("TagLostException", timeout=5.0)
+
+        asserts.assert_is_not_none(
+            lost_event,
+            "Android failed to trigger TagLostException upon tag mute/removal."
+        )
+
     #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
     def test_single_non_payment_service_with_listen_tech_poll_tech_mismatch(self):
         """Tests successful APDU exchange between non-payment service and
