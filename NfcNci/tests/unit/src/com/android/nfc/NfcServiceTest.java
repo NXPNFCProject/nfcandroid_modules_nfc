@@ -2904,6 +2904,10 @@ public final class NfcServiceTest {
 
         msg.obj = tagEndpoint;
 
+        mNfcService.mGestureExchangeEnabled = true;
+        when(android.provider.Settings.Secure.getString(
+                any(), eq(NfcService.GESTURE_EXCHANGE_COMPONENT_SETTINGS_KEY)))
+                .thenReturn("some_component");
         mNfcService.mCookieUpToDate = -1;
 
         handler.handleMessage(msg);
@@ -2938,15 +2942,16 @@ public final class NfcServiceTest {
 
         msg.obj = tagEndpoint;
 
+        mNfcService.mGestureExchangeEnabled = true;
+        when(android.provider.Settings.Secure.getString(
+                any(), eq(NfcService.GESTURE_EXCHANGE_COMPONENT_SETTINGS_KEY)))
+                .thenReturn("some_component");
         mNfcService.mCookieUpToDate = 12345L;
 
         handler.handleMessage(msg);
 
-        ArgumentCaptor<Tag> tagCaptor = ArgumentCaptor.forClass(Tag.class);
-        verify(gestureCallback).onTagDiscovered(tagCaptor.capture());
-        Tag tag = tagCaptor.getValue();
-        Assert.assertNotNull(tag);
-        Assert.assertEquals(12345L, mNfcService.mCookieUpToDate);
+        Assert.assertNotEquals(12345L, mNfcService.mCookieUpToDate);
+        Assert.assertTrue(mNfcService.mCookieUpToDate >= 0);
         verify(tagEndpoint, atLeastOnce()).startPresenceChecking(anyInt(), any());
     }
 }

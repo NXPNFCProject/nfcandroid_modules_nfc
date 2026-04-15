@@ -27,7 +27,6 @@ import static android.nfc.OemLogItems.EVENT_ENABLE;
 import static com.android.nfc.ScreenStateHelper.SCREEN_STATE_ON_LOCKED;
 import static com.android.nfc.ScreenStateHelper.SCREEN_STATE_ON_UNLOCKED;
 import static com.android.nfc.module.flags.Flags.nfcstack26q2Updates;
-import static com.android.nfc.module.flags.Flags.tapToX;
 import static com.android.nfc.module.nonexported.flags.Flags.coalesceRfFieldOnOffBroadcasts;
 
 import android.annotation.FlaggedApi;
@@ -81,6 +80,7 @@ import android.nfc.IReaderCallback;
 import android.nfc.IT4tNdefNfcee;
 import android.nfc.ITagRemovedCallback;
 import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.nfc.NfcAntennaInfo;
 import android.nfc.NfcOemExtension;
@@ -202,6 +202,10 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     public static final String PREF_TAG_APP_LIST = nfcstack26q2Updates()
                 ? "TagIntentAppPreferenceListPrefsV2" : "TagIntentAppPreferenceListPrefs";
     public static final String GESTURE_EXCHAGE_AID = "A00000047609";
+    public static final String GESTURE_EXCHAGE_SECONDARY_AID_SETTINGS_KEY =
+            "nfc.gesture_exchange_secondary_aid";
+    public static final String GESTURE_EXCHANGE_COMPONENT_SETTINGS_KEY =
+            "nfc.gesture_exchange_component";
     static final String PREF_NFC_ON = "nfc_on";
 
     static final String PREF_NFC_READER_OPTION_ON = "nfc_reader_on";
@@ -264,6 +268,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     static final int MAX_TOAST_DEBOUNCE_TIME = 10000;
 
     static final int DISABLE_POLLING_FLAGS = 0x1000;
+
+    static final int GESTURE_EXCHANGE_FLAG = 0x4000;
+    static final int GESTURE_EXCHANGE_SECONDARY_FLAG = 0x8000;
 
     static final int RF_COALESCING_WINDOW_1 = 50;
     static final int RF_COALESCING_WINDOW_2 = 150;
@@ -439,6 +446,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     boolean mInProvisionMode; // whether we're in setup wizard and enabled NFC provisioning
     boolean mIsSecureNfcEnabled;
     boolean mSkipNdefRead;
+    boolean mGestureExchangeEnabled;
     NfcDiscoveryParameters mCurrentDiscoveryParameters =
             NfcDiscoveryParameters.getNfcOffParameters();
 
@@ -485,6 +493,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     NfcInjector mNfcInjector;
     NfcEventLog mNfcEventLog;
     private DeviceHost mDeviceHost;
+    private GesturePollFrameObserver mGesturePollFrameObserver;
     private SharedPreferences mPrefs;
     private SharedPreferences.Editor mPrefsEditor;
     private SharedPreferences mTagAppPrefListPrefs;
@@ -1498,6 +1507,13 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             // Turn off reader option if the device does not support reader mode.
             mIsReaderOptionEnabled = false;
         }
+
+        mGesturePollFrameObserver = new GesturePollFrameObserver(mHandler);
+        mContext.getContentResolver().registerContentObserver(
+                Settings.Secure.getUriFor(HostEmulationManager.GESTURE_POLL_FRAME_SETTINGS_KEY),
+                false, mGesturePollFrameObserver);
+        mGesturePollFrameObserver.updateGesturePollFrame();
+
         executeTaskBoot();  // do blocking boot tasks
 
         if ((NFC_SNOOP_LOG_MODE.equals(NfcProperties.snoop_log_mode_values.FULL) ||
@@ -3855,13 +3871,6 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 if (DBG) Log.i(TAG, "registerGestureExchangeCallback");
                 NfcPermissions.enforceGestureExchangePermissions(mContext);
                 mNfcGestureExchangeCallback = callback;
-
-                String gesturePollFrameString =
-                        Settings.Secure.getString(mContext.getContentResolver(),
-                                HostEmulationManager.GESTURE_POLL_FRAME_SETTINGS_KEY);
-                if (tapToX() && isObserveModeSupported() && gesturePollFrameString != null) {
-                    setObserveModeAlwaysOn(true);
-                }
             }
         }
 
@@ -3872,9 +3881,6 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 if (DBG) Log.i(TAG, "unregisterGestureExchangeCallback");
                 NfcPermissions.enforceGestureExchangePermissions(mContext);
                 mNfcGestureExchangeCallback = null;
-                if (tapToX() && isObserveModeSupported()) {
-                    setObserveModeAlwaysOn(false);
-                }
             }
         }
 
@@ -5688,35 +5694,56 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                         break;
                     }
 
-                    if (mNfcGestureExchangeCallback != null
+                    if (mGestureExchangeEnabled
                             && tag.getConnectedTechnology() == TagTechnology.ISO_DEP) {
-                        byte[] gestureAidCheckCmd = {0x00, (byte) 0xA4, 0x04, 0x00, 0x06,
-                                (byte) 0xA0, 0x00, 0x00, 0x04, 0x76, 0x09, 0x00};
-                        int[] retCode = new int[2];
-                        byte[] respData = tag.transceive(gestureAidCheckCmd, false, retCode);
+                        int[] retCode;
+                        byte[] respData;
+
+                        String gestureSecondaryAid = Settings.Secure.getString(
+                                mContext.getContentResolver(),
+                                GESTURE_EXCHAGE_SECONDARY_AID_SETTINGS_KEY);
+
+                        // Validate the fetched string
+                        if (gestureSecondaryAid != null && !gestureSecondaryAid.isEmpty()) {
+                            byte[] gestureSecondaryAidCheckCmd =
+                                    buildSelectAidCommand(gestureSecondaryAid);
+                            Log.d(TAG, "Gesture exchange alternative AID selectCmd:"
+                                    + Arrays.toString(gestureSecondaryAidCheckCmd));
+
+
+                            retCode = new int[2];
+                            respData = tag.transceive(gestureSecondaryAidCheckCmd, false, retCode);
+
+                            if (respData != null && respData.length >= 2) {
+                                if (respData[respData.length - 2] == (byte) 0x90
+                                        && respData[respData.length - 1] == 0x00) {
+                                    Log.d(TAG, "Gesture Exchange secondary AID exists, "
+                                            + "skipping ndef read");
+                                    ReaderModeParams gestureReaderModeParams =
+                                            new ReaderModeParams();
+                                    gestureReaderModeParams.flags = GESTURE_EXCHANGE_SECONDARY_FLAG;
+                                    dispatchTagEndpoint(tag, gestureReaderModeParams);
+
+                                    tag.startPresenceChecking(presenceCheckDelay, callback);
+                                    break;
+                                }
+                            }
+                        }
+
+                        byte[] gestureAidCheckCmd = buildSelectAidCommand(GESTURE_EXCHAGE_AID);
+                        Log.d(TAG, "Gesture exchange primary AID selectCmd:"
+                                + Arrays.toString(gestureAidCheckCmd));
+                        retCode = new int[2];
+                        respData = tag.transceive(gestureAidCheckCmd, false, retCode);
 
                         if (respData != null && respData.length >= 2) {
                             if (respData[respData.length - 2] == (byte) 0x90
                                     && respData[respData.length - 1] == 0x00) {
                                 Log.d(TAG, "Gesture Exchange AID exists, skipping ndef read");
-                                if (mCookieUpToDate == -1) {
-                                    mCookieUpToDate = mCookieGenerator.nextLong() >>> 1;
-                                }
-                                Tag tagGestureExchange = new Tag(tag.getUid(), tag.getTechList(),
-                                                        tag.getTechExtras(), tag.getHandle(),
-                                                        mCookieUpToDate, mNfcTagService);
-                                registerTagObject(tag);
-                                registerTag(tagGestureExchange);
-                                try {
-                                    mNfcGestureExchangeCallback.onTagDiscovered(tagGestureExchange);
-                                } catch (RemoteException e) {
-                                    Log.e(TAG, "mNfcGestureExchangeCallback remote has died: ", e);
-                                    // Intentional fall-through
-                                } catch (Exception e) {
-                                    // Catch any other exception
-                                    Log.e(TAG, "mNfcGestureExchangeCallback: App exception"
-                                            + " , not dispatching ", e);
-                                }
+                                ReaderModeParams gestureReaderModeParams = new ReaderModeParams();
+                                gestureReaderModeParams.flags = GESTURE_EXCHANGE_FLAG;
+                                dispatchTagEndpoint(tag, gestureReaderModeParams);
+
                                 tag.startPresenceChecking(presenceCheckDelay, callback);
                                 break;
                             }
@@ -6011,6 +6038,29 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             }
         }
 
+        private byte[] buildSelectAidCommand(String aidStr) {
+            if (aidStr == null || aidStr.length() % 2 != 0) {
+                Log.e(TAG, "Invalid or missing AID.");
+                return null;
+            }
+            int aidLen = aidStr.length() / 2;
+            byte[] selectCmd = new byte[5 + aidLen]; // 5 bytes for APDU header + AID payload
+
+            // Set standard APDU Header
+            selectCmd[0] = (byte) 0x00; // CLA
+            selectCmd[1] = (byte) 0xA4; // INS
+            selectCmd[2] = (byte) 0x04; // P1
+            selectCmd[3] = (byte) 0x00; // P2
+            selectCmd[4] = (byte) aidLen; // Lc (Length of AID)
+
+            for (int i = 0; i < aidStr.length(); i += 2) {
+                selectCmd[5 + (i / 2)] = (byte) ((Character.digit(aidStr.charAt(i), 16) << 4)
+                        + Character.digit(aidStr.charAt(i + 1), 16));
+            }
+
+            return selectCmd;
+        }
+
         private void sendOffHostTransactionEvent(byte[] aid, byte[] data, byte[] readerByteArray) {
             String reader = "";
             int uid = -1;
@@ -6301,6 +6351,22 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             }
         }
 
+        private Tag buildGestureTag(TagEndpoint endpoint, String component, String aid) {
+            NdefRecord applicationRecord = NdefRecord.createApplicationRecord(component);
+            NdefMessage applicationMsg = new NdefMessage(applicationRecord);
+
+            Bundle extras = new Bundle();
+            extras.putParcelable(Ndef.EXTRA_NDEF_MSG, applicationMsg);
+            extras.putString(NfcAdapter.EXTRA_AID, aid);
+
+            Bundle[] techExtras = new Bundle[] {endpoint.getTechExtras()[0], extras};
+
+            int[] techList = new int[] { TagTechnology.ISO_DEP, TagTechnology.NDEF };
+
+            return new Tag(endpoint.getUid(), techList, techExtras, endpoint.getHandle(),
+                    mCookieUpToDate, mNfcTagService);
+        }
+
         private void dispatchTagEndpoint(TagEndpoint tagEndpoint, ReaderModeParams readerParams) {
             if (mNfcOemExtensionCallback != null
                     && receiveOemCallbackResult(ACTION_ON_TAG_DISPATCH)) {
@@ -6308,11 +6374,38 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 return;
             }
             try {
+                boolean performFeedback = true;
                 /* Avoid setting mCookieUpToDate to negative values */
                 mCookieUpToDate = mCookieGenerator.nextLong() >>> 1;
-                Tag tag = new Tag(tagEndpoint.getUid(), tagEndpoint.getTechList(),
-                        tagEndpoint.getTechExtras(), tagEndpoint.getHandle(),
-                        mCookieUpToDate, mNfcTagService);
+                Tag tag;
+                String gestureComponent = Settings.Secure.getString(mContext.getContentResolver(),
+                        GESTURE_EXCHANGE_COMPONENT_SETTINGS_KEY);
+
+                boolean isValidGesture = (readerParams != null && gestureComponent != null);
+                boolean isPrimaryGesture =
+                        isValidGesture && (readerParams.flags == GESTURE_EXCHANGE_FLAG);
+                boolean isSecondaryGesture =
+                        isValidGesture && (readerParams.flags == GESTURE_EXCHANGE_SECONDARY_FLAG);
+
+                if (isPrimaryGesture) {
+                    tag = buildGestureTag(tagEndpoint, gestureComponent, GESTURE_EXCHAGE_AID);
+                    readerParams = null;
+                    performFeedback = false;
+
+                } else if (isSecondaryGesture) {
+                    String gestureSecondaryAid =
+                            Settings.Secure.getString(mContext.getContentResolver(),
+                            GESTURE_EXCHAGE_SECONDARY_AID_SETTINGS_KEY);
+                    tag = buildGestureTag(tagEndpoint, gestureComponent, gestureSecondaryAid);
+                    readerParams = null;
+                    performFeedback = false;
+                } else {
+                    // Default fallback
+                    tag = new Tag(tagEndpoint.getUid(), tagEndpoint.getTechList(),
+                            tagEndpoint.getTechExtras(), tagEndpoint.getHandle(),
+                            mCookieUpToDate, mNfcTagService);
+                }
+
                 registerTagObject(tagEndpoint);
                 registerTag(tag);
                 if (readerParams != null) {
@@ -6367,7 +6460,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                             mHandler.sendEmptyMessageDelayed(MSG_TOAST_DEBOUNCE_EVENT,
                                                              sToast_debounce_time_ms);
                         }
-                        playSound(SOUND_ERROR);
+                        if (performFeedback) {
+                            playSound(SOUND_ERROR);
+                        }
                     }
                     if (!mAntennaBlockedMessageShown && mDispatchFailedCount++ > mDispatchFailedMax) {
                         new NfcBlockedNotification(mContext).startNotification();
@@ -6393,8 +6488,10 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                                 PowerManager.USER_ACTIVITY_EVENT_OTHER, 0);
                     }
                     mDispatchFailedCount = 0;
-                    mVibrator.vibrate(mVibrationEffect, HARDWARE_FEEDBACK_VIBRATION_ATTRIBUTES);
-                    playSound(SOUND_END);
+                    if (performFeedback) {
+                        mVibrator.vibrate(mVibrationEffect, HARDWARE_FEEDBACK_VIBRATION_ATTRIBUTES);
+                        playSound(SOUND_END);
+                    }
                     notifyOemLogEvent(new OemLogItems.Builder(OemLogItems.LOG_ACTION_TAG_DETECTED)
                             .setTag(tag).build());
                 }
@@ -7057,5 +7154,32 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         }
 
         return result;
+    }
+
+    private final class GesturePollFrameObserver extends ContentObserver {
+        GesturePollFrameObserver(Handler handler) {
+            super(handler);
+        }
+
+        @Override
+        public void onChange(boolean selfChange) {
+            super.onChange(selfChange);
+            updateGesturePollFrame();
+        }
+
+        void updateGesturePollFrame() {
+            String gesturePollFrameString =
+                    Settings.Secure.getString(mContext.getContentResolver(),
+                            HostEmulationManager.GESTURE_POLL_FRAME_SETTINGS_KEY);
+            if (gesturePollFrameString == null) {
+                mGestureExchangeEnabled = false;
+                byte[] defaultFrame = new byte[] {(byte) 0x6a, 0x01, (byte) 0xcf, 0x00, 0x00};
+                mDeviceHost.setDefaultFrame(defaultFrame);
+            } else {
+                mGestureExchangeEnabled = true;
+                byte[] frame = HexFormat.of().parseHex(gesturePollFrameString);
+                mDeviceHost.setDefaultFrame(frame);
+            }
+        }
     }
 }

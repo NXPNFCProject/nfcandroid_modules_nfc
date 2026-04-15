@@ -198,6 +198,7 @@ tNFA_STATUS gVSCmdStatus = NFA_STATUS_OK;
 uint16_t gCurrentConfigLen;
 uint8_t gConfig[256];
 std::vector<uint8_t> gCaps(0);
+std::vector<uint8_t> defaultFrame;
 
 // sPrevScreenStateMask contains screen state + polling enable/disable mask
 //  Possible screen states:
@@ -1964,8 +1965,10 @@ static void nfcManager_enableDiscovery(
               extra_annotationBytes.size());
         }
       } else {
-        uint8_t ignoreFrame[] = {0x6a, 0x01, 0xcf, 0x00, 0x00};
-        setTechAPollingLoopAnnotation(e, 0, ignoreFrame, 5, NULL, 0);
+        LOG(DEBUG) << StringPrintf("%s: applying defaultFrame, size: %zu",
+                                   __func__, defaultFrame.size());
+        setTechAPollingLoopAnnotation(e, o, defaultFrame.data(),
+                                      defaultFrame.size(), NULL, 0);
       }
     }
     startPolling_rfDiscoveryDisabled(tech_mask);
@@ -2988,6 +2991,30 @@ static jbyteArray nfcManager_doGetRfDiscoverConfig(JNIEnv* e, jobject o) {
   return rtJavaArray;
 }
 
+/*******************************************************************************
+**
+** Function:        nfcManager_doSetDefaultFrame
+**
+** Description:     Set default frame content
+**                  e: JVM environment.
+**                  o: Java object.
+**                  frame: default frame content.
+**
+** Returns:         None
+**
+*******************************************************************************/
+static void nfcManager_doSetDefaultFrame(JNIEnv* e, jobject o,
+                                         jbyteArray frame) {
+  LOG(DEBUG) << StringPrintf("%s: enter", __func__);
+  if (frame != NULL) {
+    ScopedByteArrayRO bytes(e, frame);
+    defaultFrame.assign((const uint8_t*)bytes.get(),
+                        (const uint8_t*)bytes.get() + bytes.size());
+  } else {
+    defaultFrame.clear();
+  }
+}
+
 /*****************************************************************************
 **
 ** JNI functions for android-4.0.1_r1
@@ -3098,6 +3125,7 @@ static JNINativeMethod gMethods[] = {
     {"doRestartRfDiscovery", "()V", (void*)nfcManager_restartRfDiscovery},
     {"setNciConfig", "(I[BIZ)V", (void*)nfcManager_setNciConfig},
     {"getRfDiscoverConfig", "()[B", (void*)nfcManager_doGetRfDiscoverConfig},
+    {"doSetDefaultFrame", "([B)V", (void*)nfcManager_doSetDefaultFrame},
 };
 
 /*******************************************************************************

@@ -732,6 +732,13 @@ public class NativeNfcManager implements DeviceHost {
     @Override
     public native byte[] getRfDiscoverConfig();
 
+    private native void doSetDefaultFrame(byte[] frame);
+
+    @Override
+    public void setDefaultFrame(byte[] frame) {
+        doSetDefaultFrame(frame);
+    }
+
     /** wrappers for values */
     private static final int CAPS_OBSERVE_MODE_UNKNOWN =
             NFC_PROPRIETARY_CAPABILITIES_REPORTED__PASSIVE_OBSERVE_MODE__MODE_UNKNOWN;

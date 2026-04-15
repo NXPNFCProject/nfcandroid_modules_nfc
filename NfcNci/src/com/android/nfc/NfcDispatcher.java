@@ -52,6 +52,7 @@ import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.Ndef;
 import android.nfc.tech.NfcBarcode;
+import android.nfc.tech.TagTechnology;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
@@ -921,6 +922,16 @@ class NfcDispatcher {
         return receiveOemCallbackResult(tag,message);
     }
 
+    private String getAidFromGestureTag(Tag tag) {
+        if (tag == null) return null;
+
+        Bundle ndefExtras = tag.getTechExtras(TagTechnology.NDEF);
+        if (ndefExtras != null) {
+            return ndefExtras.getString(NfcAdapter.EXTRA_AID);
+        }
+        return null;
+    }
+
     boolean tryActivityOrLaunchAppStore(DispatchInfo dispatch, List<String> packages,
         boolean isAar) {
         for (String pkg : packages) {
@@ -952,6 +963,12 @@ class NfcDispatcher {
                     return false;
                 }
                 Intent appLaunchIntent = pm.getLaunchIntentForPackage(firstPackage);
+                Tag tag = dispatch.tag;
+                appLaunchIntent.putExtra(NfcAdapter.EXTRA_TAG, tag);
+                String aid = getAidFromGestureTag(tag);
+                if (aid != null) {
+                    appLaunchIntent.putExtra(NfcAdapter.EXTRA_AID, aid);
+                }
                 if (appLaunchIntent != null) {
                     ResolveInfo ri = pm.resolveActivity(appLaunchIntent, 0);
                     if (ri != null && ri.activityInfo != null && ri.activityInfo.exported
