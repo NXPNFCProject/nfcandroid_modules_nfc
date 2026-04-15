@@ -2881,4 +2881,72 @@ public final class NfcServiceTest {
         aid = mNfcService.getT4tNfceeAid();
         assertThat(aid).isNull();
     }
+
+    @Test
+    public void testMsg_Ndef_Tag_GestureExchange() throws RemoteException {
+        Handler handler = mNfcService.getHandler();
+        Assert.assertNotNull(handler);
+        Message msg = handler.obtainMessage(NfcService.MSG_NDEF_TAG);
+        mNfcService.mState.set(NfcAdapter.STATE_ON);
+
+        android.nfc.IReaderCallback gestureCallback = mock(android.nfc.IReaderCallback.class);
+        mNfcService.mNfcAdapter.registerGestureExchangeCallback(gestureCallback);
+
+        DeviceHost.TagEndpoint tagEndpoint = mock(DeviceHost.TagEndpoint.class);
+        when(tagEndpoint.getConnectedTechnology()).thenReturn(TagTechnology.ISO_DEP);
+        when(tagEndpoint.getUid()).thenReturn(new byte[]{0x01, 0x02});
+        when(tagEndpoint.getTechList()).thenReturn(new int[]{TagTechnology.ISO_DEP});
+        when(tagEndpoint.getTechExtras()).thenReturn(new Bundle[]{new Bundle()});
+        when(tagEndpoint.getHandle()).thenReturn(1);
+
+        byte[] respData = new byte[]{(byte) 0x90, 0x00};
+        when(tagEndpoint.transceive(any(), eq(false), any())).thenReturn(respData);
+
+        msg.obj = tagEndpoint;
+
+        mNfcService.mCookieUpToDate = -1;
+
+        handler.handleMessage(msg);
+
+        ArgumentCaptor<Tag> tagCaptor = ArgumentCaptor.forClass(Tag.class);
+        verify(gestureCallback).onTagDiscovered(tagCaptor.capture());
+        Tag tag = tagCaptor.getValue();
+        Assert.assertNotNull(tag);
+        Assert.assertNotEquals(-1, mNfcService.mCookieUpToDate);
+        verify(tagEndpoint, atLeastOnce()).startPresenceChecking(anyInt(), any());
+    }
+
+    @Test
+    public void testMsg_Ndef_Tag_GestureExchange_CookieAlreadySet() throws RemoteException {
+        Handler handler = mNfcService.getHandler();
+        Assert.assertNotNull(handler);
+        Message msg = handler.obtainMessage(NfcService.MSG_NDEF_TAG);
+        mNfcService.mState.set(NfcAdapter.STATE_ON);
+
+        android.nfc.IReaderCallback gestureCallback = mock(android.nfc.IReaderCallback.class);
+        mNfcService.mNfcAdapter.registerGestureExchangeCallback(gestureCallback);
+
+        DeviceHost.TagEndpoint tagEndpoint = mock(DeviceHost.TagEndpoint.class);
+        when(tagEndpoint.getConnectedTechnology()).thenReturn(TagTechnology.ISO_DEP);
+        when(tagEndpoint.getUid()).thenReturn(new byte[]{0x01, 0x02});
+        when(tagEndpoint.getTechList()).thenReturn(new int[]{TagTechnology.ISO_DEP});
+        when(tagEndpoint.getTechExtras()).thenReturn(new Bundle[]{new Bundle()});
+        when(tagEndpoint.getHandle()).thenReturn(1);
+
+        byte[] respData = new byte[]{(byte) 0x90, 0x00};
+        when(tagEndpoint.transceive(any(), eq(false), any())).thenReturn(respData);
+
+        msg.obj = tagEndpoint;
+
+        mNfcService.mCookieUpToDate = 12345L;
+
+        handler.handleMessage(msg);
+
+        ArgumentCaptor<Tag> tagCaptor = ArgumentCaptor.forClass(Tag.class);
+        verify(gestureCallback).onTagDiscovered(tagCaptor.capture());
+        Tag tag = tagCaptor.getValue();
+        Assert.assertNotNull(tag);
+        Assert.assertEquals(12345L, mNfcService.mCookieUpToDate);
+        verify(tagEndpoint, atLeastOnce()).startPresenceChecking(anyInt(), any());
+    }
 }
