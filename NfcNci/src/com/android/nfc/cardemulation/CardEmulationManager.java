@@ -2003,17 +2003,7 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
     public void onObserveModeStateChange(boolean enabled) {
         mHostEmulationManager.onObserveModeStateChange(enabled);
         if (android.nfc.Flags.nfcEventListener()) {
-            callNfcEventCallbacks(listener -> {
-                if (NfcService.getInstance().isObserveModeAlwaysOnEnabled()) {
-                    // If external app did not enable observe mode, don't send them any observe
-                    // mode state enabled callbacks.
-                    if (!enabled || mHostEmulationManager.isAppRequestedObserveModeEnabled()) {
-                        listener.onObserveModeStateChanged(enabled);
-                    }
-                } else {
-                    listener.onObserveModeStateChanged(enabled);
-                }
-            });
+            callNfcEventCallbacks(listener -> listener.onObserveModeStateChanged(enabled));
         }
     }
 
@@ -2122,31 +2112,5 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         } else {
             Log.e("CardEmulationManager", "HostEmulationManager is not available.");
         }
-    }
-
-    /**
-     * Set the always on observe mode state.
-     */
-    public void setObserveModeAlwaysOn(boolean enable) {
-        mHostEmulationManager.setObserveModeAlwaysOn(enable);
-    }
-
-    /**
-     * Return the app requested observe mode state.
-     * If {@link NfcService#isObserveModeAlwaysOnEnabled()} is {@code false}, then this returns
-     * {@code true} because always on mode is off and observe mode state is explicitly controlled
-     * by apps.
-     */
-    public boolean isAppRequestedObserveModeEnabled() {
-        return mHostEmulationManager.isAppRequestedObserveModeEnabled();
-    }
-
-    /**
-     * Store the app requested observe mode state.
-     *
-     * Only used when {@link NfcService#isObserveModeAlwaysOnEnabled()} is {@code true}.
-     */
-    public boolean setAppRequestedObserveMode(boolean enable) {
-        return mHostEmulationManager.setAppRequestedObserveMode(enable);
     }
 }

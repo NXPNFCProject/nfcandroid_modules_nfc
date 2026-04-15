@@ -55,7 +55,6 @@ import android.os.SystemClock;
 import android.os.Trace;
 import android.os.UserHandle;
 import android.os.WorkSource;
-import android.provider.Settings;
 import android.sysprop.NfcProperties;
 import android.util.ArraySet;
 import android.util.Log;
@@ -137,6 +136,7 @@ public class HostEmulationManager {
     static final String EVENT_HCE_COMMAND_APDU = "hce_command_apdu";
     static final String EVENT_POLLING_FRAMES = "hce_polling_frames";
     static final String TRIGGER_NAME_SLOW_TAP = "android.nfc.slow-tap";
+    public static final String GESTURE_POLL_FRAME_SETTINGS_KEY = "nfc.gesture_poll_frame";
 
     final Context mContext;
     final RegisteredAidCache mAidCache;
@@ -162,10 +162,6 @@ public class HostEmulationManager {
     long mFieldOnTime;
 
     boolean mFieldOn = false;
-    /**
-     * Only used when {@link NfcService#isObserveModeAlwaysOnEnabled()} is {@code true}.
-     */
-    boolean mIsAppRequestedObserveModeEnabled = false;
 
     // All variables below protected by mLock
 
@@ -439,19 +435,17 @@ public class HostEmulationManager {
         }
 
         synchronized (mLock) {
-            if (!NfcService.getInstance().isObserveModeAlwaysOnEnabled()) {
-                if (isHostCardEmulationActivated()) {
-                    mEnableObserveModeAfterTransaction = enabled;
+            if (isHostCardEmulationActivated()) {
+                mEnableObserveModeAfterTransaction = enabled;
+                return;
+            }
+            if (mHandler.hasCallbacks(mEnableObserveModeAfterTransactionRunnable)) {
+                if (enabled) {
                     return;
-                }
-                if (mHandler.hasCallbacks(mEnableObserveModeAfterTransactionRunnable)) {
-                    if (enabled) {
-                        return;
-                    } else {
-                        mHandler.removeCallbacks(mEnableObserveModeAfterTransactionRunnable);
-                        mEnableObserveModeAfterTransaction = false;
-                        mEnableObserveModeOnFieldOff = false;
-                    }
+                } else {
+                    mHandler.removeCallbacks(mEnableObserveModeAfterTransactionRunnable);
+                    mEnableObserveModeAfterTransaction = false;
+                    mEnableObserveModeOnFieldOff = false;
                 }
             }
         }
@@ -638,38 +632,6 @@ public class HostEmulationManager {
         mPollingLoopState = state;
     }
 
-    public static final String GESTURE_POLL_FRAME_SETTINGS_KEY = "nfc.gesture_poll_frame";
-    private byte[] getGesturePollFrameBytes() {
-        String gesturePollFrameString =
-                Settings.Secure.getString(mContext.getContentResolver(),
-                        GESTURE_POLL_FRAME_SETTINGS_KEY);
-        if (gesturePollFrameString != null) {
-            return HexFormat.of().parseHex(gesturePollFrameString);
-        } else {
-            return null;
-        }
-    }
-
-    private boolean isGesturePollFrameDetected(List<PollingFrame> frames) {
-        if (frames == null) return false;
-        byte[] prefix = getGesturePollFrameBytes();
-        if (prefix == null) return false;
-
-        return frames.stream().anyMatch(frame -> {
-            byte[] data = frame.getData();
-            if (data == null || data.length == 0) {
-                return false;
-            }
-            for (int i = 0; i < prefix.length; i++) {
-                if (data[i] != prefix[i]) {
-                    return false;
-                }
-            }
-            return true;
-        });
-    }
-
-
     @TargetApi(35)
     public void onPollingLoopDetected(List<PollingFrame> pollingFrames) {
         if (DBG) Log.d(TAG, "onPollingLoopDetected: " + pollingFrames);
@@ -696,7 +658,7 @@ public class HostEmulationManager {
                 if (mUnprocessedPollingFrames != null) {
                     mUnprocessedPollingFrames.add(pollingFrame);
                 } else if (pollingFrame.getType()
-                        == PollingFrame.POLLING_LOOP_TYPE_F && shouldSendPollingFramesToApp()) {
+                        == PollingFrame.POLLING_LOOP_TYPE_F) {
                     Pair<Messenger, ComponentName> serviceAndName =
                             bindToForegroundServiceOrDefaultForPollingLoop();
                     if (serviceAndName != null) {
@@ -704,8 +666,7 @@ public class HostEmulationManager {
                             pollingFrame);
                     }
                 } else if (pollingFrame.getType()
-                        == PollingFrame.POLLING_LOOP_TYPE_UNKNOWN
-                        && shouldSendPollingFramesToApp()) {
+                        == PollingFrame.POLLING_LOOP_TYPE_UNKNOWN) {
                     byte[] data = pollingFrame.getData();
                     String dataStr = HexFormat.of().formatHex(data).toUpperCase(Locale.ROOT);
                     if (DBG) {
@@ -858,24 +819,16 @@ public class HostEmulationManager {
             }
 
             if (mPollingLoopState == PollingLoopState.DELIVERING_TO_PREFERRED) {
-                if (isGesturePollFrameDetected(mPendingPollingLoopFrames)) {
-                    Log.i(TAG, "GesturePollFrameDetected: Stay in observe mode");
-                } else if (!shouldSendPollingFramesToApp()) {
-                    Log.i(TAG, "onPollingLoopDetected: No GesturePollFrame Detected"
-                            + ", allowing transaction");
-                    allowOneTransaction();
+                Pair<Messenger, ComponentName> serviceAndName =
+                        bindToForegroundServiceOrDefaultForPollingLoop();
+                if (serviceAndName != null) {
+                    sendFramesToServiceLocked(serviceAndName.first, serviceAndName.second,
+                            mPendingPollingLoopFrames);
+                    mPendingPollingLoopFrames = null;
                 } else {
-                    Pair<Messenger, ComponentName> serviceAndName =
-                            bindToForegroundServiceOrDefaultForPollingLoop();
-                    if (serviceAndName != null) {
-                        sendFramesToServiceLocked(serviceAndName.first, serviceAndName.second,
-                                mPendingPollingLoopFrames);
-                        mPendingPollingLoopFrames = null;
-                    } else {
-                        Log.i(TAG, "onPollingLoopDetected: No preferred service to deliver "
-                                + "polling frames to, allowing transaction");
-                        allowOneTransaction();
-                    }
+                    Log.i(TAG, "onPollingLoopDetected: No preferred service to deliver "
+                            + "polling frames to, allowing transaction");
+                    allowOneTransaction();
                 }
             }
         }
@@ -1250,92 +1203,6 @@ public class HostEmulationManager {
             intent.setPackage(NfcInjector.getInstance().getNfcPackageName());
             mContext.sendBroadcastAsUser(intent, UserHandle.ALL);
         }
-    }
-
-    /**
-     * If {@link NfcService#isObserveModeAlwaysOnEnabled()} is {@code false}, then this returns
-     * {@code true} because always on mode is off and observe mode state is explicitly controlled
-     * by apps.
-     */
-    public boolean shouldSendPollingFramesToApp() {
-        if (!NfcService.getInstance().isObserveModeAlwaysOnEnabled()) {
-            return true;
-        }
-        return mIsAppRequestedObserveModeEnabled;
-    }
-
-    /**
-     * Set the always on observe mode state.
-     */
-    public void setObserveModeAlwaysOn(boolean enable) {
-        Log.i(TAG, "setObserveModeAlwaysOn: " + enable);
-        // Transition/Remain in observe mode if always on mode is enabled or if app requested
-        // observe mode is enabled.
-        mHandler.post(() -> NfcService.getInstance().setObserveMode(
-                enable || mIsAppRequestedObserveModeEnabled));
-    }
-
-    /**
-     * Return the app requested observe mode state.
-     *
-     * Only used when {@link NfcService#isObserveModeAlwaysOnEnabled()} is {@code true}.
-     */
-    public boolean isAppRequestedObserveModeEnabled() {
-        if (!NfcService.getInstance().isObserveModeAlwaysOnEnabled()) {
-            Log.v(TAG, "isAppRequestedObserveModeEnabled: Always on observe mode is disabled");
-            return false;
-        }
-        return mIsAppRequestedObserveModeEnabled;
-    }
-
-    /**
-     * Store the app requested observe mode state.
-     *
-     * Only used when {@link NfcService#isObserveModeAlwaysOnEnabled()} is {@code true}.
-     */
-    public boolean setAppRequestedObserveMode(boolean enable) {
-        if (!NfcService.getInstance().isObserveModeAlwaysOnEnabled()) {
-            Log.v(TAG, "setAppRequestedObserveMode: Always on observe mode is disabled");
-            return false;
-        }
-        Log.i(TAG, "setAppRequestedObserveMode: " + enable);
-        synchronized (mLock) {
-            if (isHostCardEmulationActivated()) {
-                Log.v(TAG, "setAppRequestedObserveMode in the middle of transaction, ignoring");
-                return false;
-            }
-            // update caller's observe mode request status
-            mIsAppRequestedObserveModeEnabled = enable;
-            // caller tries to disable observe mode
-            if (!enable) {
-                // allow one transaction
-                if (NfcService.getInstance().isObserveModeEnabled()) {
-                    NfcService.getInstance().setObserveMode(false);
-                    // Schedule a timer to force-enable observe mode after a timeout if there is no
-                    // transaction in progress.
-                    mHandler.postDelayed(mEnableObserveModeRunnable,
-                            RE_ENABLE_OBSERVE_MODE_DELAY_MS);
-                } else {
-                    // Send the card emulation event callback so that apps know we are NOT in
-                    // observe mode.
-                    NfcService.getInstance().onObserveModeStateChanged(false);
-                }
-            } else {
-                // Remove any left over timers set from the previous
-                if (mHandler.hasCallbacks(mEnableObserveModeRunnable)) {
-                    mHandler.removeCallbacks(mEnableObserveModeRunnable);
-                }
-                // Go back into observe mode (or remain in observe mode).
-                if (!NfcService.getInstance().isObserveModeEnabled()) {
-                    NfcService.getInstance().setObserveMode(true);
-                } else {
-                    // Send the card emulation event callback so that apps know we are in
-                    // observe mode.
-                    NfcService.getInstance().onObserveModeStateChanged(true);
-                }
-            }
-        }
-        return true;
     }
 
     private void acquireWakeLock() {
@@ -2156,9 +2023,6 @@ public class HostEmulationManager {
     }
 
     public void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
-        if (NfcService.getInstance().isObserveModeAlwaysOnEnabled()) {
-            pw.println("mIsAppRequestedObserveModeEnabled=" + mIsAppRequestedObserveModeEnabled);
-        }
         pw.println("Bound HCE-A/HCE-B services: ");
         if (mPaymentServiceBound) {
             pw.println("    payment: " + mPaymentServiceName);
