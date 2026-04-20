@@ -174,6 +174,7 @@ static bool sIsShuttingDown = false;
 #define DEFAULT_DISCOVERY_DURATION 500
 #define READER_MODE_DISCOVERY_DURATION 200
 #define FLAG_SET_DEFAULT_TECH 0x40000000
+#define DEFAULT_MAX_POLLING_WAIT_TIME 5000
 
 static void nfaConnectionCallback(uint8_t event, tNFA_CONN_EVT_DATA* eventData);
 static void nfaDeviceManagementCallback(uint8_t event,
@@ -2144,8 +2145,10 @@ static jboolean nfcManager_doDeinitialize(JNIEnv*, jobject) {
 
     tNFA_STATUS stat = NFA_Disable(!sIsRecovering);
     if (stat == NFA_STATUS_OK) {
+      int16_t max_polling_wait_time = NfcConfig::getUnsigned(
+          NAME_MAX_POLLING_WAIT_TIME, DEFAULT_MAX_POLLING_WAIT_TIME);
       LOG(DEBUG) << StringPrintf("%s: wait for completion", __func__);
-      if (!sNfaDisableEvent.wait(5000)) {
+      if (!sNfaDisableEvent.wait(max_polling_wait_time)) {
         LOG(ERROR) << StringPrintf(
             "%s: NFA_Disable() timeout, keep disabling anyway", __func__);
       }
@@ -2415,7 +2418,9 @@ static void nfcManager_doSetScreenState(JNIEnv* e, jobject o,
                                  __FUNCTION__, status);
       return;
     } else {
-      if (!sNfaSetPowerSubState.wait(5000)) {
+      int16_t max_polling_wait_time = NfcConfig::getUnsigned(
+          NAME_MAX_POLLING_WAIT_TIME, DEFAULT_MAX_POLLING_WAIT_TIME);
+      if (!sNfaSetPowerSubState.wait(max_polling_wait_time)) {
         LOG(ERROR) << StringPrintf(
             "%s: Wait for NFA_SetPowerSubStateForScreenState timeout",
             __func__);
@@ -2478,7 +2483,9 @@ static void nfcManager_doSetScreenState(JNIEnv* e, jobject o,
       LOG(ERROR) << StringPrintf("%s: fail enable SetScreenState; error=0x%X",
                                  __FUNCTION__, status);
     } else {
-      if (!sNfaSetPowerSubState.wait(5000)) {
+      int16_t max_polling_wait_time = NfcConfig::getUnsigned(
+          NAME_MAX_POLLING_WAIT_TIME, DEFAULT_MAX_POLLING_WAIT_TIME);
+      if (!sNfaSetPowerSubState.wait(max_polling_wait_time)) {
         LOG(ERROR) << StringPrintf(
             "%s: Wait for NFA_SetPowerSubStateForScreenState timeout",
             __func__);
@@ -2787,8 +2794,10 @@ static void nfcManager_setDiscoveryTech(JNIEnv* e, jobject o, jint pollTech,
 
   if (nfaStat == NFA_STATUS_OK) {
     // wait for NFA_LISTEN_DISABLED_EVT
+    int16_t max_polling_wait_time = NfcConfig::getUnsigned(
+          NAME_MAX_POLLING_WAIT_TIME, DEFAULT_MAX_POLLING_WAIT_TIME);
     LOG(DEBUG) << StringPrintf("%s: wait for completion", __func__);
-    if (!sNfaEnableDisablePollingEvent.wait(5000)) {
+    if (!sNfaEnableDisablePollingEvent.wait(max_polling_wait_time)) {
       LOG(ERROR) << StringPrintf("%s: wait for NFA_LISTEN_DISABLED_EVT timeout",
                                  __func__);
     }
@@ -3162,8 +3171,10 @@ void startRfDiscovery(bool isStart) {
     SyncEventGuard guard(sNfaEnableDisablePollingEvent);
     status = isStart ? NFA_StartRfDiscovery() : NFA_StopRfDiscovery();
     if (!sIsRecovering && status == NFA_STATUS_OK) {
+      int16_t max_polling_wait_time = NfcConfig::getUnsigned(
+          NAME_MAX_POLLING_WAIT_TIME, DEFAULT_MAX_POLLING_WAIT_TIME);
       LOG(DEBUG) << StringPrintf("%s: Wait for completion timeout", __func__);
-      if (!sNfaEnableDisablePollingEvent.wait(5000)) {
+      if (!sNfaEnableDisablePollingEvent.wait(max_polling_wait_time)) {
         LOG(ERROR) << StringPrintf(
             "%s: Wait for NFA_RF_DISCOVERY_xxxx_EVT timeout. Restart NFC "
             "service...",
