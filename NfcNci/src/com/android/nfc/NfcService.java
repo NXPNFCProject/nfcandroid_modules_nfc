@@ -2571,6 +2571,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     return false;
                 }
 
+                if(mTagConnected) {
+                    Log.w(TAG, "setObserveMode: Cannot set observe mode during tag operations.");
+                    return false;
+                }
+
                 Log.d(
                         TAG,
                         "setObserveMode: package "
