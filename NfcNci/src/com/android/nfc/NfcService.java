@@ -1130,6 +1130,35 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     }
 
 
+
+    /**
+     * Returns the SharedPreferences key for the Secure NFC setting for a specific user.
+     * @param userId The user ID.
+     * @return The user-specific preference key.
+     */
+    private String getSecureNfcPreferenceKeyForUser(int userId) {
+        return PREF_SECURE_NFC_ON + "_" + userId;
+    }
+
+    /**
+     * Loads the Secure NFC setting for the given user.
+     * @param userId The user ID for which to load the settings.
+     */
+    private void loadSecureNfcSettings(int userId) {
+        String secureNfcPreferenceKey = getSecureNfcPreferenceKeyForUser(userId);
+        // Get the user-specific preference.
+        // Fall back to the device's default setting if not found.
+        mIsSecureNfcEnabled = mPrefs.getBoolean(secureNfcPreferenceKey,
+                mDeviceConfigFacade.getDefaultSecureNfcState())
+                && mIsSecureNfcCapable;
+
+        Log.i(TAG, "Reloaded Secure NFC setting for user "
+                + userId + ". Enabled: " + mIsSecureNfcEnabled);
+
+        // Apply the newly loaded setting to the NFC controller
+        mDeviceHost.setNfcSecure(mIsSecureNfcEnabled);
+    }
+
     /** Returns true if NFC has user restriction set. */
     private boolean isNfcUserRestricted() {
         return mUserManager.getUserRestrictions().getBoolean(
@@ -1339,7 +1368,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 && NfcInjector.NfcProperties.isEuiccSupported();
         mForegroundUtils = mNfcInjector.getForegroundUtils();
         mIsSecureNfcCapable = mIsHceCapable && mDeviceConfigFacade.isSecureNfcCapable();
-        mIsSecureNfcEnabled = mPrefs.getBoolean(PREF_SECURE_NFC_ON,
+        String secureNfcPreferenceKey = getSecureNfcPreferenceKeyForUser(mUserId);
+        mIsSecureNfcEnabled = mPrefs.getBoolean(secureNfcPreferenceKey,
             mDeviceConfigFacade.getDefaultSecureNfcState())
             && mIsSecureNfcCapable;
         mDeviceHost.setNfcSecure(mIsSecureNfcEnabled);
@@ -2733,7 +2763,18 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     return false;
                 }
                 Log.i(TAG, "setNfcSecure: " + enable);
-                mPrefsEditor.putBoolean(PREF_SECURE_NFC_ON, enable);
+                final int currentUserId = getUserId();
+                final String secureNfcPreferenceKey =
+                        getSecureNfcPreferenceKeyForUser(currentUserId);
+                mPrefsEditor.putBoolean(secureNfcPreferenceKey, enable);
+                Log.i(TAG, "currentUserId: " + currentUserId);
+                // If the change is made by the Primary User (SYSTEM), use the setting
+                // as new default.
+                // Check for System User ID
+                if (currentUserId == UserHandle.SYSTEM.getIdentifier()) {
+                    mDeviceConfigFacade.setDefaultSecureNfcState(enable);
+                }
+
                 mPrefsEditor.apply();
                 mIsSecureNfcEnabled = enable;
                 mBackupManager.dataChanged();
@@ -6440,6 +6481,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 if (DBG) Log.d(TAG, action + "mReceiver.onReceive: UserId: " + userId);
                 if (mIsHceCapable) {
                     mCardEmulationManager.onUserSwitched(getUserId());
+                    loadSecureNfcSettings(userId);
                 }
 
                 mNfcInjector.onUserSwitched();
@@ -6528,7 +6570,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             } else {
                 new EnableDisableTask().execute(TASK_DISABLE);
             }
-            mIsSecureNfcEnabled = mPrefs.getBoolean(PREF_SECURE_NFC_ON,
+            String secureNfcPreferenceKey = getSecureNfcPreferenceKeyForUser(mUserId);
+            mIsSecureNfcEnabled = mPrefs.getBoolean(secureNfcPreferenceKey,
                     mDeviceConfigFacade.getDefaultSecureNfcState())
                     && mIsSecureNfcCapable;
             mDeviceHost.setNfcSecure(mIsSecureNfcEnabled);
