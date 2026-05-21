@@ -649,6 +649,7 @@ public final class NfcAdapter {
     final Context mContext;
     final HashMap<NfcUnlockHandler, INfcUnlockHandler> mNfcUnlockHandlers;
     final Object mLock;
+    private Binder mDiscoveryTechToken;
     final NfcOemExtension mNfcOemExtension;
 
 
@@ -1941,7 +1942,12 @@ public final class NfcAdapter {
         if (activity == null
                 || (pollTechnology & FLAG_SET_DEFAULT_TECH) == FLAG_SET_DEFAULT_TECH
                 || (listenTechnology & FLAG_SET_DEFAULT_TECH) == FLAG_SET_DEFAULT_TECH) {
-            Binder token = new Binder();
+            synchronized (mLock) {
+                if (mDiscoveryTechToken == null) {
+                    mDiscoveryTechToken = new Binder();
+                }
+            }
+            Binder token = mDiscoveryTechToken;
             callService(() ->
                     sService.updateDiscoveryTechnology(
                             token, pollTechnology, listenTechnology, mContext.getPackageName()));
@@ -1961,7 +1967,12 @@ public final class NfcAdapter {
     public void resetDiscoveryTechnology(@Nullable Activity activity) {
         // Allow priv apps to pass null in activity.
         if (activity == null) {
-            Binder token = new Binder();
+            synchronized (mLock) {
+                if (mDiscoveryTechToken == null) {
+                    mDiscoveryTechToken = new Binder();
+                }
+            }
+            Binder token = mDiscoveryTechToken;
             callService(() ->
                     sService.updateDiscoveryTechnology(
                             token, NfcAdapter.FLAG_USE_ALL_TECH, NfcAdapter.FLAG_USE_ALL_TECH,

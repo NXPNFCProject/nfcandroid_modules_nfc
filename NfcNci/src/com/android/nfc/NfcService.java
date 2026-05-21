@@ -2419,7 +2419,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 resetReaderModeParams();
             }
             if (mDiscoveryTechParams != null && mDiscoveryTechParams.uid == uid) {
-                mDiscoveryTechParams.binder.unlinkToDeath(mDiscoveryTechDeathRecipient, 0);
+                try {
+                    mDiscoveryTechParams.binder.unlinkToDeath(mDiscoveryTechDeathRecipient, 0);
+                } catch (NoSuchElementException e) {
+                    // ignore
+                }
                 mDeviceHost.resetDiscoveryTech();
                 mDiscoveryTechParams = null;
                 if (isNfcEnabled()) {
@@ -3073,15 +3077,23 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                         listenTech == NfcAdapter.FLAG_USE_ALL_TECH &&
                         mDiscoveryTechParams != null) {
                     try {
-                        binder.unlinkToDeath(mDiscoveryTechDeathRecipient, 0);
-                        mDeviceHost.resetDiscoveryTech();
-                        mDiscoveryTechParams = null;
+                        mDiscoveryTechParams.binder.unlinkToDeath(mDiscoveryTechDeathRecipient, 0);
                     } catch (NoSuchElementException e) {
                         Log.e(TAG, "handleTemporaryTechnologyUpdate: "
                                 + "Change Tech Binder was never registered");
                     }
+                    mDeviceHost.resetDiscoveryTech();
+                    mDiscoveryTechParams = null;
                 } else if (!(pollTech == NfcAdapter.FLAG_USE_ALL_TECH
                         && listenTech == NfcAdapter.FLAG_USE_ALL_TECH)) {
+                    if (mDiscoveryTechParams != null) {
+                        try {
+                            mDiscoveryTechParams.binder.unlinkToDeath(
+                                    mDiscoveryTechDeathRecipient, 0);
+                        } catch (NoSuchElementException e) {
+                            // ignore
+                        }
+                    }
                     if ((pollTech & NfcAdapter.FLAG_READER_KEEP) != 0) {
                         pollTech = getNfcPollTech();
                     } else {
