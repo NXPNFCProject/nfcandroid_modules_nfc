@@ -168,6 +168,34 @@ public class ScreenStateHelperTest {
     }
 
     @Test
+    public void testCheckScreenState_checkDisplayStateTrue_interactiveTrue_displayOff() {
+        // Verifies that when checkDisplayState is true, the screen state is determined by display
+        // state (OFF) even if the power manager reports the device is interactive.
+        Display mockDisplay = mock(Display.class);
+        when(mMockPowerMngr.isInteractive()).thenReturn(true);
+        when(mMockDisplayMngr.getDisplay(anyInt())).thenReturn(mockDisplay);
+        when(mMockDisplayMngr.getDisplays(anyString())).thenReturn(new Display[0]);
+        when((mockDisplay.getState())).thenReturn(Display.STATE_OFF);
+        when(mMockNfcInjector.isDeviceLocked()).thenReturn(false);
+
+        assertEquals(SCREEN_STATE_OFF_UNLOCKED, mScreenStateHelper.checkScreenState(true));
+    }
+
+    @Test
+    public void testCheckScreenState_checkDisplayStateTrue_interactiveFalse_displayOn() {
+        // Verifies that when checkDisplayState is true, the screen state is determined by display
+        // state (ON) even if the power manager reports the device is not interactive.
+        Display mockDisplay = mock(Display.class);
+        when(mMockPowerMngr.isInteractive()).thenReturn(false);
+        when(mMockDisplayMngr.getDisplay(anyInt())).thenReturn(mockDisplay);
+        when(mMockDisplayMngr.getDisplays(anyString())).thenReturn(new Display[0]);
+        when((mockDisplay.getState())).thenReturn(Display.STATE_ON);
+        when(mMockNfcInjector.isDeviceLocked()).thenReturn(false);
+
+        assertEquals(SCREEN_STATE_ON_UNLOCKED, mScreenStateHelper.checkScreenState(true));
+    }
+
+    @Test
     public void testCheckScreenState_multipleDisplays_oneOn_unlocked() {
         // Verifies that screen state is ON_UNLOCKED when one of multiple built-in displays is ON.
         // This tests the scenario where the feature flag for built-in displays is enabled.
