@@ -50,6 +50,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -1732,6 +1733,114 @@ public final class NfcServiceTest {
         verify(binder, times(2)).unlinkToDeath(any(), anyInt());
         verify(mDeviceHost).resetDiscoveryTech();
         Assert.assertNull(mNfcService.mDiscoveryTechParams);
+    }
+
+    @Test
+    public void testOnUidToBackground_unlinkThrows() throws RemoteException {
+        mNfcService.mState.set(NfcAdapter.STATE_ON);
+        mLooper.dispatchAll();
+        IBinder binder = mock(IBinder.class);
+        doThrow(new java.util.NoSuchElementException()).when(binder).unlinkToDeath(any(), anyInt());
+
+        NfcService.DiscoveryTechParams discoveryTechParams =
+                mNfcService.new DiscoveryTechParams();
+        discoveryTechParams.uid = 1;
+        discoveryTechParams.binder = binder;
+        mNfcService.mDiscoveryTechParams = discoveryTechParams;
+
+        mNfcService.onUidToBackground(1);
+
+        verify(binder).unlinkToDeath(any(), anyInt());
+        verify(mDeviceHost).resetDiscoveryTech();
+        Assert.assertNull(mNfcService.mDiscoveryTechParams);
+    }
+
+    @Test
+    public void testUpdateDiscoveryTechnology_resetTech() throws RemoteException {
+        mNfcService.mState.set(NfcAdapter.STATE_ON);
+        when(NfcInjector.isPrivileged(anyInt())).thenReturn(true);
+
+        IBinder binder = mock(IBinder.class);
+        NfcService.DiscoveryTechParams discoveryTechParams =
+                mNfcService.new DiscoveryTechParams();
+        discoveryTechParams.uid = 1;
+        discoveryTechParams.binder = binder;
+        mNfcService.mDiscoveryTechParams = discoveryTechParams;
+
+        mNfcService.mNfcAdapter.updateDiscoveryTechnology(binder,
+                NfcAdapter.FLAG_USE_ALL_TECH, NfcAdapter.FLAG_USE_ALL_TECH, PKG_NAME);
+
+        verify(binder).unlinkToDeath(any(), anyInt());
+        verify(mDeviceHost).resetDiscoveryTech();
+        Assert.assertNull(mNfcService.mDiscoveryTechParams);
+    }
+
+    @Test
+    public void testUpdateDiscoveryTechnology_resetTech_unlinkThrows() throws RemoteException {
+        mNfcService.mState.set(NfcAdapter.STATE_ON);
+        when(NfcInjector.isPrivileged(anyInt())).thenReturn(true);
+
+        IBinder binder = mock(IBinder.class);
+        doThrow(new java.util.NoSuchElementException()).when(binder).unlinkToDeath(any(), anyInt());
+
+        NfcService.DiscoveryTechParams discoveryTechParams =
+                mNfcService.new DiscoveryTechParams();
+        discoveryTechParams.uid = 1;
+        discoveryTechParams.binder = binder;
+        mNfcService.mDiscoveryTechParams = discoveryTechParams;
+
+        mNfcService.mNfcAdapter.updateDiscoveryTechnology(binder,
+                NfcAdapter.FLAG_USE_ALL_TECH, NfcAdapter.FLAG_USE_ALL_TECH, PKG_NAME);
+
+        verify(binder).unlinkToDeath(any(), anyInt());
+        verify(mDeviceHost).resetDiscoveryTech();
+        Assert.assertNull(mNfcService.mDiscoveryTechParams);
+    }
+
+    @Test
+    public void testUpdateDiscoveryTechnology_setTech() throws RemoteException {
+        mNfcService.mState.set(NfcAdapter.STATE_ON);
+        when(NfcInjector.isPrivileged(anyInt())).thenReturn(true);
+
+        IBinder binder = mock(IBinder.class);
+        IBinder newBinder = mock(IBinder.class);
+        NfcService.DiscoveryTechParams discoveryTechParams =
+                mNfcService.new DiscoveryTechParams();
+        discoveryTechParams.uid = 1;
+        discoveryTechParams.binder = binder;
+        mNfcService.mDiscoveryTechParams = discoveryTechParams;
+
+        mNfcService.mNfcAdapter.updateDiscoveryTechnology(newBinder,
+                0x01, 0x01, PKG_NAME);
+
+        verify(binder).unlinkToDeath(any(), anyInt());
+        verify(newBinder).linkToDeath(any(), anyInt());
+        Assert.assertNotNull(mNfcService.mDiscoveryTechParams);
+        Assert.assertEquals(newBinder, mNfcService.mDiscoveryTechParams.binder);
+    }
+
+    @Test
+    public void testUpdateDiscoveryTechnology_setTech_unlinkThrows() throws RemoteException {
+        mNfcService.mState.set(NfcAdapter.STATE_ON);
+        when(NfcInjector.isPrivileged(anyInt())).thenReturn(true);
+
+        IBinder binder = mock(IBinder.class);
+        doThrow(new java.util.NoSuchElementException()).when(binder).unlinkToDeath(any(), anyInt());
+        IBinder newBinder = mock(IBinder.class);
+
+        NfcService.DiscoveryTechParams discoveryTechParams =
+                mNfcService.new DiscoveryTechParams();
+        discoveryTechParams.uid = 1;
+        discoveryTechParams.binder = binder;
+        mNfcService.mDiscoveryTechParams = discoveryTechParams;
+
+        mNfcService.mNfcAdapter.updateDiscoveryTechnology(newBinder,
+                0x01, 0x01, PKG_NAME);
+
+        verify(binder).unlinkToDeath(any(), anyInt());
+        verify(newBinder).linkToDeath(any(), anyInt());
+        Assert.assertNotNull(mNfcService.mDiscoveryTechParams);
+        Assert.assertEquals(newBinder, mNfcService.mDiscoveryTechParams.binder);
     }
 
     @Test
