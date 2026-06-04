@@ -110,14 +110,14 @@ public class NfcBackupAgent extends BackupAgentHelper {
             if (logger != null) {
                 logger.logItemsBackedUp(DATA_TYPE_NFC_PREFS, 1);
                 logger.logItemsBackedUp(DATA_TYPE_NFC_TAG_APPS, 1);
-                Log.d(TAG, "Logged successful backup.");
+                Log.d(TAG, "onBackup: Logged successful backup.");
             }
         } catch (IOException e) {
             if (logger != null) {
                 logger.logItemsBackupFailed(DATA_TYPE_NFC_PREFS, 1, ERROR_EXCEPTION);
                 logger.logItemsBackupFailed(DATA_TYPE_NFC_TAG_APPS, 1, ERROR_EXCEPTION);
             }
-            Log.e(TAG, "Exception during backup.", e);
+            Log.e(TAG, "onBackup: Exception during backup.", e);
             throw e;
         }
     }
@@ -131,14 +131,14 @@ public class NfcBackupAgent extends BackupAgentHelper {
             if (logger != null) {
                 logger.logItemsRestored(DATA_TYPE_NFC_PREFS, 1);
                 logger.logItemsRestored(DATA_TYPE_NFC_TAG_APPS, 1);
-                Log.d(TAG, "Logged successful restore.");
+                Log.d(TAG, "onRestore: Logged successful restore.");
             }
         } catch (IOException e) {
             if (logger != null) {
                 logger.logItemsRestoreFailed(DATA_TYPE_NFC_PREFS, 1, ERROR_EXCEPTION);
                 logger.logItemsRestoreFailed(DATA_TYPE_NFC_TAG_APPS, 1, ERROR_EXCEPTION);
             }
-            Log.e(TAG, "Exception during restore.", e);
+            Log.e(TAG, "onRestore: Exception during restore.", e);
             throw e;
         }
     }

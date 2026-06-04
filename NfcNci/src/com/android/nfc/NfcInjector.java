@@ -267,7 +267,7 @@ public class NfcInjector {
     public ISecureElementService connectToSeService() throws RemoteException {
         SeServiceManager manager = SeFrameworkInitializer.getSeServiceManager();
         if (manager == null) {
-            Log.e(TAG, "SEServiceManager is null");
+            Log.e(TAG, "connectToSeService: SEServiceManager is null");
             return null;
         }
         return ISecureElementService.Stub.asInterface(

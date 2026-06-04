@@ -105,7 +105,7 @@ public class RfDiscoverCmdParser {
         mRawDataRfDiscoverCmd = "";
 
         if (config == null || config.length == 0) {
-            Log.i(TAG, "No RF Discover config enabled");
+            Log.i(TAG, "parse: No RF Discover config enabled");
             return;
         }
         logRfDiscoverConfigRawData(config);

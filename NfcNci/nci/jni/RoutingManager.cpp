@@ -310,8 +310,7 @@ bool RoutingManager::isTypeATypeBTechSupportedInEe(tNFA_HANDLE eeHandle) {
   }
 
   LOG(WARNING) << StringPrintf(
-      "%s:  Route %02X does not support A/B, using DH as default", fn,
-      eeHandle);
+      "%s:  Route %02X does not support A/B, using DH as default", fn, eeHandle);
   return false;
 }
 

@@ -69,6 +69,7 @@ import com.android.nfc.NfcInjector;
 import com.android.nfc.NfcService;
 import com.android.nfc.NfcStatsLog;
 import com.android.nfc.PerfettoTrigger;
+import com.android.nfc.cardemulation.HostEmulationManager.HostEmulationConnection;
 import com.android.nfc.cardemulation.RegisteredAidCache.AidResolveInfo;
 import com.android.nfc.cardemulation.util.StatsdUtils;
 import com.android.nfc.flags.Flags;
@@ -667,7 +668,7 @@ public class HostEmulationManager {
                     if (MappingForUser != null) {
                         serviceInfos = MappingForUser.get(dataStr);
                     } else {
-                        Log.e(TAG, "MappingForUser is null, CurrentUser: "
+                        Log.e(TAG, "onPollingLoopDetected: MappingForUser is null, CurrentUser: "
                                 + ActivityManager.getCurrentUser());
                         serviceInfos = null;
                     }
@@ -677,7 +678,8 @@ public class HostEmulationManager {
                     if (patternMappingForUser != null) {
                         patternSet = patternMappingForUser.keySet();
                     } else {
-                        Log.e(TAG, "patternMappingForUser is null, CurrentUser: "
+                        Log.e(TAG, "onPollingLoopDetected: "
+                                + " patternMappingForUser is null, CurrentUser: "
                                 + ActivityManager.getCurrentUser());
                         patternSet = null;
                     }
@@ -686,7 +688,7 @@ public class HostEmulationManager {
                         matchedPatterns = patternSet.stream()
                             .filter(p -> p.matcher(dataStr).matches()).toList();
                     } else {
-                        Log.e(TAG, "patternSet is null");
+                        Log.e(TAG, "onPollingLoopDetected: patternSet is null");
                         matchedPatterns = null;
                     }
                     if (matchedPatterns != null && !matchedPatterns.isEmpty()) {
@@ -731,8 +733,8 @@ public class HostEmulationManager {
                                 // after disabling observe mode.
                                 mEnableObserveModeOnFieldOff = true;
                                 Log.d(TAG,
-                                        "Polling frame matches exit frame, leaving observe mode "
-                                                + "disabled");
+                                        "onPollingLoopDetected: Polling frame matches exit frame, "
+                                                + "leaving observe mode disabled");
                             } else {
                                 allowOneTransaction();
                             }
@@ -851,6 +853,10 @@ public class HostEmulationManager {
      * This assumes the exit frame will be in the next batch of processed polling frames.
      */
     public void onObserveModeDisabledInFirmware(PollingFrame exitFrame) {
+        if (DBG) {
+            Log.d(TAG, "onObserveModeDisabledInFirmware: exitFrame="
+                    + HexFormat.of().formatHex(exitFrame.getData()));
+        }
         synchronized(mLock) {
             mFirmwareExitFrame = exitFrame;
             clearAutoDisableObserveModeRunnableLocked();
@@ -1214,8 +1220,8 @@ public class HostEmulationManager {
             mWakeLock.setWorkSource(new WorkSource(uid, packageName));
             mWakeLock.acquire(mDeviceConfig.getCeWakeLockTimeoutMillis());
         } catch (PackageManager.NameNotFoundException e) {
-            Log.w(TAG, "Failed to find uid for " + packageName + " and user "
-                    + componentNameAndUser.getUserId());
+            Log.w(TAG, "updateWakeLockWorkSource: Failed to find uid for " + packageName
+                    + " and user " + componentNameAndUser.getUserId());
         }
     }
 
