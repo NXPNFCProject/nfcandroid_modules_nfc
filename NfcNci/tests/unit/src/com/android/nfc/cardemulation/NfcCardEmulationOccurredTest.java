@@ -244,8 +244,8 @@ public final class NfcCardEmulationOccurredTest {
         when(mockAidCache.getPreferredServiceInfo())
                 .thenReturn(service);
         IBinder iBinder = new Binder();
-        ServiceConnection serviceConnection = mHostEmulation.getServiceConnection();
-        serviceConnection.onServiceConnected(componentName, iBinder);
+        ServiceConnection serviceConnection = mHostEmulation.new HostEmulationServiceConnection(0);
+	serviceConnection.onServiceConnected(componentName, iBinder);
         mHostEmulation.onPollingLoopDetected(pollingLoopTypeOnFrames);
         mHostEmulation.onPollingLoopDetected(pollingLoopTypeOnFrames);
         mHostEmulation.onPollingLoopDetected(pollingLoopTypeOffFrames);
