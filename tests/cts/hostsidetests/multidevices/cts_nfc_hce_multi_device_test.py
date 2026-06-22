@@ -1779,6 +1779,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         self.emulator.nfc_emulator.resetListenTech()
 
     def test_ndef_read(self):
+        asserts.skip("Skipped due to hardware timeout flakiness (b/498085081)")
         """Tests that the Android NDEF protocol stack can successfully read a Type 4 Tag.
 
         Test Steps:
@@ -1835,6 +1836,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         )
 
     def test_pn532_tag_presence_check(self):
+        asserts.skip("Skipped due to hardware timeout flakiness (b/498085081)")
         """Tests that the Android NFC stack correctly handles Tag detachment.
 
         Test Steps:
@@ -1925,6 +1927,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
 
 
     def test_ndef_write(self):
+        asserts.skip("Skipped due to hardware timeout flakiness (b/498085081)")
         """Tests that the Android NFC stack can correctly write NDEF message to an emulated Type 4 Tag.
 
         Test Steps:
