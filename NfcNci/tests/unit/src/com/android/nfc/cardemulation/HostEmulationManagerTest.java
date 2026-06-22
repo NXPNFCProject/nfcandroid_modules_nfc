@@ -1265,7 +1265,8 @@ public class HostEmulationManagerTest {
 
         mHostEmulationManager.getPaymentConnection().onBindingDied(WALLET_PAYMENT_SERVICE);
 
-        verify(mContext).unbindService(eq(mHostEmulationManager.getPaymentConnection()));
+        verify(mContext, times(2))
+                .unbindService(eq(mHostEmulationManager.getPaymentConnection()));
         assertFalse(
                 verify(mContext)
                         .bindServiceAsUser(
@@ -1293,6 +1294,68 @@ public class HostEmulationManagerTest {
 
         assertEquals(USER_ID, mHostEmulationManager.mPaymentServiceUserId);
         assertTrue(mHostEmulationManager.mPaymentServiceBound);
+    }
+
+    @Test
+    public void testOnPreferredPaymentServiceChanged_bindServiceAsUserReturnsFalse() {
+        when(mContext.bindServiceAsUser(any(), any(), anyInt(), any())).thenReturn(false);
+        UserHandle userHandle = UserHandle.of(USER_ID);
+
+        mHostEmulationManager.onPreferredPaymentServiceChanged(
+                new ComponentNameAndUser(USER_ID, WALLET_PAYMENT_SERVICE));
+        mTestableLooper.processAllMessages();
+
+        verify(mContext).getSystemService(eq(PowerManager.class));
+        verify(mContext).getSystemService(eq(KeyguardManager.class));
+        verify(mContext)
+                .bindServiceAsUser(
+                        mIntentArgumentCaptor.capture(),
+                        mServiceConnectionArgumentCaptor.capture(),
+                        eq(
+                                Context.BIND_AUTO_CREATE
+                                        | Context.BIND_ALLOW_BACKGROUND_ACTIVITY_STARTS),
+                        eq(userHandle));
+        verify(mContext).unbindService(mServiceConnectionArgumentCaptor.getValue());
+        assertFalse(mHostEmulationManager.mPaymentServiceBound);
+    }
+
+    @Test
+    public void testOnHostEmulationData_bindServiceAsUserReturnsFalse()
+            throws RemoteException {
+        when(mContext.bindServiceAsUser(any(), any(), anyInt(), any())).thenReturn(false);
+        byte[] mockAidData = createSelectAidData(MOCK_AID);
+        mHostEmulationManager.mState.set(HostEmulationManager.STATE_XFER);
+        ApduServiceInfo apduServiceInfo = mock(ApduServiceInfo.class);
+        RegisteredAidCache.AidResolveInfo aidResolveInfo = mRegisteredAidCache.new AidResolveInfo();
+        aidResolveInfo.services = new ArrayList<>();
+        aidResolveInfo.services.add(apduServiceInfo);
+        aidResolveInfo.category = CardEmulation.CATEGORY_PAYMENT;
+        when(apduServiceInfo.requiresUnlock()).thenReturn(false);
+        when(apduServiceInfo.requiresScreenOn()).thenReturn(false);
+        when(apduServiceInfo.isOnHost()).thenReturn(false);
+        when(apduServiceInfo.getComponent()).thenReturn(WALLET_PAYMENT_SERVICE);
+        when(apduServiceInfo.getUid()).thenReturn(USER_ID);
+        when(mNfcService.isSecureNfcEnabled()).thenReturn(false);
+        when(mKeyguardManager.isKeyguardLocked()).thenReturn(false);
+        when(mPowerManager.isScreenOn()).thenReturn(true);
+        when(mRegisteredAidCache.resolveAid(eq(MOCK_AID))).thenReturn(aidResolveInfo);
+        mHostEmulationManager.mActiveServiceName = WALLET_PAYMENT_SERVICE;
+        mHostEmulationManager.mPaymentServiceBound = false;
+
+        mHostEmulationManager.onHostEmulationData(mockAidData);
+
+        assertEquals(HostEmulationManager.STATE_W4_SERVICE, mHostEmulationManager.getState());
+        verify(mContext).getSystemService(eq(PowerManager.class));
+        verify(mContext).getSystemService(eq(KeyguardManager.class));
+        verify(mContext)
+                .bindServiceAsUser(
+                        mIntentArgumentCaptor.capture(),
+                        mServiceConnectionArgumentCaptor.capture(),
+                        eq(
+                                Context.BIND_AUTO_CREATE
+                                        | Context.BIND_ALLOW_BACKGROUND_ACTIVITY_STARTS),
+                        eq(USER_HANDLE));
+        verify(mContext).unbindService(mServiceConnectionArgumentCaptor.getValue());
     }
 
     @Test
