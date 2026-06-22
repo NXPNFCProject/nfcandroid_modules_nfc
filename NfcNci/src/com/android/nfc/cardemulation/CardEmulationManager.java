@@ -368,7 +368,8 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
     }
 
     public void resetToIdleState() {
-        mHostEmulationManager.returnToIdleState();
+        onHostCardEmulationDeactivated(NFC_HCE_APDU);
+        onHostCardEmulationDeactivated(NFC_HCE_NFCF);
     }
 
     public void onHostCardEmulationDeactivated(int technology) {
