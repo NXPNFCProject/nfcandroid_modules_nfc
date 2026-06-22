@@ -69,6 +69,7 @@ import com.android.nfc.NfcInjector;
 import com.android.nfc.NfcService;
 import com.android.nfc.NfcStatsLog;
 import com.android.nfc.PerfettoTrigger;
+import com.android.nfc.ScreenStateHelper;
 import com.android.nfc.cardemulation.HostEmulationManager.HostEmulationConnection;
 import com.android.nfc.cardemulation.RegisteredAidCache.AidResolveInfo;
 import com.android.nfc.cardemulation.util.StatsdUtils;
@@ -148,6 +149,7 @@ public class HostEmulationManager {
     final PowerManager.WakeLock mWakeLock;
     private final Looper mLooper;
     final DeviceConfigFacade mDeviceConfig;
+    final ScreenStateHelper mScreenStateHelper;
 
     @Nullable
     private final StatsdUtils mStatsdUtils;
@@ -359,7 +361,9 @@ public class HostEmulationManager {
         mPollingLoopFilters = new HashMap<Integer, Map<String, List<ApduServiceInfo>>>();
         mPollingLoopPatternFilters = new HashMap<Integer, Map<Pattern, List<ApduServiceInfo>>>();
         mDeviceConfig = nfcInjector.getDeviceConfigFacade();
-	mHandler.postDelayed(mUnbindInactiveServicesRunnable, UNBIND_SERVICES_DELAY_MS);
+        mScreenStateHelper = nfcInjector.getScreenStateHelper();
+
+        mHandler.postDelayed(mUnbindInactiveServicesRunnable, UNBIND_SERVICES_DELAY_MS);
     }
 
     public void setOemExtension(@Nullable INfcOemExtensionCallback nfcOemExtensionCallback) {
@@ -596,6 +600,13 @@ public class HostEmulationManager {
             mHandler.removeCallbacks(mAutoDisableObserveModeRunnable);
             mAutoDisableObserveModeRunnable = null;
         }
+    }
+
+    private boolean isScreenOn() {
+        boolean checkDisplayState = mDeviceConfig.getCheckDisplayStateForScreenState();
+        int screenState = mScreenStateHelper.checkScreenState(checkDisplayState);
+        return screenState == ScreenStateHelper.SCREEN_STATE_ON_UNLOCKED
+                || screenState == ScreenStateHelper.SCREEN_STATE_ON_LOCKED;
     }
 
     void onNfcFHostEmulationActivated() {
@@ -963,7 +974,7 @@ public class HostEmulationManager {
                     if (selectAid.equals(NDEF_V1_AID) || selectAid.equals(NDEF_V2_AID)) {
                         Log.w(TAG,
                                 "onHostEmulationData: Can't route NDEF AID, sending AID_NOT_FOUND");
-                    } else if (!mPowerManager.isScreenOn()) {
+                    } else if (!isScreenOn()) {
                       Log.i(TAG,
                               "onHostEmulationData: Screen is off, sending AID_NOT_FOUND, "
                                       + "but not triggering bug report");
@@ -1006,7 +1017,7 @@ public class HostEmulationManager {
                         launchTapAgain(resolveInfo.defaultService, resolveInfo.category);
                         return;
                     }
-                    if (defaultServiceInfo.requiresScreenOn() && !mPowerManager.isScreenOn()) {
+                    if (defaultServiceInfo.requiresScreenOn() && !isScreenOn()) {
                         NfcService.getInstance().sendData(AID_NOT_FOUND);
                         if (DBG) Log.d(TAG, "onHostEmulationData: requiresScreenOn()!");
                         if (mStatsdUtils != null) {
