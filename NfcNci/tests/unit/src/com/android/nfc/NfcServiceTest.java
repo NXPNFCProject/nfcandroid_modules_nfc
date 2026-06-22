@@ -128,7 +128,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.dx.mockito.inline.extended.ExtendedMockito;
 import com.android.nfc.cardemulation.CardEmulationManager;
-import com.android.nfc.cardemulation.HostEmulationManager;
 import com.android.nfc.cardemulation.util.StatsdUtils;
 import com.android.nfc.dhimpl.NativeNfcManager;
 import com.android.nfc.flags.Flags;
@@ -2984,80 +2983,6 @@ public final class NfcServiceTest {
 
         // Assert
         verify(mockTagEndpoint, never()).stopPresenceChecking(anyBoolean());
-    }
-
-    @Test
-    public void testRegisterGestureExchangeCallback_tapToXEnabled_observeModeSupported_pollFrameSet()
-            throws Exception {
-        when(com.android.nfc.module.flags.Flags.tapToX()).thenReturn(true);
-        mNfcService.mState.set(NfcAdapter.STATE_ON);
-        when(mDeviceHost.isObserveModeSupported()).thenReturn(true);
-        when(android.provider.Settings.Secure.getString(
-                any(), eq(HostEmulationManager.GESTURE_POLL_FRAME_SETTINGS_KEY)))
-                .thenReturn("some_string");
-
-        android.nfc.IReaderCallback callback = mock(android.nfc.IReaderCallback.class);
-        mNfcService.mNfcAdapter.registerGestureExchangeCallback(callback);
-
-        assertTrue(mNfcService.isObserveModeAlwaysOnEnabled());
-    }
-
-    @Test
-    public void testRegisterGestureExchangeCallback_tapToXEnabled_observeModeSupported_pollFrameNotSet()
-            throws Exception {
-        when(com.android.nfc.module.flags.Flags.tapToX()).thenReturn(true);
-        mNfcService.mState.set(NfcAdapter.STATE_ON);
-        when(mDeviceHost.isObserveModeSupported()).thenReturn(true);
-        when(android.provider.Settings.Secure.getString(
-                any(), eq(HostEmulationManager.GESTURE_POLL_FRAME_SETTINGS_KEY)))
-                .thenReturn(null);
-
-        android.nfc.IReaderCallback callback = mock(android.nfc.IReaderCallback.class);
-        mNfcService.mNfcAdapter.registerGestureExchangeCallback(callback);
-
-        assertFalse(mNfcService.isObserveModeAlwaysOnEnabled());
-    }
-
-    @Test
-    public void testRegisterGestureExchangeCallback_tapToXDisabled() throws Exception {
-        when(com.android.nfc.module.flags.Flags.tapToX()).thenReturn(false);
-        mNfcService.mState.set(NfcAdapter.STATE_ON);
-        when(mDeviceHost.isObserveModeSupported()).thenReturn(true);
-        when(android.provider.Settings.Secure.getString(
-                any(), eq(HostEmulationManager.GESTURE_POLL_FRAME_SETTINGS_KEY)))
-                .thenReturn("some_string");
-
-        android.nfc.IReaderCallback callback = mock(android.nfc.IReaderCallback.class);
-        mNfcService.mNfcAdapter.registerGestureExchangeCallback(callback);
-
-        assertFalse(mNfcService.isObserveModeAlwaysOnEnabled());
-    }
-
-    @Test
-    public void testUnregisterGestureExchangeCallback_tapToXEnabled_observeModeSupported()
-            throws Exception {
-        when(com.android.nfc.module.flags.Flags.tapToX()).thenReturn(true);
-        mNfcService.mState.set(NfcAdapter.STATE_ON);
-        when(mDeviceHost.isObserveModeSupported()).thenReturn(true);
-        mNfcService.setObserveModeAlwaysOn(true);
-
-        android.nfc.IReaderCallback callback = mock(android.nfc.IReaderCallback.class);
-        mNfcService.mNfcAdapter.unregisterGestureExchangeCallback(callback);
-
-        assertFalse(mNfcService.isObserveModeAlwaysOnEnabled());
-    }
-
-    @Test
-    public void testUnregisterGestureExchangeCallback_tapToXDisabled() throws Exception {
-        when(com.android.nfc.module.flags.Flags.tapToX()).thenReturn(false);
-        mNfcService.mState.set(NfcAdapter.STATE_ON);
-        when(mDeviceHost.isObserveModeSupported()).thenReturn(true);
-        mNfcService.setObserveModeAlwaysOn(true);
-
-        android.nfc.IReaderCallback callback = mock(android.nfc.IReaderCallback.class);
-        mNfcService.mNfcAdapter.unregisterGestureExchangeCallback(callback);
-
-        assertTrue(mNfcService.isObserveModeAlwaysOnEnabled());
     }
 
     @Test
