@@ -791,7 +791,7 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
     public void onPreferredSubscriptionChanged(int subscriptionId, boolean isActive) {
         int simType = isActive ?  getSimTypeById(subscriptionId) : TelephonyUtils.SIM_TYPE_UNKNOWN;
         Log.i(TAG, "onPreferredSubscriptionChanged: subscription_" + subscriptionId
-                + "is active(" + isActive + "), type(" + simType + ")");
+                + " is active(" + isActive + "), type(" + simType + ")");
         mRoutingOptionManager.onPreferredSimChanged(simType);
         if (simType != TelephonyUtils.SIM_TYPE_UNKNOWN) {
             updateRouteBasedOnPreferredSim();

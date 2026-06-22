@@ -3743,7 +3743,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                                     NfcService.this.setPowerSavingModeInternal(payload[1] == 0x01);
                                 } catch (Exception e) {
                                     Log.e(TAG,
-                                            "sendVendorNciMessage: Failed to set power saving mode "
+                                            "sendVendorNciMessage: "
+                                            + "Failed to set power saving mode "
                                             + e);
                                     return NCI_STATUS_FAILED;
                                 }
@@ -3770,7 +3771,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                                             response.gid, response.oid, response.payload));
                                 }
                                 return Integer.valueOf(response.status);
-                             }
+                            }
                 }});
             int status = NCI_STATUS_FAILED;
             try {
@@ -6934,7 +6935,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             }
             pw.println("---BEGIN: NATIVE CRASH LOG----");
             Scanner sc = new Scanner(file);
-            while(sc.hasNextLine()) {
+            while (sc.hasNextLine()) {
                 String s = sc.nextLine();
                 pw.println(s);
             }

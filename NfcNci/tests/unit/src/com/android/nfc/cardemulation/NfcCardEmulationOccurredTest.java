@@ -245,7 +245,7 @@ public final class NfcCardEmulationOccurredTest {
                 .thenReturn(service);
         IBinder iBinder = new Binder();
         ServiceConnection serviceConnection = mHostEmulation.new HostEmulationServiceConnection(0);
-	serviceConnection.onServiceConnected(componentName, iBinder);
+        serviceConnection.onServiceConnected(componentName, iBinder);
         mHostEmulation.onPollingLoopDetected(pollingLoopTypeOnFrames);
         mHostEmulation.onPollingLoopDetected(pollingLoopTypeOnFrames);
         mHostEmulation.onPollingLoopDetected(pollingLoopTypeOffFrames);

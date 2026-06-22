@@ -1778,6 +1778,45 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         # Reset listen tech back.
         self.emulator.nfc_emulator.resetListenTech()
 
+
+    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    def test_single_non_payment_service_with_listen_tech_poll_tech_mismatch(self):
+        """Tests successful APDU exchange between non-payment service and
+        reader does not proceed when emulator listen tech mismatches reader poll tech.
+
+        Test Steps:
+        1. Start emulator activity and set up non-payment HCE Service.
+        2. Set listen tech to Type-F on the emulator.
+        3. Start PN532 and verify transaction does not proceed.
+        4. Set listen tech to Type-A on the emulator.
+        6. Start PN532 and verify APDU exchange between reader and emulator.
+
+        Verifies:
+        1. Verifies that no APDU exchange occurs when the listen tech mismatches with poll tech.
+        2. Verifies a successful APDU exchange when no longer mismatched.
+        """
+        asserts.skip_if(int(self.emulator.adb.getprop("ro.product.first_api_level")) < 36,
+            "Tech mismatch test is only supported on Android 16+")
+        self._set_up_emulator(service_list=[_TRANSPORT_SERVICE_1],
+                              expected_service=_TRANSPORT_SERVICE_1, is_payment=False)
+        # Set listen to Type-F
+        self.emulator.nfc_emulator.setListenTech(_NFC_TECH_F_LISTEN_ON)
+
+        command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator, _TRANSPORT_SERVICE_1)
+        tag_detected, transacted = poll_and_transact(self.pn532, command_apdus[:1],
+                                                     response_apdus[:1])
+        asserts.assert_false(tag_detected, "Tag is detected unexpectedly!")
+        asserts.assert_false(transacted, "Transaction is completed unexpectedly!")
+
+        # Set listen to Type-A
+        self.emulator.nfc_emulator.setListenTech(_NFC_TECH_A_LISTEN_ON)
+        tag_detected, transacted = poll_and_transact(self.pn532, command_apdus[:1], response_apdus[:1])
+        asserts.assert_true(tag_detected, _FAILED_TAG_MSG)
+        asserts.assert_true(transacted, _FAILED_TRANSACTION_MSG)
+
+        # Reset listen tech back.
+        self.emulator.nfc_emulator.resetListenTech()
+
     def test_ndef_read(self):
         asserts.skip("Skipped due to hardware timeout flakiness (b/498085081)")
         """Tests that the Android NDEF protocol stack can successfully read a Type 4 Tag.
@@ -1886,45 +1925,6 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             lost_event,
             "Android failed to trigger TagLostException upon tag mute/removal."
         )
-
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
-    def test_single_non_payment_service_with_listen_tech_poll_tech_mismatch(self):
-        """Tests successful APDU exchange between non-payment service and
-        reader does not proceed when emulator listen tech mismatches reader poll tech.
-
-        Test Steps:
-        1. Start emulator activity and set up non-payment HCE Service.
-        2. Set listen tech to Type-F on the emulator.
-        3. Start PN532 and verify transaction does not proceed.
-        4. Set listen tech to Type-A on the emulator.
-        6. Start PN532 and verify APDU exchange between reader and emulator.
-
-        Verifies:
-        1. Verifies that no APDU exchange occurs when the listen tech mismatches with poll tech.
-        2. Verifies a successful APDU exchange when no longer mismatched.
-        """
-        asserts.skip_if(int(self.emulator.adb.getprop("ro.product.first_api_level")) < 36,
-            "Tech mismatch test is only supported on Android 16+")
-        self._set_up_emulator(service_list=[_TRANSPORT_SERVICE_1],
-                              expected_service=_TRANSPORT_SERVICE_1, is_payment=False)
-        # Set listen to Type-F
-        self.emulator.nfc_emulator.setListenTech(_NFC_TECH_F_LISTEN_ON)
-
-        command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator, _TRANSPORT_SERVICE_1)
-        tag_detected, transacted = poll_and_transact(self.pn532, command_apdus[:1],
-                                                     response_apdus[:1])
-        asserts.assert_false(tag_detected, "Tag is detected unexpectedly!")
-        asserts.assert_false(transacted, "Transaction is completed unexpectedly!")
-
-        # Set listen to Type-A
-        self.emulator.nfc_emulator.setListenTech(_NFC_TECH_A_LISTEN_ON)
-        tag_detected, transacted = poll_and_transact(self.pn532, command_apdus[:1], response_apdus[:1])
-        asserts.assert_true(tag_detected, _FAILED_TAG_MSG)
-        asserts.assert_true(transacted, _FAILED_TRANSACTION_MSG)
-
-        # Reset listen tech back.
-        self.emulator.nfc_emulator.resetListenTech()
-
 
     def test_ndef_write(self):
         asserts.skip("Skipped due to hardware timeout flakiness (b/498085081)")

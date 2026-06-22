@@ -1300,7 +1300,8 @@ void static nfaVSCallback(uint8_t event, uint16_t param_len, uint8_t* p_param) {
                             (jint)param_len, dataJavaArray.get());
         } break;
         case NCI_ANDROID_PASSIVE_OBSERVER_SUSPENDED_NTF: {
-          LOG(INFO) << StringPrintf("%s: Observe mode suspended NTF received", __func__);
+          LOG(INFO) << StringPrintf("%s: Observe mode suspended NTF received",
+                                    __func__);
           gObserveModeEnabled = false;
           struct nfc_jni_native_data* nat = getNative(NULL, NULL);
           if (!nat) {
@@ -1315,9 +1316,9 @@ void static nfaVSCallback(uint8_t event, uint16_t param_len, uint8_t* p_param) {
           }
           if (param_len <= 2) {
             LOG(ERROR) << StringPrintf(
-                 "%s: Cannot parse exit frame from "
-                 "NCI_ANDROID_PASSIVE_OBSERVER_SUSPENDED_NTF",
-                 __func__);
+                "%s: Cannot parse exit frame from "
+                "NCI_ANDROID_PASSIVE_OBSERVER_SUSPENDED_NTF",
+                __func__);
             return;
           }
           jint exit_frame_type = (jint) p_param[4];
@@ -1332,8 +1333,8 @@ void static nfaVSCallback(uint8_t event, uint16_t param_len, uint8_t* p_param) {
                                     (jbyte*)(p_param + 6));
               if (e->ExceptionCheck()) {
                   e->ExceptionClear();
-                  LOG(ERROR) << StringPrintf(
-                    "%s: failed to fill array", __func__);
+                  LOG(ERROR)
+                      << StringPrintf("%s: failed to fill array", __func__);
                   return;
               }
           }
@@ -1343,7 +1344,8 @@ void static nfaVSCallback(uint8_t event, uint16_t param_len, uint8_t* p_param) {
           return;
         } break;
         case NCI_ANDROID_PASSIVE_OBSERVER_RESUMED_NTF: {
-          LOG(INFO) << StringPrintf("%s: Observe mode resumed NTF received", __func__);
+          LOG(INFO) << StringPrintf("%s: Observe mode resumed NTF received",
+                                    __func__);
           gObserveModeEnabled = true;
           struct nfc_jni_native_data *nat = getNative(NULL, NULL);
           if (!nat) {
@@ -2797,7 +2799,7 @@ static void nfcManager_setDiscoveryTech(JNIEnv* e, jobject o, jint pollTech,
   if (nfaStat == NFA_STATUS_OK) {
     // wait for NFA_LISTEN_DISABLED_EVT
     int16_t max_polling_wait_time = NfcConfig::getUnsigned(
-          NAME_MAX_POLLING_WAIT_TIME, DEFAULT_MAX_POLLING_WAIT_TIME);
+        NAME_MAX_POLLING_WAIT_TIME, DEFAULT_MAX_POLLING_WAIT_TIME);
     LOG(DEBUG) << StringPrintf("%s: wait for completion", __func__);
     if (!sNfaEnableDisablePollingEvent.wait(max_polling_wait_time)) {
       LOG(ERROR) << StringPrintf("%s: wait for NFA_LISTEN_DISABLED_EVT timeout",

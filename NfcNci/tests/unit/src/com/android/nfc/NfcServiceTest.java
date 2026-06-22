@@ -2984,17 +2984,6 @@ public final class NfcServiceTest {
     }
 
     @Test
-    public void testGetT4tNfceeAid() {
-        byte[] aidBytes = {(byte) 0xD2, 0x76, 0x00, 0x00, (byte) 0x85, 0x01, 0x01};
-        when(mDeviceHost.getT4tNfceeAid()).thenReturn(aidBytes);
-        String aid = mNfcService.getT4tNfceeAid();
-        assertThat(aid).isEqualTo("D2760000850101");
-        when(mDeviceHost.getT4tNfceeAid()).thenReturn(null);
-        aid = mNfcService.getT4tNfceeAid();
-        assertThat(aid).isNull();
-    }
-
-    @Test
     public void testMsg_Ndef_Tag_GestureExchange() throws RemoteException {
         Handler handler = mNfcService.getHandler();
         Assert.assertNotNull(handler);
@@ -3065,5 +3054,17 @@ public final class NfcServiceTest {
         Assert.assertNotEquals(12345L, mNfcService.mCookieUpToDate);
         Assert.assertTrue(mNfcService.mCookieUpToDate >= 0);
         verify(tagEndpoint, atLeastOnce()).startPresenceChecking(anyInt(), any());
+    }
+
+    @Test
+    public void testGetT4tNfceeAid() {
+        byte[] aidBytes = {(byte) 0xD2, 0x76, 0x00, 0x00, (byte) 0x85, 0x01, 0x01};
+        when(mDeviceHost.getT4tNfceeAid()).thenReturn(aidBytes);
+        String aid = mNfcService.getT4tNfceeAid();
+        assertThat(aid).isEqualTo("D2760000850101");
+
+        when(mDeviceHost.getT4tNfceeAid()).thenReturn(null);
+        aid = mNfcService.getT4tNfceeAid();
+        assertThat(aid).isNull();
     }
 }

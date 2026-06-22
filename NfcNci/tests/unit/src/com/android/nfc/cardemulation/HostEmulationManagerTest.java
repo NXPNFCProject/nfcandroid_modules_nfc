@@ -427,15 +427,16 @@ public class HostEmulationManagerTest {
         Intent intent = mIntentArgumentCaptor.getValue();
         assertEquals(HostApduService.SERVICE_INTERFACE, intent.getAction());
         assertEquals(WALLET_PAYMENT_SERVICE, intent.getComponent());
-    	assertTrue(mHostEmulationManager.isServiceBounded(USER_ID, WALLET_PAYMENT_SERVICE));
+        assertTrue(mHostEmulationManager.isServiceBounded(USER_ID, WALLET_PAYMENT_SERVICE));
     }
 
     @Test
     public void testOnPreferredForegroundServiceChanged_nullService() {
-	mHostEmulationManager.mComponentNameToConnectionsMap.put(
+        mHostEmulationManager.mComponentNameToConnectionsMap.put(
                 new ComponentNameAndUser(USER_ID, WALLET_PAYMENT_SERVICE),
                 new HostEmulationManager.HostEmulationConnection(USER_ID, WALLET_PAYMENT_SERVICE,
                         mHostEmulationManager.getServiceConnection(), mMessenger));
+
         mHostEmulationManager.onPreferredForegroundServiceChanged(
                 new ComponentNameAndUser(USER_ID, null));
 
@@ -449,17 +450,18 @@ public class HostEmulationManagerTest {
     public void testOnPreferredForegroundServiceChanged_nullService_previouslyBoundService() {
         when(mContext.bindServiceAsUser(any(), any(), anyInt(), any())).thenReturn(true);
         UserHandle userHandle = UserHandle.of(USER_ID);
-	mHostEmulationManager.mComponentNameToConnectionsMap.put(
+        mHostEmulationManager.mComponentNameToConnectionsMap.put(
                 new ComponentNameAndUser(USER_ID, WALLET_PAYMENT_SERVICE),
                 new HostEmulationManager.HostEmulationConnection(USER_ID, WALLET_PAYMENT_SERVICE,
                         mHostEmulationManager.getServiceConnection(), mMessenger));
+
         mHostEmulationManager.onPreferredForegroundServiceChanged(
                 new ComponentNameAndUser(USER_ID, WALLET_PAYMENT_SERVICE));
 
         verify(mContext).getSystemService(eq(PowerManager.class));
         verify(mContext).getSystemService(eq(KeyguardManager.class));
         verifyNoMoreInteractions(mContext);
-    	assertTrue(mHostEmulationManager.isServiceBounded(USER_ID, WALLET_PAYMENT_SERVICE));
+        assertTrue(mHostEmulationManager.isServiceBounded(USER_ID, WALLET_PAYMENT_SERVICE));
     }
 
     @Test
@@ -850,8 +852,8 @@ public class HostEmulationManagerTest {
         assertEquals(HostApduService.SERVICE_INTERFACE, intent.getAction());
         assertEquals(WALLET_PAYMENT_SERVICE, intent.getComponent());
         assertNotNull(mServiceConnectionArgumentCaptor.getValue());
-	assertTrue(mHostEmulationManager.isServiceBounded(USER_ID, WALLET_PAYMENT_SERVICE));
-	verifyNoMoreInteractions(mContext);
+        assertTrue(mHostEmulationManager.isServiceBounded(USER_ID, WALLET_PAYMENT_SERVICE));
+        verifyNoMoreInteractions(mContext);
 
         mHostEmulationManager.onFieldChangeDetected(false);
         verify(mWakeLock).release();
@@ -993,8 +995,8 @@ public class HostEmulationManagerTest {
         assertEquals(HostApduService.SERVICE_INTERFACE, intent.getAction());
         assertEquals(WALLET_PAYMENT_SERVICE, intent.getComponent());
         assertNotNull(mServiceConnectionArgumentCaptor.getValue());
-	assertTrue(mHostEmulationManager.isServiceBounded(USER_ID, WALLET_PAYMENT_SERVICE));
-	verifyNoMoreInteractions(mContext);
+        assertTrue(mHostEmulationManager.isServiceBounded(USER_ID, WALLET_PAYMENT_SERVICE));
+        verifyNoMoreInteractions(mContext);
     }
 
     @Test
@@ -1015,10 +1017,10 @@ public class HostEmulationManagerTest {
             throws RemoteException {
         mHostEmulationManager.mActiveService = mMessenger;
         mHostEmulationManager.mComponentNameToConnectionsMap.put(
-			new ComponentNameAndUser(USER_ID, WALLET_PAYMENT_SERVICE),
-			new HostEmulationManager.HostEmulationConnection(USER_ID, WALLET_PAYMENT_SERVICE,
-				mHostEmulationManager.getServiceConnection(), mMessenger));
-	mHostEmulationManager.mEnableObserveModeAfterTransaction = true;
+                new ComponentNameAndUser(USER_ID, WALLET_PAYMENT_SERVICE),
+                new HostEmulationManager.HostEmulationConnection(USER_ID, WALLET_PAYMENT_SERVICE,
+                        mHostEmulationManager.getServiceConnection(), mMessenger));
+        mHostEmulationManager.mEnableObserveModeAfterTransaction = true;
 
         mHostEmulationManager.onHostEmulationDeactivated();
         mTestableLooper.processAllMessages();
@@ -1026,11 +1028,11 @@ public class HostEmulationManagerTest {
         assertNull(mHostEmulationManager.mActiveService);
         assertNull(mHostEmulationManager.mActiveServiceName);
         assertFalse(mHostEmulationManager.mComponentNameToConnectionsMap.isEmpty());
-	assertNull(mHostEmulationManager.mPendingPollingLoopFrames);
+        assertNull(mHostEmulationManager.mPendingPollingLoopFrames);
         assertEquals(Process.INVALID_UID, mHostEmulationManager.mActiveServiceUserId);
         assertEquals(HostEmulationManager.STATE_IDLE, mHostEmulationManager.getState());
         assertTrue(mHostEmulationManager.isServiceBounded(USER_ID, WALLET_PAYMENT_SERVICE));
-	verify(mMessenger).send(mMessageArgumentCaptor.capture());
+        verify(mMessenger).send(mMessageArgumentCaptor.capture());
         Message message = mMessageArgumentCaptor.getValue();
         assertEquals(HostApduService.MSG_DEACTIVATED, message.what);
         assertEquals(HostApduService.DEACTIVATION_LINK_LOSS, message.arg1);
@@ -1056,12 +1058,12 @@ public class HostEmulationManagerTest {
         assertNull(mHostEmulationManager.mActiveService);
         assertNull(mHostEmulationManager.mActiveServiceName);
         assertTrue(mHostEmulationManager.mComponentNameToConnectionsMap.isEmpty());
-	assertNull(mHostEmulationManager.mPendingPollingLoopFrames);
+        assertNull(mHostEmulationManager.mPendingPollingLoopFrames);
         assertEquals(Process.INVALID_UID, mHostEmulationManager.mActiveServiceUserId);
         assertEquals(HostEmulationManager.STATE_IDLE, mHostEmulationManager.getState());
         assertFalse(mHostEmulationManager.mEnableObserveModeAfterTransaction);
         assertFalse(mHostEmulationManager.isServiceBounded(USER_ID, WALLET_PAYMENT_SERVICE));
-	verify(mContext).getSystemService(eq(PowerManager.class));
+        verify(mContext).getSystemService(eq(PowerManager.class));
         verify(mContext).getSystemService(eq(KeyguardManager.class));
         verifyNoMoreInteractions(mMessenger);
         verifyNoMoreInteractions(mMessenger);
@@ -1080,7 +1082,7 @@ public class HostEmulationManagerTest {
         assertNull(mHostEmulationManager.mActiveServiceName);
         assertEquals(Process.INVALID_UID, mHostEmulationManager.mActiveServiceUserId);
         assertFalse(mHostEmulationManager.isServiceBounded(USER_ID, WALLET_PAYMENT_SERVICE));
-	verify(mContext).getSystemService(eq(PowerManager.class));
+        verify(mContext).getSystemService(eq(PowerManager.class));
         verify(mContext).getSystemService(eq(KeyguardManager.class));
         verify(mContext).sendBroadcastAsUser(mIntentArgumentCaptor.capture(), eq(UserHandle.ALL));
         assertEquals(HostEmulationManager.STATE_W4_SELECT, mHostEmulationManager.getState());
@@ -1097,7 +1099,7 @@ public class HostEmulationManagerTest {
                 new ComponentNameAndUser(USER_ID, WALLET_PAYMENT_SERVICE),
                 new HostEmulationManager.HostEmulationConnection(USER_ID, WALLET_PAYMENT_SERVICE,
                         mHostEmulationManager.getServiceConnection(), mMessenger));
-	mHostEmulationManager.mState.set(HostEmulationManager.STATE_XFER);
+        mHostEmulationManager.mState.set(HostEmulationManager.STATE_XFER);
 
         mHostEmulationManager.onOffHostAidSelectedOrTransaction();
 
@@ -1105,7 +1107,7 @@ public class HostEmulationManagerTest {
         assertNull(mHostEmulationManager.mActiveServiceName);
         assertEquals(Process.INVALID_UID, mHostEmulationManager.mActiveServiceUserId);
         assertTrue(mHostEmulationManager.isServiceBounded(USER_ID, WALLET_PAYMENT_SERVICE));
-	verify(mContext).getSystemService(eq(PowerManager.class));
+        verify(mContext).getSystemService(eq(PowerManager.class));
         verify(mContext).getSystemService(eq(KeyguardManager.class));
         verify(mContext).sendBroadcastAsUser(mIntentArgumentCaptor.capture(), eq(UserHandle.ALL));
         assertEquals(HostEmulationManager.STATE_W4_SELECT, mHostEmulationManager.getState());
@@ -1126,7 +1128,7 @@ public class HostEmulationManagerTest {
                 new ComponentNameAndUser(USER_ID, WALLET_PAYMENT_SERVICE),
                 new HostEmulationManager.HostEmulationConnection(USER_ID, WALLET_PAYMENT_SERVICE,
                         mHostEmulationManager.getServiceConnection(), mMessenger));
-	mHostEmulationManager.mState.set(HostEmulationManager.STATE_IDLE);
+        mHostEmulationManager.mState.set(HostEmulationManager.STATE_IDLE);
 
         mHostEmulationManager.onOffHostAidSelectedOrTransaction();
 
@@ -1134,7 +1136,7 @@ public class HostEmulationManagerTest {
         assertNull(mHostEmulationManager.mActiveServiceName);
         assertEquals(Process.INVALID_UID, mHostEmulationManager.mActiveServiceUserId);
         assertTrue(mHostEmulationManager.isServiceBounded(USER_ID, WALLET_PAYMENT_SERVICE));
-	verify(mContext).getSystemService(eq(PowerManager.class));
+        verify(mContext).getSystemService(eq(PowerManager.class));
         verify(mContext).getSystemService(eq(KeyguardManager.class));
         verify(mContext).sendBroadcastAsUser(mIntentArgumentCaptor.capture(), eq(UserHandle.ALL));
         assertEquals(HostEmulationManager.STATE_W4_SELECT, mHostEmulationManager.getState());
@@ -1155,8 +1157,9 @@ public class HostEmulationManagerTest {
         mHostEmulationManager
                 .getServiceConnection()
                 .onServiceConnected(WALLET_PAYMENT_SERVICE, service);
-	int currentUserId = UserHandle.CURRENT.getIdentifier();
-	assertTrue(mHostEmulationManager.isServiceBounded(currentUserId, WALLET_PAYMENT_SERVICE));
+
+        int currentUserId = UserHandle.CURRENT.getIdentifier();
+        assertTrue(mHostEmulationManager.isServiceBounded(currentUserId, WALLET_PAYMENT_SERVICE));
         verify(mStatsdUtils).notifyCardEmulationEventServiceBound();
         assertEquals(HostEmulationManager.STATE_XFER, mHostEmulationManager.getState());
         assertNull(mHostEmulationManager.mSelectApdu);
@@ -1176,8 +1179,9 @@ public class HostEmulationManagerTest {
         mHostEmulationManager
                 .getServiceConnection()
                 .onServiceConnected(WALLET_PAYMENT_SERVICE, service);
-	int currentUserId = UserHandle.CURRENT.getIdentifier();
-	assertTrue(mHostEmulationManager.isServiceBounded(currentUserId, WALLET_PAYMENT_SERVICE));
+
+        int currentUserId = UserHandle.CURRENT.getIdentifier();
+        assertTrue(mHostEmulationManager.isServiceBounded(currentUserId, WALLET_PAYMENT_SERVICE));
         assertEquals(HostEmulationManager.STATE_W4_SELECT, mHostEmulationManager.getState());
         assertNull(mHostEmulationManager.mPollingFramesToSend.get(WALLET_PAYMENT_SERVICE));
         verify(service).transact(eq(1), any(), eq(null), eq(1));
@@ -1197,15 +1201,16 @@ public class HostEmulationManagerTest {
 
     @Test
     public void testServiceConnectionOnServiceDisconnected() {
-	int currentUserId = UserHandle.CURRENT.getIdentifier();
-	mHostEmulationManager.mComponentNameToConnectionsMap.put(
-			new ComponentNameAndUser(currentUserId, WALLET_PAYMENT_SERVICE),
-			new HostEmulationManager.HostEmulationConnection(
-				currentUserId, WALLET_PAYMENT_SERVICE,
-				mHostEmulationManager.getServiceConnection(), mMessenger));
+        int currentUserId = UserHandle.CURRENT.getIdentifier();
+        mHostEmulationManager.mComponentNameToConnectionsMap.put(
+                new ComponentNameAndUser(currentUserId, WALLET_PAYMENT_SERVICE),
+                new HostEmulationManager.HostEmulationConnection(
+                        currentUserId, WALLET_PAYMENT_SERVICE,
+                        mHostEmulationManager.getServiceConnection(), mMessenger));
 
         mHostEmulationManager.getServiceConnection().onServiceDisconnected(WALLET_PAYMENT_SERVICE);
-	assertFalse(mHostEmulationManager.isServiceBounded(currentUserId, WALLET_PAYMENT_SERVICE));
+
+        assertFalse(mHostEmulationManager.isServiceBounded(currentUserId, WALLET_PAYMENT_SERVICE));
     }
 
     @Test

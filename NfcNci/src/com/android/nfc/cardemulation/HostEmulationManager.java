@@ -623,8 +623,8 @@ public class HostEmulationManager {
 
     void rescheduleInactivityChecks() {
         mHandler.removeCallbacks(mReturnToIdleStateRunnable);
-            mHandler.removeCallbacks(mUnbindInactiveServicesRunnable);
-            mHandler.postDelayed(mUnbindInactiveServicesRunnable, UNBIND_SERVICES_DELAY_MS);
+        mHandler.removeCallbacks(mUnbindInactiveServicesRunnable);
+        mHandler.postDelayed(mUnbindInactiveServicesRunnable, UNBIND_SERVICES_DELAY_MS);
     }
 
     private void setPollingLoopStateLocked(PollingLoopState state) {
@@ -1273,7 +1273,7 @@ public class HostEmulationManager {
                     + "payment service but is not, binding now");
             bindPaymentServiceLocked(userId, preferredPaymentServiceName);
             return null;
-	    } else if (mComponentNameToConnectionsMap.containsKey(newServiceAndUser)
+        } else if (mComponentNameToConnectionsMap.containsKey(newServiceAndUser)
                 && mComponentNameToConnectionsMap.get(newServiceAndUser).mMessenger != null) {
             if (VDBG) {
                 Log.d(TAG, "bindServiceIfNeededLocked: Service" + service
@@ -1294,10 +1294,10 @@ public class HostEmulationManager {
             aidIntent.setComponent(service);
             try {
                 ServiceConnection connection = new HostEmulationServiceConnection(userId);
-		mComponentNameToConnectionsMap.put(
-		  new ComponentNameAndUser(userId, service),
-		  new HostEmulationConnection(userId, service, connection));
-		boolean serviceBound =
+                mComponentNameToConnectionsMap.put(
+                    new ComponentNameAndUser(userId, service),
+                    new HostEmulationConnection(userId, service, connection));
+                boolean serviceBound =
                         mContext.bindServiceAsUser(
                                 aidIntent,
                                 connection,
@@ -1346,7 +1346,7 @@ public class HostEmulationManager {
                 mActiveServiceName = mPaymentServiceName;
                 mActiveServiceUserId = mPaymentServiceUserId;
             } else {
-                    for (Map.Entry<ComponentNameAndUser, HostEmulationConnection> entry :
+                for (Map.Entry<ComponentNameAndUser, HostEmulationConnection> entry :
                         mComponentNameToConnectionsMap.entrySet()) {
                     }
                 }
@@ -1387,15 +1387,15 @@ public class HostEmulationManager {
                 mActiveServiceName = mPaymentServiceName;
                 mActiveServiceUserId = mPaymentServiceUserId;
             } else {
-            	for (Map.Entry<ComponentNameAndUser, HostEmulationConnection> entry :
-		mComponentNameToConnectionsMap.entrySet()) {
-		if (service.equals(entry.getValue().mMessenger)) {
-			mActiveServiceName = entry.getKey().getComponentName();
-			mActiveServiceUserId = entry.getKey().getUserId();
-			break;
-		}
-		}
-	    }
+                for (Map.Entry<ComponentNameAndUser, HostEmulationConnection> entry :
+                        mComponentNameToConnectionsMap.entrySet()) {
+                    if (service.equals(entry.getValue().mMessenger)) {
+                        mActiveServiceName = entry.getKey().getComponentName();
+                        mActiveServiceUserId = entry.getKey().getUserId();
+                        break;
+                    }
+                }
+            }
         }
         Message msg = Message.obtain(null, HostApduService.MSG_POLLING_LOOP);
         Bundle msgData = new Bundle();
@@ -1443,7 +1443,7 @@ public class HostEmulationManager {
             try {
                 mContext.unbindService(mPaymentConnection);
                 mComponentNameToConnectionsMap.remove(
-                        new ComponentNameAndUser(mPaymentServiceUserId, mPaymentServiceName));
+                    new ComponentNameAndUser(mPaymentServiceUserId, mPaymentServiceName));
             } catch (Exception e) {
                 Log.w(TAG, "unbindPaymentServiceLocked: Failed to unbind: " + mPaymentServiceName,
                         e);
@@ -1467,9 +1467,9 @@ public class HostEmulationManager {
         intent.setComponent(serviceName);
         try {
             mComponentNameToConnectionsMap.put(
-		new ComponentNameAndUser(userId, serviceName),
-		new HostEmulationConnection(userId, serviceName, mPaymentConnection));
-	    if (mContext.bindServiceAsUser(intent, mPaymentConnection,
+                    new ComponentNameAndUser(userId, serviceName),
+                    new HostEmulationConnection(userId, serviceName, mPaymentConnection));
+            if (mContext.bindServiceAsUser(intent, mPaymentConnection,
                     Context.BIND_AUTO_CREATE | Context.BIND_ALLOW_BACKGROUND_ACTIVITY_STARTS,
                     UserHandle.of(userId))) {
                 mPaymentServiceBound = true;
@@ -1510,10 +1510,10 @@ public class HostEmulationManager {
      * invocation which is only triggered when the next NFC transaction occurs.
      */
     void unbindServiceIfNeededLocked(boolean force) {
-    if (force) {
-	    unbindInactiveServicesLocked();
-	    return;
-	    }
+        if (force) {
+            unbindInactiveServicesLocked();
+            return;
+        }
     }
 
     void launchTapAgain(ApduServiceInfo service, String category) {
@@ -1645,13 +1645,13 @@ public class HostEmulationManager {
                 mPaymentServiceName = name;
                 mPaymentService = new Messenger(service);
                 paymentServiceName = mPaymentServiceName;
-		if (mComponentNameToConnectionsMap.containsKey(
+                if (mComponentNameToConnectionsMap.containsKey(
                         new ComponentNameAndUser(mPaymentServiceUserId, name))) {
-                            mComponentNameToConnectionsMap.get(
-			    new ComponentNameAndUser(mPaymentServiceUserId, name)).mMessenger =
+                    mComponentNameToConnectionsMap.get(
+                            new ComponentNameAndUser(mPaymentServiceUserId, name)).mMessenger =
                             mPaymentService;
-                    } else {
-                        mComponentNameToConnectionsMap.put(
+                } else {
+                    mComponentNameToConnectionsMap.put(
                             new ComponentNameAndUser(mPaymentServiceUserId, name),
                             new HostEmulationConnection(mPaymentServiceUserId, name,
                                     this, mPaymentService));
@@ -1692,9 +1692,9 @@ public class HostEmulationManager {
             Log.i(TAG, "onServiceDisconnected: " + name);
             ComponentName paymentServiceName = new ComponentName("", "");
             synchronized (mLock) {
-                    ComponentNameAndUser nameAndUser =
-                            new ComponentNameAndUser(mPaymentServiceUserId, name);
-                    mComponentNameToConnectionsMap.remove(nameAndUser);
+                ComponentNameAndUser nameAndUser =
+                        new ComponentNameAndUser(mPaymentServiceUserId, name);
+                mComponentNameToConnectionsMap.remove(nameAndUser);
                 if (mPaymentServiceName != null) paymentServiceName = mPaymentServiceName;
                 mPaymentService = null;
                 mPaymentServiceName = null;
@@ -1794,13 +1794,12 @@ public class HostEmulationManager {
                     return;
                 }
                 Messenger messenger = new Messenger(service);
-                    ComponentNameAndUser key = new ComponentNameAndUser(mUserId, name);
-                    if (mComponentNameToConnectionsMap.containsKey(key)) {
-                        mComponentNameToConnectionsMap.get(key).mMessenger = messenger;
+                ComponentNameAndUser key = new ComponentNameAndUser(mUserId, name);
+                if (mComponentNameToConnectionsMap.containsKey(key)) {
+                    mComponentNameToConnectionsMap.get(key).mMessenger = messenger;
                 } else {
-                	mComponentNameToConnectionsMap.put(key,
-				new HostEmulationConnection(mUserId, name, this, messenger));
-				
+                    mComponentNameToConnectionsMap.put(key,
+                        new HostEmulationConnection(mUserId, name, this, messenger));
                 }
 
                 if (nfcHceLatencyEvents()) {
@@ -1848,8 +1847,8 @@ public class HostEmulationManager {
         public void onServiceDisconnected(ComponentName name) {
             synchronized (mLock) {
                 Log.d(TAG, "onServiceDisconnected: unbound: " + name);
-                    ComponentNameAndUser nameAndUser = new ComponentNameAndUser(mUserId, name);
-                    mComponentNameToConnectionsMap.remove(nameAndUser);
+                ComponentNameAndUser nameAndUser = new ComponentNameAndUser(mUserId, name);
+                mComponentNameToConnectionsMap.remove(nameAndUser);
             }
         }
 
@@ -1991,8 +1990,8 @@ public class HostEmulationManager {
         // TODO make this a repeated field and return all the services
         if (mActiveServiceName != null) {
             Utils.dumpDebugComponentName(
-        	mActiveServiceName, proto, HostEmulationManagerProto.SERVICE_NAME);
-	}
+                    mActiveServiceName, proto, HostEmulationManagerProto.SERVICE_NAME);
+        }
     }
 
     @VisibleForTesting
@@ -2030,8 +2029,8 @@ public class HostEmulationManager {
 
     @VisibleForTesting
     public Boolean isServiceBounded(@UserIdInt int userId, ComponentName componentName) {
-            return mComponentNameToConnectionsMap.containsKey(
-                    new ComponentNameAndUser(userId, componentName));
+        return mComponentNameToConnectionsMap.containsKey(
+                new ComponentNameAndUser(userId, componentName));
     }
 
     @VisibleForTesting

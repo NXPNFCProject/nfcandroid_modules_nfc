@@ -24,7 +24,7 @@
     <string name="pairing_peripheral" msgid="5319926791325775305">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> po çiftohet"</string>
     <string name="pairing_peripheral_failed" msgid="5905500974914016272">"<xliff:g id="DEVICE_NAME">%1$s</xliff:g> nuk mund të çiftohej"</string>
     <string name="failed_to_enable_bt" msgid="5978409523818027926">"Bluetooth-i nuk mund të aktivizohej"</string>
-    <string name="confirm_pairing" msgid="6587809107551647782">"E konfirmon që dëshiron ta çiftosh pajisjen me bluetooth: <xliff:g id="DEVICE_NAME">%1$s</xliff:g>?"</string>
+    <string name="confirm_pairing" msgid="6587809107551647782">"E konfirmon që dëshiron ta çiftosh pajisjen me Bluetooth: <xliff:g id="DEVICE_NAME">%1$s</xliff:g>?"</string>
     <string name="pair_yes" msgid="3624986519335168604">"Po"</string>
     <string name="pair_no" msgid="1333098406083837138">"Jo"</string>
     <string name="tap_again_to_pay" msgid="4338572813931564301">"Trokit përsëri për të paguar me <xliff:g id="APP">%1$s</xliff:g>"</string>
