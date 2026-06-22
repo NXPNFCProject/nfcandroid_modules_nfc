@@ -1266,6 +1266,7 @@ public class NfcAdapterTest {
     @Test
     @RequiresFlagsEnabled(com.android.nfc.module.flags.Flags.FLAG_TAP_TO_X)
     public void testRegisterAndUnregisterGestureExchangeCallbacks() {
+        assumeTrue(getVendorApiLevel() > 202504);
         NfcAdapter nfcAdapter = getDefaultAdapter();
         assertNotNull(nfcAdapter);
         NfcAdapter.ReaderCallback cb = new CtsReaderCallback();
