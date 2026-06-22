@@ -130,6 +130,7 @@ import android.widget.Toast;
 import androidx.annotation.VisibleForTesting;
 
 import com.android.internal.annotations.GuardedBy;
+import com.android.modules.utils.build.SdkLevel;
 import com.android.nfc.DeviceHost.DeviceHostListener;
 import com.android.nfc.DeviceHost.TagEndpoint;
 import com.android.nfc.cardemulation.CardEmulationManager;
@@ -5680,6 +5681,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     }
 
                     if (mGestureExchangeEnabled
+                            && readerParams == null
                             && tag.getConnectedTechnology() == TagTechnology.ISO_DEP) {
                         int[] retCode;
                         byte[] respData;
@@ -5704,10 +5706,28 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                                         && respData[respData.length - 1] == 0x00) {
                                     Log.d(TAG, "Gesture Exchange secondary AID exists, "
                                             + "skipping ndef read");
-                                    ReaderModeParams gestureReaderModeParams =
-                                            new ReaderModeParams();
-                                    gestureReaderModeParams.flags = GESTURE_EXCHANGE_SECONDARY_FLAG;
-                                    dispatchTagEndpoint(tag, gestureReaderModeParams);
+                                    if (SdkLevel.isAtLeastC()
+                                            && mNfcGestureExchangeCallback != null) {
+                                        try {
+                                            mCookieUpToDate = mCookieGenerator.nextLong() >>> 1;
+                                            String gestureComponent = Settings.Secure.getString(
+                                                    mContext.getContentResolver(),
+                                                    GESTURE_EXCHANGE_COMPONENT_SETTINGS_KEY);
+                                            Tag gestureTag = buildGestureTag(tag,
+                                                    gestureComponent, gestureSecondaryAid);
+                                            registerTagObject(tag);
+                                            registerTag(gestureTag);
+                                            mNfcGestureExchangeCallback.onTagDiscovered(gestureTag);
+                                        } catch (RemoteException e) {
+                                            Log.e(TAG, "Failed to trigger gesture callback", e);
+                                        }
+                                    } else {
+                                        ReaderModeParams gestureReaderModeParams =
+                                                new ReaderModeParams();
+                                        gestureReaderModeParams.flags =
+                                                GESTURE_EXCHANGE_SECONDARY_FLAG;
+                                        dispatchTagEndpoint(tag, gestureReaderModeParams);
+                                    }
 
                                     tag.startPresenceChecking(presenceCheckDelay, callback);
                                     break;
@@ -5725,9 +5745,27 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                             if (respData[respData.length - 2] == (byte) 0x90
                                     && respData[respData.length - 1] == 0x00) {
                                 Log.d(TAG, "Gesture Exchange AID exists, skipping ndef read");
-                                ReaderModeParams gestureReaderModeParams = new ReaderModeParams();
-                                gestureReaderModeParams.flags = GESTURE_EXCHANGE_FLAG;
-                                dispatchTagEndpoint(tag, gestureReaderModeParams);
+                                if (SdkLevel.isAtLeastC()
+                                        && mNfcGestureExchangeCallback != null) {
+                                    try {
+                                        mCookieUpToDate = mCookieGenerator.nextLong() >>> 1;
+                                        String gestureComponent = Settings.Secure.getString(
+                                                mContext.getContentResolver(),
+                                                GESTURE_EXCHANGE_COMPONENT_SETTINGS_KEY);
+                                        Tag gestureTag = buildGestureTag(tag,
+                                                gestureComponent, GESTURE_EXCHAGE_AID);
+                                        registerTagObject(tag);
+                                        registerTag(gestureTag);
+                                        mNfcGestureExchangeCallback.onTagDiscovered(gestureTag);
+                                    } catch (RemoteException e) {
+                                        Log.e(TAG, "Failed to trigger gesture callback", e);
+                                    }
+                                } else {
+                                    ReaderModeParams gestureReaderModeParams =
+                                            new ReaderModeParams();
+                                    gestureReaderModeParams.flags = GESTURE_EXCHANGE_FLAG;
+                                    dispatchTagEndpoint(tag, gestureReaderModeParams);
+                                }
 
                                 tag.startPresenceChecking(presenceCheckDelay, callback);
                                 break;
