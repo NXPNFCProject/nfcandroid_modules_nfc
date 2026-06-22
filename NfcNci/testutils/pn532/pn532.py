@@ -466,6 +466,15 @@ class PN532(Reader):
         self.device.reset_input_buffer()
         self.device.reset_output_buffer()
 
+    def chip_reset(self):
+        """Aborts any stuck command and soft-resets the PN532 chip state machine."""
+        try:
+            self._send_ack_frame(timeout=0.2)
+        except Exception:
+            pass
+        self.reset()
+        self.sam_configuration(mode=0x01, timeout_value=0x00)
+
     # Special commands
 
     def transceive_raw(

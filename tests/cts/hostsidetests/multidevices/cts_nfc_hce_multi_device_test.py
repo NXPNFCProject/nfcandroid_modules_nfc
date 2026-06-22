@@ -1733,6 +1733,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
                 "*** TEST END: " + self.current_test_info.name + " ***")
         if hasattr(self, 'pn532'):
             self.pn532.reset_buffers()
+            self.pn532.chip_reset()
             self.pn532.mute()
         if hasattr(self, "emulator"):
             self.emulator.services.create_output_excerpts_all(self.current_test_info)
@@ -1876,7 +1877,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
 
         # 5. Verify exception caught inside snippet
         _LOG.info("Waiting for Android to trigger or handle TagLostException...")
-        lost_event = tag_lost_handler.waitAndGet("TagLostException", timeout=5.0)
+        lost_event = tag_lost_handler.waitAndGet("TagLostException", _NFC_TIMEOUT_SEC)
 
         asserts.assert_is_not_none(
             lost_event,
