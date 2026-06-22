@@ -346,7 +346,9 @@ public class NativeNfcManager implements DeviceHost {
     }
 
     public boolean isT3TIdentifierRegistered() {
-        return mT3tIdentifiers.size() > 0;
+        synchronized (mLock) {
+            return mT3tIdentifiers.size() > 0;
+        }
     }
 
     @Override

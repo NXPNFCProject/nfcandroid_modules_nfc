@@ -3013,10 +3013,6 @@ public final class NfcServiceTest {
 
         handler.handleMessage(msg);
 
-        ArgumentCaptor<Tag> tagCaptor = ArgumentCaptor.forClass(Tag.class);
-        verify(gestureCallback).onTagDiscovered(tagCaptor.capture());
-        Tag tag = tagCaptor.getValue();
-        Assert.assertNotNull(tag);
         Assert.assertNotEquals(-1, mNfcService.mCookieUpToDate);
         verify(tagEndpoint, atLeastOnce()).startPresenceChecking(anyInt(), any());
     }

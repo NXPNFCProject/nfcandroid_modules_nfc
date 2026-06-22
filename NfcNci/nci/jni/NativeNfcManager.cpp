@@ -2428,11 +2428,14 @@ static void nfcManager_doSetScreenState(JNIEnv* e, jobject o,
         LOG(ERROR) << StringPrintf(
             "%s: Wait for NFA_SetPowerSubStateForScreenState timeout",
             __func__);
-
-        nfaDeviceManagementCallback(NFA_DM_NFCC_TIMEOUT_EVT, nullptr);
-        return;
+        status = NFA_STATUS_TIMEOUT;
       }
     }
+  }
+
+  if (status == NFA_STATUS_TIMEOUT) {
+    nfaDeviceManagementCallback(NFA_DM_NFCC_TIMEOUT_EVT, nullptr);
+    return;
   }
 
   // skip remaining SetScreenState tasks when trying to silent recover NFCC

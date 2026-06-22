@@ -26,7 +26,6 @@ import android.annotation.TargetApi;
 import android.annotation.UserIdInt;
 import android.app.ActivityManager;
 import android.app.KeyguardManager;
-import android.app.compat.CompatChanges;
 import android.compat.annotation.ChangeId;
 import android.compat.annotation.EnabledSince;
 import android.content.ComponentName;
@@ -70,7 +69,6 @@ import com.android.nfc.NfcService;
 import com.android.nfc.NfcStatsLog;
 import com.android.nfc.PerfettoTrigger;
 import com.android.nfc.ScreenStateHelper;
-import com.android.nfc.cardemulation.HostEmulationManager.HostEmulationConnection;
 import com.android.nfc.cardemulation.RegisteredAidCache.AidResolveInfo;
 import com.android.nfc.cardemulation.util.StatsdUtils;
 import com.android.nfc.flags.Flags;
@@ -1348,6 +1346,10 @@ public class HostEmulationManager {
             } else {
                 for (Map.Entry<ComponentNameAndUser, HostEmulationConnection> entry :
                         mComponentNameToConnectionsMap.entrySet()) {
+                    if (service.equals(entry.getValue().mMessenger)) {
+                        mActiveServiceName = entry.getKey().getComponentName();
+                        mActiveServiceUserId = entry.getKey().getUserId();
+                        break;
                     }
                 }
             }
